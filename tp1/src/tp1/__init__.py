@@ -50,3 +50,6 @@ def main() -> None:
     a_star(BoardManager(board), start, h_trivial)
 
     print("Solution found!")
+
+if __name__ == "__main__":
+    main()
