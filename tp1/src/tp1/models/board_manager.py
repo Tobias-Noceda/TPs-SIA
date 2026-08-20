@@ -7,7 +7,7 @@ from interfaces.coords import Coords
 from models.board import Board, BoardCellType
 
 # Board Node has a type (an enum with block, empty and goal) and a position (a tuple with x and y coordinates)
-class BoardNode(StateManager[BoardState]):
+class BoardManager(StateManager[BoardState]):
     board: Board
   
     def __init__(self, board: Board):
@@ -37,14 +37,6 @@ class BoardNode(StateManager[BoardState]):
 
     def is_goal(self, state: BoardState) -> bool:
         return self.board.is_goal()
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, BoardNode):
-            return self.board == other.board
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.board)
 
     def clone_with_player(self, player: Coords):
         # TODO: NASSSSTYYY
