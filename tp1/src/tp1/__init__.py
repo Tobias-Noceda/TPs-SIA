@@ -1,45 +1,52 @@
+from algorithms.a_star import a_star
+
+from interfaces.coords import Coords
+from interfaces.board_state import BoardState
+
+from models.board import Board, BoardCellType
+from models.board_manager import BoardManager
+
 import json
 import sys
 from pathlib import Path
 
-from tp1.models.board import Board, BoardCellType
-from tp1.models.board_node import BoardNode
-from tp1.algorithms.a_star import a_star
+board: BoardManager
 
-def h_trivial(state: BoardNode) -> int:
-    return 0 if state.is_goal() else 1
+def h_trivial(state: BoardState) -> int:
+    return 0 if board.is_goal(state) else 1
 
-def goal_func(state: BoardNode) -> bool:
-    return state.is_goal()
-
-def parse_board(path: str | Path) -> Board:
+def parse_board(path: str | Path) -> tuple[Board, BoardState]:
     with open(path) as f:
         data = json.load(f)
 
     elements = []
     for x, y in data.get("walls", []):
         elements.append((x, y, BoardCellType.WALL))
+
+    cubes: list[Coords] = []
     for x, y in data.get("cubes", []):
         elements.append((x, y, BoardCellType.BLOCK))
+        cubes.append((x, y))
+
     for x, y in data.get("wins", []):
         elements.append((x, y, BoardCellType.GOAL))
 
     board = Board(data["x"], data["y"], tuple(data.get("player", (0, 0))), elements)
 
-    return board
+    return board, (board.player_position, cubes)
 
 def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: tp1 <board.json>")
         sys.exit(1)
 
-    board = parse_board(sys.argv[1])
+    board, start = parse_board(sys.argv[1])
     print(f"Board {board.width}x{board.height}")
     print(f"Player at {board.player_position}")
     print(f"Walls at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.WALL ]}")
     print(f"Cubes at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.BLOCK ]}")
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
-    a_star(BoardNode(board), goal_func, h_trivial)
+    a_star(BoardManager(board), start, h_trivial)
 
     print("Solution found!")
