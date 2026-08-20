@@ -1,58 +1,53 @@
-# Definitions
-from tp1.src.tp1.models.state import State
-
 # Utils
 import math
 
 # Data structures
-import heapq
+from heapq import heappush, heappop
 from collections import deque
 
 # Typings
 from typing import Sequence
-from tp1.models.heuristic import Heuristic, Goal
+from models.heuristic import Heuristic
+from models.state_manager import StateManager
 
-type MetaTuple[S: State] = tuple[float, int, S, float]
+type MetaTuple[S] = tuple[float, int, S, float]
 
-# https://en.wikipedia.org/wiki/A*_search_algorithm
-def a_star[S: State](start: S, goal: Goal, h: Heuristic[S]) -> Sequence[S] | None:
-    push = heapq.heappush
-    pop = heapq.heappop
-
+# @link https://en.wikipedia.org/wiki/A*_search_algorithm
+# @generic S The state type MUST be comparable and hashable
+def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | None:
     counter: int = 0
     open_nodes: list[MetaTuple[S]] = [(h(start), counter, start, 0.0)]
 
     smallest_g_score: dict[S, float] = { start: 0.0 }
 
-    came_from: dict[S, S] = {}
+    previous_state: dict[S, S] = {}
 
     while open_nodes:
-        current: MetaTuple[S] = pop(open_nodes)
+        peak: MetaTuple[S] = heappop(open_nodes)
 
-        node: S = current[2]
-        gs: float = current[3]
+        curr: S = peak[2]
+        gs: float = peak[3]
 
-        if smallest_g_score.get(node, math.inf) < gs:
+        if smallest_g_score.get(curr, math.inf) < gs:
             continue
 
-        if goal(node):
-            return build_path(came_from, node)
+        if sm.is_goal(curr):
+            return build_path(previous_state, curr)
 
-        peers: Sequence[S] = node.peers() # pyright: ignore[reportAssignmentType]
-        for peer in peers:
-            tentative: float = gs + node.dist(peer)
+        for next in sm.next(curr):
+            tentative: float = gs + sm.dist(curr, next)
 
-            if tentative < smallest_g_score.get(peer, math.inf):
+            if tentative < smallest_g_score.get(next, math.inf):
                 counter += 1
-                update: MetaTuple[S] = (tentative + h(peer), counter, peer, tentative)
+                update: MetaTuple[S] = (tentative + h(next), counter, next, tentative)
 
-                push(open_nodes, update)
-                smallest_g_score[peer] = tentative
-                came_from[peer] = node
+                heappush(open_nodes, update)
+                smallest_g_score[next] = tentative
+                previous_state[next] = curr
 
     return None
 
-def build_path[N: State](came_from: dict[N, N], current: N) -> Sequence[N]:
+def build_path[S](came_from: dict[S, S], current: S) -> Sequence[S]:
     total_path = deque([current])
 
     while current in came_from:
