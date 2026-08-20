@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 from typing import Sequence
 
 @dataclass
-class Node(ABC):
+class State(ABC):
     @abstractmethod
-    def peers(self) -> Sequence[Node]: pass
+    def peers(self) -> Sequence[State]: pass
 
     @abstractmethod
-    def dist(self, other: Node) -> int: pass
+    def dist(self, other: State) -> int: pass
 
     @abstractmethod
     def is_goal(self) -> bool: pass

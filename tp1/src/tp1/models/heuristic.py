@@ -1,8 +1,8 @@
 # Data structures
-from tp1.models.node import Node
+from tp1.src.tp1.models.state import State
 
 # Typings
 from typing import Callable
 
-type Heuristic[N: Node] = Callable[[N], int]
-type Goal[N: Node] = Callable[[N], bool]
+type Heuristic[S: State] = Callable[[S], int]
+type Goal[S: State] = Callable[[S], bool]

@@ -1,14 +1,14 @@
-from tp1.models.node import Node
+from tp1.src.tp1.models.state import State
 from tp1.models.board import Board
 
 # Board Node has a type (an enum with block, empty and goal) and a position (a tuple with x and y coordinates)
-class BoardNode(Node):  
+class BoardNode(State):  
     board: Board
   
     def __init__(self, board: Board):
         self.board = board
 
-    def peers(self) -> list[Node]:
+    def peers(self) -> list[State]:
         peer_movements = self.board.get_player_peer_movements()
         peers = []
 
@@ -19,7 +19,7 @@ class BoardNode(Node):
 
         return peers
 
-    def dist(self, other: Node) -> int:
+    def dist(self, other: State) -> int:
         return 1
 
     def is_goal(self) -> bool:
