@@ -1,5 +1,7 @@
 from enum import Enum
 
+from tp1.models.coords import Coords
+
 class BoardCellType(Enum):
     WALL = 0
     BLOCK = 1
@@ -17,10 +19,10 @@ class BoardCell:
         self.cell_type = cell_type
 
 class Board:
-    player_position: tuple[int, int]
+    player_position: Coords
     cells: list[list[BoardCell]]
 
-    def __init__(self, width: int, height: int, player_position: tuple[int, int], elements: list[tuple[int, int, BoardCellType]] = list()):
+    def __init__(self, width: int, height: int, player_position: Coords, elements: list[tuple[int, int, BoardCellType]] = list()):
         self.width = width
         self.height = height
         self.player_position = player_position
@@ -61,7 +63,7 @@ class Board:
 
         return False
 
-    def move_element(self, position: tuple[int, int], movement: BoardMovement) -> tuple[int, int]:
+    def move_element(self, position: Coords, movement: BoardMovement) -> Coords:
         new_x = position[0] + movement.value[0]
         new_y = position[1] + movement.value[1]
         if 0 <= new_x < self.width and 0 <= new_y < self.height:
