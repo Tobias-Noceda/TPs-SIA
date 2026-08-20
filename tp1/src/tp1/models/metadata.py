@@ -3,7 +3,7 @@ import numpy as np
 
 # Data structures
 from functools import total_ordering
-from TP1.models.node import Node
+from tp1.models.node import Node
 
 # Typings
 from typing import Callable, Sequence

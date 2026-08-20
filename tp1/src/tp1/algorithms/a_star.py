@@ -3,15 +3,15 @@ import heapq
 from collections import deque
 
 # Models
-from TP1.models.node import Node
-from TP1.models.metadata import Metadata, Heuristic, MetaMapa
+from tp1.models.node import Node
+from tp1.models.metadata import Metadata, Heuristic
 
 # Typings
 from typing import Sequence, Mapping
 
 type MetaMap[N: Node] = Mapping[Metadata[N], Metadata[N]]
 
-def build_path[N: Node](came_from: MetaMapa[N], current: Metadata[N]) -> Sequence[N]:
+def build_path[N: Node](came_from: MetaMap[N], current: Metadata[N]) -> Sequence[N]:
     total_path = deque([current.node])
 
     while current.node in came_from:
@@ -27,7 +27,7 @@ def a_star[N: Node](start: N, goal: N, h: Heuristic[N]) -> Sequence[N] | None:
     open_nodes = [Metadata(start)]
     heapq.heapify(open_nodes)
 
-    came_from: MetaMapa[N] = {}
+    came_from: MetaMap[N] = {}
 
     open_nodes[0].g_score = 0
     open_nodes[0].f_score = h(start)
@@ -48,6 +48,3 @@ def a_star[N: Node](start: N, goal: N, h: Heuristic[N]) -> Sequence[N] | None:
                     heapq.heappush(open_nodes, neighbour)
 
     return None
-
-def main() -> None:
-    print("Hello from sia-pseudo!")
