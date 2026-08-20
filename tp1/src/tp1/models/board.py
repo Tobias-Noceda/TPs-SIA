@@ -1,6 +1,6 @@
 from enum import Enum
 
-from tp1.models.coords import Coords
+from interfaces.coords import Coords
 
 class BoardCellType(Enum):
     WALL = 0

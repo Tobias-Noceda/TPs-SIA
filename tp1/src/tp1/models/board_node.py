@@ -1,5 +1,5 @@
-from tp1.src.tp1.models.state import State
-from tp1.models.board import Board
+from interfaces.state import State
+from models.board import Board
 
 # Board Node has a type (an enum with block, empty and goal) and a position (a tuple with x and y coordinates)
 class BoardNode(State):  
