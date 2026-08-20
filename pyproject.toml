@@ -1,22 +1,25 @@
 [project]
 name = "tps-sia"
 version = "0.1.0"
-description = "Add your description here"
+description = "An AI for a TP"
 readme = "README.md"
 authors = [
-    { name = "Tobias-Noceda", email = "tnoceda@itba.edu.ar" }
+    { name = "Tobias-Noceda", email = "tnoceda@itba.edu.ar" },
+    { name = "Pedro Seggiaro", email = "pedro.seggiaro@gmail.com" },
+    { name = "Josefinamrm", email = "jmiguez@itba.edu.ar" },
+    { name = "Tomás Raiti", email = "46955459+Secreto31126@users.noreply.github.com" }
 ]
 requires-python = ">=3.14"
 dependencies = []
 
-[project.scripts]
-tps-sia = "tps_sia:main"
+[tool.uv.sources]
+tp1 = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "tp1"
+]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
-
-[tool.uv.workspace]
-members = [
-    "tp1",
-]
