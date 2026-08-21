@@ -10,10 +10,10 @@ import json
 import sys
 from pathlib import Path
 
-board: BoardManager
+manager: BoardManager
 
 def h_trivial(state: BoardState) -> int:
-    return 0 if board.is_goal(state) else 1
+    return 0 if manager.is_goal(state) else 1
 
 def parse_board(path: str | Path) -> tuple[Board, BoardState]:
     with open(path) as f:
@@ -36,6 +36,8 @@ def parse_board(path: str | Path) -> tuple[Board, BoardState]:
     return board, (board.player_position, cubes)
 
 def main() -> None:
+    global manager
+
     if len(sys.argv) < 2:
         print("Usage: tp1 <board.json>")
         sys.exit(1)
@@ -47,7 +49,8 @@ def main() -> None:
     print(f"Cubes at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.BLOCK ]}")
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
-    a_star(BoardManager(board), start, h_trivial)
+    manager = BoardManager(board)
+    a_star(manager, start, h_trivial)
 
     print("Solution found!")
 
