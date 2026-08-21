@@ -25,17 +25,17 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
     while open_nodes:
         peak: MetaTuple[S] = heappop(open_nodes)
 
-        curr: S = peak[2]
-        gs: float = peak[3]
+        current: S = peak[2]
+        g_score: float = peak[3]
 
-        if smallest_g_score.get(curr, math.inf) < gs:
+        if smallest_g_score.get(current, math.inf) < g_score:
             continue
 
-        if sm.is_goal(curr):
-            return build_path(previous_state, curr)
+        if sm.is_goal(current):
+            return build_path(previous_state, current)
 
-        for next in sm.next(curr):
-            tentative: float = gs + sm.dist(curr, next)
+        for next in sm.next(current):
+            tentative: float = g_score + sm.dist(current, next)
 
             if tentative < smallest_g_score.get(next, math.inf):
                 counter += 1
@@ -43,7 +43,7 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
 
                 heappush(open_nodes, update)
                 smallest_g_score[next] = tentative
-                previous_state[next] = curr
+                previous_state[next] = current
 
     return None
 
