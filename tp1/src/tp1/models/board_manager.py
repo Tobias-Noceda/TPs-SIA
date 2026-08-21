@@ -50,7 +50,7 @@ class BoardManager(StateManager[BoardState]):
 
     def clone_with_state(self, state: BoardState):
         player: Coords = state[0]
-        boxes: Tuple[Coords] = state[1]
+        boxes: Sequence[Coords] = state[1]
 
         # TODO: NASSSSTYYY
         things: list[tuple[int, int, BoardCellType]] = []
