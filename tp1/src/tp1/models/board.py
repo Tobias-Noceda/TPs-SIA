@@ -46,6 +46,8 @@ class Board:
     def move_player(self, movement: BoardMovement) -> bool:
         new_x = self.player_position[0] + movement.value[0]
         new_y = self.player_position[1] + movement.value[1]
+        print((movement, new_x, new_y))
+
         if 0 <= new_x < self.width and 0 <= new_y < self.height:
             if self.get_cell(new_x, new_y).cell_type == BoardCellType.EMPTY:
                 self.player_position = (new_x, new_y)
