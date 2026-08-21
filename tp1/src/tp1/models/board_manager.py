@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Tuple
 
 from interfaces.state_manager import StateManager
 from interfaces.board_state import BoardState
@@ -9,7 +9,7 @@ from models.board import Board, BoardCellType
 # Board Node has a type (an enum with block, empty and goal) and a position (a tuple with x and y coordinates)
 class BoardManager(StateManager[BoardState]):
     board: Board
-  
+
     def __init__(self, board: Board):
         self.board = board
 
@@ -28,7 +28,7 @@ class BoardManager(StateManager[BoardState]):
                     if cell.cell_type == BoardCellType.BLOCK:
                         boxes.append((x, y))
 
-            next.append((board.player_position, boxes))
+            next.append((board.player_position, tuple(boxes)))
 
         return next
 
@@ -50,7 +50,7 @@ class BoardManager(StateManager[BoardState]):
 
     def clone_with_state(self, state: BoardState):
         player: Coords = state[0]
-        boxes: Sequence[Coords] = state[1]
+        boxes: Tuple[Coords] = state[1]
 
         # TODO: NASSSSTYYY
         things: list[tuple[int, int, BoardCellType]] = []
