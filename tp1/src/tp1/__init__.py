@@ -33,7 +33,7 @@ def parse_board(path: str | Path) -> tuple[Board, BoardState]:
 
     board = Board(data["x"], data["y"], tuple(data.get("player", (0, 0))), elements)
 
-    return board, (board.player_position, cubes)
+    return board, (board.player_position, tuple(cubes))
 
 def main() -> None:
     global manager
@@ -50,9 +50,10 @@ def main() -> None:
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
     manager = BoardManager(board)
-    a_star(manager, start, h_trivial)
+    solution = a_star(manager, start, h_trivial)
 
-    print("Solution found!")
+    print(solution)
+    print("Solution found!" if solution is not None else ":/")
 
 if __name__ == "__main__":
     main()
