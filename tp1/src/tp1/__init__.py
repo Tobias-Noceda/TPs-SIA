@@ -10,9 +10,6 @@ from tp1.models.board_manager import BoardManager
 from tp1.models.sokoban_board import BoardCellType, SokobanBoard
 from tp1.types.sokoban_state import SokobanBoardState
 
-def h_trivial(state: SokobanBoardState) -> int:
-    return 0 if manager.is_goal(state) else 1
-
 def parse_board(path: str | Path) -> tuple[SokobanBoard, SokobanBoardState]:
     with open(path) as f:
         data = json.load(f)
@@ -47,7 +44,7 @@ def main() -> None:
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
     manager = BoardManager(board)
-    solution = a_star(manager, start, h_trivial)
+    solution = a_star(manager, start, board.h_trivial)
 
     print(solution)
     print("Solution found!" if solution is not None else ":/")

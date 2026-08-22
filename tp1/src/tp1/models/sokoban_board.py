@@ -87,3 +87,6 @@ class SokobanBoard(Board[SokobanBoardState]):
             if self.cells[y][x].cell_type != BoardCellType.GOAL:
                 return False
         return True
+
+    def h_trivial(self, state: SokobanBoardState) -> int:
+        return 0 if self.is_goal(state) else 1
