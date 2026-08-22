@@ -1,21 +1,19 @@
-from algorithms.a_star import a_star
+from tp1.algorithms.a_star import a_star
 
-from interfaces.coords import Coords
-from interfaces.board_state import BoardState
-
-from models.board import Board, BoardCellType
-from models.board_manager import BoardManager
+from tp1.types.coords import Coords
 
 import json
 import sys
 from pathlib import Path
 
-manager: BoardManager
+from tp1.models.board_manager import BoardManager
+from tp1.models.sokoban_board import BoardCellType, SokobanBoard
+from tp1.types.sokoban_state import SokobanBoardState
 
-def h_trivial(state: BoardState) -> int:
+def h_trivial(state: SokobanBoardState) -> int:
     return 0 if manager.is_goal(state) else 1
 
-def parse_board(path: str | Path) -> tuple[Board, BoardState]:
+def parse_board(path: str | Path) -> tuple[SokobanBoard, SokobanBoardState]:
     with open(path) as f:
         data = json.load(f)
 
@@ -25,15 +23,14 @@ def parse_board(path: str | Path) -> tuple[Board, BoardState]:
 
     cubes: list[Coords] = []
     for x, y in data.get("cubes", []):
-        elements.append((x, y, BoardCellType.BLOCK))
         cubes.append((x, y))
 
     for x, y in data.get("wins", []):
         elements.append((x, y, BoardCellType.GOAL))
 
-    board = Board(data["x"], data["y"], tuple(data.get("player", (0, 0))), elements)
+    board = SokobanBoard(data["x"], data["y"], elements)
 
-    return board, (board.player_position, tuple(cubes))
+    return board, (tuple(data.get("player", (0, 0))), tuple(cubes))
 
 def main() -> None:
     global manager
@@ -44,9 +41,9 @@ def main() -> None:
 
     board, start = parse_board(sys.argv[1])
     print(f"Board {board.width}x{board.height}")
-    print(f"Player at {board.player_position}")
+    print(f"Player at {start[0]}")
     print(f"Walls at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.WALL ]}")
-    print(f"Cubes at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.BLOCK ]}")
+    print(f"Cubes at {start[1]}")
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
     manager = BoardManager(board)

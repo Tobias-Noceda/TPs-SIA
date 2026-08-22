@@ -7,8 +7,8 @@ from collections import deque
 
 # Typings
 from typing import Sequence
-from interfaces.heuristic import Heuristic
-from interfaces.state_manager import StateManager
+from tp1.types.heuristic import Heuristic
+from tp1.interfaces.state_manager import StateManager
 
 type MetaTuple[S] = tuple[float, int, S, float]
 
