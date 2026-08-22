@@ -1,4 +1,5 @@
 from tp1.algorithms.a_star import a_star
+from tp1.algorithms.iddfs import iddfs
 
 from tp1.types.coords import Coords
 
@@ -44,7 +45,8 @@ def main() -> None:
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
     manager = BoardManager(board)
-    solution = a_star(manager, start, board.h_trivial)
+    # solution = a_star(manager, start, board.h_trivial)
+    solution = iddfs(manager, start)
 
     print(solution)
     print("Solution found!" if solution is not None else ":/")
