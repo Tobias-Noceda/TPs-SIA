@@ -2,6 +2,7 @@ from tp1.algorithms.a_star import a_star
 from tp1.algorithms.greedy import greedy
 from tp1.algorithms.iddfs import iddfs
 from tp1.algorithms.dfs import dfs
+from tp1.algorithms.bfs import bfs
 
 from tp1.models.sokoban_parser import parse_board
 from tp1.models.board_manager import BoardManager
@@ -27,9 +28,10 @@ def main() -> None:
     manager = BoardManager(board)
 
     # solution = a_star(manager, start, board.h_trivial)
-    solution = greedy(manager, start, board.h_trivial)
+    # solution = greedy(manager, start, board.h_trivial)
     # solution = iddfs(manager, start)
     # solution = dfs(manager, start)
+    solution = bfs(manager, start)
 
     print(solution)
     print("Solution found!" if solution is not None else ":/")
