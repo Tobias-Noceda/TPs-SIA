@@ -9,14 +9,7 @@ def iddfs[S](sm: StateManager[S], start: S, limit = 1_000) -> Sequence[S] | None
             return result[::-1]
     return None
 
-max_depth = -1
 def dls[S](sm: StateManager[S], state: S, depth: int) -> list[S] | None:
-    global max_depth
-
-    if depth > max_depth:
-        print(depth)
-        max_depth = depth
-
     if sm.is_goal(state):
         return [state]
 
