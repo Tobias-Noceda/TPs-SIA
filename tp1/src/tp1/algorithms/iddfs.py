@@ -2,6 +2,7 @@ from typing import Sequence
 
 from tp1.interfaces.state_manager import StateManager
 
+# https://es.wikipedia.org/wiki/B%C3%BAsqueda_en_profundidad_iterativa
 def iddfs[S](sm: StateManager[S], start: S, limit = 1_000) -> Sequence[S] | None:
     for depth in range(limit):
         result = dls(sm, start, depth)
