@@ -2,6 +2,8 @@ from typing import Sequence
 from enum import Enum
 
 from tp1.interfaces.board import Board
+
+from tp1.types.coords import Coords
 from tp1.types.sokoban_state import SokobanBoardState
 
 class BoardCellType(Enum):
@@ -22,9 +24,11 @@ class BoardCell:
 class SokobanBoard(Board[SokobanBoardState]):
     width: int
     height: int
+    wins: Sequence[Coords]
+    walls: Sequence[Coords]
     cells: list[list[BoardCell]]
 
-    def __init__(self, width: int, height: int, elements: list[tuple[int, int, BoardCellType]] = list()):
+    def __init__(self, width: int, height: int, walls: Sequence[Coords], wins: Sequence[Coords]):
         """
         Initializes a Board instance.
         width: The width of the board.
@@ -34,10 +38,17 @@ class SokobanBoard(Board[SokobanBoardState]):
         """
         self.width = width
         self.height = height
+
+        self.wins = wins
+        self.walls = walls
+
         self.cells = [[BoardCell(BoardCellType.EMPTY) for _ in range(width)] for _ in range(height)]
-        
-        for x, y, cell_type in elements:
-            self.__set_cell(x, y, cell_type)
+
+        for x, y in walls:
+            self.__set_cell(x, y, BoardCellType.WALL)
+
+        for x, y in wins:
+            self.__set_cell(x, y, BoardCellType.GOAL)
 
     def __set_cell(self, x: int, y: int, cell_type: BoardCellType):
         if 0 <= x < self.width and 0 <= y < self.height:

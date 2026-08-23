@@ -1,4 +1,6 @@
-from tp1.models.sokoban_board import BoardCellType, SokobanBoard
+from typing import Any, Sequence
+
+from tp1.models.sokoban_board import SokobanBoard
 
 from tp1.types.coords import Coords
 from tp1.types.sokoban_state import SokobanBoardState
@@ -10,18 +12,20 @@ def parse_board(path: str | Path) -> tuple[SokobanBoard, SokobanBoardState]:
     with open(path) as f:
         data = json.load(f)
 
-    elements = []
-    for x, y in data.get("walls", []):
-        elements.append((x, y, BoardCellType.WALL))
-    for x, y in data.get("wins", []):
-        elements.append((x, y, BoardCellType.GOAL))
+    walls = __coords_tuple(data, "walls")
+    wins = __coords_tuple(data, "wins")
+    cubes = __coords_tuple(data, "cubes")
+    player = tuple(data.get("player", (0, 0)))
 
-    board = SokobanBoard(data["x"], data["y"], elements)
+    board = SokobanBoard(data["x"], data["y"], walls, wins)
 
-    cubes: list[Coords] = []
-    for x, y in data.get("cubes", []):
-        cubes.append((x, y))
+    start = (player, cubes)
 
-    player = data.get("player", (0, 0))
+    return board, start
 
-    return board, (tuple(player), tuple(cubes))
+def __coords_tuple(data: Any, key: str) -> Sequence[Coords]:
+    coords: list[Coords] = []
+    for x, y in data.get(key, []):
+        coords.append((x, y))
+
+    return tuple(coords)
