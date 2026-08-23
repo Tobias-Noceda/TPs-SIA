@@ -1,15 +1,10 @@
-import sys
+import math
 from typing import Sequence
 
 from tp1.models.sokoban_board import BoardCellType, BoardMovement, SokobanBoard
 from tp1.types.coords import Coords
 from tp1.types.heuristic import Heuristic
 from tp1.types.sokoban_state import SokobanBoardState
-
-# Python ints are unbounded, so there is no natural infinity to report on a
-# deadlocked state. This is the largest value the platform stores in a native
-# int, far above any cost a real board can reach, so it always sorts last.
-UNSOLVABLE: int = sys.maxsize
 
 def is_blocked(board: SokobanBoard, x: int, y: int) -> bool:
     """A box can never be pushed here. The edge of the board acts as a wall."""
@@ -33,7 +28,7 @@ def dead_cells_of(board: SokobanBoard) -> frozenset[Coords]:
     """
     Cells where a box can never be pushed off again, so putting one there makes
     the level unsolvable. A state holding such a box has no solution, and every
-    heuristic below reports UNSOLVABLE for it.
+    heuristic below reports infinity for it.
 
     Depends only on walls and goals, which are static, so it is computed once
     when the heuristic is built and then checked in O(1) per state.
@@ -122,9 +117,8 @@ def closest_goal_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     of them against it and underestimates by a lot. Fixing that needs a minimum
     cost matching between boxes and goals, see matching_manhattan.
 
-    Reports UNSOLVABLE on a deadlocked state, which is still admissible: no
-    solution exists from there, so its real cost is infinite, and any finite
-    estimate stays below it.
+    Returns infinity on a deadlocked state, which is still admissible: no
+    solution exists from there, so its real cost is infinite too.
     """
     goals: list[Coords] = goals_of(board)
     dead: frozenset[Coords] = dead_cells_of(board)
@@ -132,11 +126,11 @@ def closest_goal_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     if not goals:
         raise ValueError("The board has no goals")
 
-    def h(state: SokobanBoardState) -> int:
+    def h(state: SokobanBoardState) -> float:
         _, boxes = state
 
         if any(box in dead for box in boxes):
-            return UNSOLVABLE
+            return math.inf
 
         return sum(min(manhattan(box, goal) for goal in goals) for box in boxes)
 
@@ -175,27 +169,27 @@ def matching_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     if not goals:
         raise ValueError("The board has no goals")
 
-    cache: dict[Sequence[Coords], int] = {}
+    cache: dict[Sequence[Coords], float] = {}
 
-    def h(state: SokobanBoardState) -> int:
+    def h(state: SokobanBoardState) -> float:
         _, boxes = state
 
         if boxes in cache:
             return cache[boxes]
 
         if any(box in dead for box in boxes):
-            cache[boxes] = UNSOLVABLE
-            return UNSOLVABLE
+            cache[boxes] = math.inf
+            return math.inf
 
         cost = [[manhattan(box, goal) for goal in goals] for box in boxes]
 
-        dp: list[int] = [UNSOLVABLE] * (1 << len(goals))
+        dp: list[float] = [math.inf] * (1 << len(goals))
         dp[0] = 0
 
-        best: int = UNSOLVABLE
+        best: float = math.inf
 
         for mask in range(1 << len(goals)):
-            if dp[mask] == UNSOLVABLE:
+            if dp[mask] == math.inf:
                 continue
 
             box = mask.bit_count()
