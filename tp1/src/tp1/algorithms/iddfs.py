@@ -10,11 +10,8 @@ def iddfs[S](sm: StateManager[S], start: S, limit = 1_000) -> Sequence[S] | None
     return None
 
 def dls[S](sm: StateManager[S], state: S, depth: int) -> list[S] | None:
-    if sm.is_goal(state):
-        return [state]
-
     if depth == 0:
-        return None
+        return [state] if sm.is_goal(state) else None
 
     for next in sm.next(state):
         result = dls(sm, next, depth - 1)
