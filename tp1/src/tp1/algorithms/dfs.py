@@ -10,7 +10,7 @@ def dfs[S](sm: StateManager[S], state: S) -> list[S] | None:
         return [state]
 
     for next in sm.next(state):
-        if state in visited:
+        if next in visited:
             continue
 
         result = dfs(sm, next)
