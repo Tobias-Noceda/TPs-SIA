@@ -4,10 +4,10 @@ visited = set()
 
 # https://en.wikipedia.org/wiki/Depth-first_search
 def dfs[S](sm: StateManager[S], state: S) -> list[S] | None:
-    visited.add(state)
-
     if sm.is_goal(state):
         return [state]
+
+    visited.add(state)
 
     for next in sm.next(state):
         if next in visited:
