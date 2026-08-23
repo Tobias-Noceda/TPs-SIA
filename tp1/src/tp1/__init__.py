@@ -24,6 +24,7 @@ def main() -> None:
     print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
 
     manager = BoardManager(board)
+
     # solution = a_star(manager, start, board.h_trivial)
     # solution = iddfs(manager, start)
     solution = dfs(manager, start)
