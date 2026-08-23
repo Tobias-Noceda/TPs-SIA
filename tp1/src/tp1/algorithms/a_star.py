@@ -24,9 +24,7 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
 
     while open_nodes:
         peak: MetaTuple[S] = heappop(open_nodes)
-
-        current: S = peak[2]
-        g_score: float = peak[3]
+        _, _, current, g_score = peak
 
         if smallest_g_score.get(current, math.inf) < g_score:
             continue
