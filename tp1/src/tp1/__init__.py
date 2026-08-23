@@ -1,5 +1,6 @@
 from tp1.algorithms.a_star import a_star
 from tp1.algorithms.iddfs import iddfs
+from tp1.algorithms.dfs import dfs
 
 from tp1.types.coords import Coords
 
@@ -46,7 +47,8 @@ def main() -> None:
 
     manager = BoardManager(board)
     # solution = a_star(manager, start, board.h_trivial)
-    solution = iddfs(manager, start)
+    # solution = iddfs(manager, start)
+    solution = dfs(manager, start)
 
     print(solution)
     print("Solution found!" if solution is not None else ":/")
