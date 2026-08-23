@@ -1,5 +1,3 @@
-from typing import Sequence
-
 from tp1.interfaces.state_manager import StateManager
 
 def dfs[S](sm: StateManager[S], state: S) -> list[S] | None:
