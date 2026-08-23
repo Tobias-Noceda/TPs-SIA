@@ -1,7 +1,6 @@
 from typing import Sequence
 
 from tp1.interfaces.state_manager import StateManager
-from tp1.types.coords import Coords
 from tp1.interfaces.board import Board
 
 # Board Node has a type (an enum with block, empty and goal) and a position (a tuple with x and y coordinates)
