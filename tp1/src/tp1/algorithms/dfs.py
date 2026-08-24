@@ -18,15 +18,17 @@ def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     visited.add(state)
 
     childs = set(sm.next(state)) - visited
-    frontier = len(childs)
+    frontier += len(childs)
 
-    for next in childs:
+    for i, next in enumerate(childs):
         frontier -= 1
+
+        if i == len(childs) - 1:
+            expanded += 1
 
         result = _dfs(sm, next)
         if result[0] is not None:
             result[0].append(state)
             return result
 
-    expanded += 1
     return (None, expanded, 0)
