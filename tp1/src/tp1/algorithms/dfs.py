@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from tp1.interfaces.state_manager import StateManager
 
 visited = set()
@@ -5,7 +7,7 @@ expanded = 0
 frontier = 0
 
 # https://en.wikipedia.org/wiki/Depth-first_search
-def dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
+def dfs[S](sm: StateManager[S], state: S) -> tuple[Sequence[S] | None, int, int]:
     path, expanded, frontier = _dfs(sm, state)
     return (path[::-1] if path is not None else None, expanded, frontier)
 
