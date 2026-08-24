@@ -10,12 +10,14 @@ do
     do
         for heur in "closest" "reduction"
         do
-            timeout $TIMEOUT uv run tp1 "$algo" "$heur" "$map"
+            timeout -v $TIMEOUT uv run tp1 "$algo" "$heur" "$map"
+            echo
         done
     done
 
     for algo in "iddfs" "dfs" "bfs"
     do
-        timeout $TIMEOUT uv run tp1 "$algo" "$map"
+        timeout -v $TIMEOUT uv run tp1 "$algo" "$map"
+        echo
     done
 done
