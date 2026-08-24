@@ -34,7 +34,7 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> tuple[Sequence[
         if sm.is_goal(current):
             path = build_path(previous_state, current)
             # Filter old inneficient states
-            open = len([n for n in open_nodes if smallest_g_score.get(current, math.inf) > g_score])
+            open = len([n for n in open_nodes if smallest_g_score.get(current, math.inf) >= g_score])
             return (path, closed_nodes, open)
 
         for next in sm.next(current):
