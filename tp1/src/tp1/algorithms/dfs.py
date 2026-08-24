@@ -4,7 +4,7 @@ from tp1.interfaces.state_manager import StateManager
 
 visited = set()
 expanded = 0
-frontier = 0
+frontier = 1
 
 # https://en.wikipedia.org/wiki/Depth-first_search
 def dfs[S](sm: StateManager[S], state: S) -> tuple[Sequence[S] | None, int, int]:
@@ -14,6 +14,7 @@ def dfs[S](sm: StateManager[S], state: S) -> tuple[Sequence[S] | None, int, int]
 def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     global expanded, frontier
 
+    frontier -= 1
     expanded += 1
     if sm.is_goal(state):
         return ([state], expanded, frontier)
@@ -24,8 +25,6 @@ def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     frontier += len(childs)
 
     for next in childs:
-        frontier -= 1
-
         result = _dfs(sm, next)
         if result[0] is not None:
             result[0].append(state)
