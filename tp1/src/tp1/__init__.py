@@ -22,7 +22,7 @@ from typing import Callable, Sequence
 heuristics = {
     "trivial": h.trivial,
     "closest": h.closest_goal_manhattan,
-    "matching": h.matching_manhattan,
+    "reduction": h.reduction_manhattan,
 }
 
 type SokobanBoardManager = BoardManager[SokobanBoardState, SokobanBoard]
@@ -45,12 +45,12 @@ def main() -> None:
     global manager
 
     if len(sys.argv) < 3:
-        print("Usage: tp1 <a_star|greedy|iddfs|dfs|bfs> [trivial*|closest|matching] <board.json>")
+        print("Usage: tp1 <a_star|greedy|iddfs|dfs|bfs> [trivial*|closest|reduction] <board.json>")
         sys.exit(1)
 
     algorithm_name = sys.argv[1]
     if algorithm_name not in algorithms:
-        print("Usage: tp1 <a_star|greedy|iddfs|dfs|bfs> [trivial*|closest|matching] <board.json>")
+        print("Usage: tp1 <a_star|greedy|iddfs|dfs|bfs> [trivial*|closest|reduction] <board.json>")
         sys.exit(1)
 
     uses_h = algorithm_name in {"a_star", "greedy"}
