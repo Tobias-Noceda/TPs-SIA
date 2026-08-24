@@ -11,7 +11,7 @@ type MetaTuple[S] = tuple[float, int, S]
 
 # @link https://es.wikipedia.org/wiki/Algoritmo_voraz
 # @generic S The state type MUST be comparable and hashable
-def greedy[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | None:
+def greedy[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> tuple[Sequence[S] | None, int, int]:
     counter: int = 0
 
     open_nodes: list[MetaTuple[S]] = [(h(start), counter, start)]
@@ -24,7 +24,8 @@ def greedy[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
         current: S = peak[2]
 
         if sm.is_goal(current):
-            return build_path(previous_state, current)
+            path = build_path(previous_state, current)
+            return (path, len(closed_nodes), len(open_nodes))
 
         closed_nodes.add(current)
 
@@ -38,7 +39,7 @@ def greedy[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
             heappush(open_nodes, update)
             previous_state[next] = current
 
-    return None
+    return (None, len(closed_nodes), 0)
 
 def build_path[S](came_from: dict[S, S], current: S) -> Sequence[S]:
     total_path = deque([current])
