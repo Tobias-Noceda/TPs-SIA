@@ -11,6 +11,7 @@ from tp1.types.sokoban_state import SokobanBoardState
 
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -32,6 +33,7 @@ def main() -> None:
 
     manager = BoardManager(board)
 
+    start_time = time.perf_counter()
     # Swap the active algorithm by commenting/uncommenting the corresponding block.
     # algorithm_name = "a_star"
     # path = a_star(manager, start, board.h_trivial)
@@ -40,14 +42,15 @@ def main() -> None:
     # algorithm_name = "iddfs"
     # path = iddfs(manager, start)
     algorithm_name = "dfs"
-    path = dfs(manager, start)
+    path, expanded, frontier = (dfs(manager, start), 0 , 0)
     # algorithm_name = "bfs"
     # path = bfs(manager, start)
+    elapsed_time = time.perf_counter() - start_time
 
     print(path)
     print("Solution found!" if path is not None else ":/")
 
-    save_result(board_path, board, start, algorithm_name, path)
+    save_result(board_path, board, start, algorithm_name, path,expanded, frontier, elapsed_time)
 
 def save_result(
     board_path: Path,
@@ -55,6 +58,9 @@ def save_result(
     start: SokobanBoardState,
     algorithm_name: str,
     path: Sequence[SokobanBoardState] | None,
+    expanded: int,
+    frontier: int,
+    elapsed_time: float,
 ) -> None:
     board_data = {
         "x": board.width,
@@ -69,6 +75,9 @@ def save_result(
         "algorithm": algorithm_name,
         "board": board_data,
         "steps": [movement.name for movement in path_to_movements(path)] if path is not None else [],
+        "expanded_nodes": expanded,
+        "frontier_nodes": frontier,
+        "execution_time_seconds": elapsed_time,
     }
 
     output_dir = Path(__file__).resolve().parents[2] / "res" / "output"
