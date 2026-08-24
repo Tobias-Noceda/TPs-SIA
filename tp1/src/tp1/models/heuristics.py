@@ -1,14 +1,15 @@
 import math
 from typing import Sequence
 
-from tp1.models.sokoban_board import BoardMovement, SokobanBoard
+from tp1.models.sokoban_board import SokobanBoard
+
 from tp1.types.coords import Coords
 from tp1.types.heuristic import Heuristic
 from tp1.types.sokoban_state import SokobanBoardState
 
-def trivial():
-    def h(self, state: SokobanBoardState) -> int:
-        return 0 if self.is_goal(state) else 1
+def trivial(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
+    def h(state: SokobanBoardState) -> int:
+        return 0 if board.is_goal(state) else 1
 
     return h
 
