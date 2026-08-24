@@ -27,9 +27,9 @@ def main() -> None:
 
     print(f"Board {board.width}x{board.height}")
     print(f"Player at {start[0]}")
-    print(f"Walls at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.WALL ]}")
+    print(f"Walls at {board.walls}")
     print(f"Cubes at {start[1]}")
-    print(f"Goals at {[ (x, y) for y, row in enumerate(board.cells) for x, cell in enumerate(row) if cell.cell_type == BoardCellType.GOAL ]}")
+    print(f"Goals at {board.wins}")
 
     manager = BoardManager(board)
 
