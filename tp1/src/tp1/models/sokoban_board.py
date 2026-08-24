@@ -96,7 +96,7 @@ class SokobanBoard(Board[SokobanBoardState]):
         return movements
 
     def __is_out_of_bounds(self, x: int, y: int) -> bool:
-        return x < 0 or x >= self.width or y < 0 or y >= self.height
+        return not (0 <= x < self.width and 0 <= y < self.height)
 
     def __lands_in_wall(self, x: int, y: int) -> bool:
         return self.cells[y][x].cell_type == BoardCellType.WALL
