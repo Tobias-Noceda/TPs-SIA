@@ -6,6 +6,12 @@ from tp1.types.coords import Coords
 from tp1.types.heuristic import Heuristic
 from tp1.types.sokoban_state import SokobanBoardState
 
+def trivial():
+    def h(self, state: SokobanBoardState) -> int:
+        return 0 if self.is_goal(state) else 1
+
+    return h
+
 def manhattan(a: Coords, b: Coords) -> int:
     # @link https://en.wikipedia.org/wiki/Taxicab_geometry
     return abs(a[0] - b[0]) + abs(a[1] - b[1])

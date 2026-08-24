@@ -108,9 +108,6 @@ class SokobanBoard(Board[SokobanBoardState]):
                 return False
         return True
 
-    def h_trivial(self, state: SokobanBoardState) -> int:
-        return 0 if self.is_goal(state) else 1
-
     def __is_blocked(self, x: int, y: int):
         return self.__is_out_of_bounds(x, y) or self.__lands_in_wall(x, y)
 
