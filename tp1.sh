@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TIMEOUT=300
+TIMEOUT=5m
 
 maps=$(find ./tp1/res/boards -type f -name '*.json' -not -path "*/too_hard/*")
 
