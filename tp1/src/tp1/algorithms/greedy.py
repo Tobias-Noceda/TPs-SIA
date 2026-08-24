@@ -23,11 +23,10 @@ def greedy[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> tuple[Sequence[
         peak: MetaTuple[S] = heappop(open_nodes)
         current: S = peak[2]
 
+        closed_nodes.add(current)
         if sm.is_goal(current):
             path = build_path(previous_state, current)
             return (path, len(closed_nodes), len(open_nodes))
-
-        closed_nodes.add(current)
 
         for next in sm.next(current):
             if next in closed_nodes:
