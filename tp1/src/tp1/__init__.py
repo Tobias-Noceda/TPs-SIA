@@ -34,6 +34,7 @@ def main() -> None:
     manager = BoardManager(board)
 
     start_time = time.perf_counter()
+
     # Swap the active algorithm by commenting/uncommenting the corresponding block.
     # algorithm_name = "a_star"
     # path = a_star(manager, start, board.h_trivial)
@@ -45,6 +46,7 @@ def main() -> None:
     # path, expanded, frontier = dfs(manager, start)
     algorithm_name = "bfs"
     path, expanded, frontier = bfs(manager, start)
+
     elapsed_time = time.perf_counter() - start_time
 
     print(path)
