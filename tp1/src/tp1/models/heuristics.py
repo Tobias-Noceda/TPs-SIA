@@ -16,14 +16,6 @@ def is_blocked(board: SokobanBoard, x: int, y: int) -> bool:
 def is_goal_cell(board: SokobanBoard, x: int, y: int) -> bool:
     return board.cells[y][x].cell_type == BoardCellType.GOAL
 
-def goals_of(board: SokobanBoard) -> list[Coords]:
-    return [
-        (x, y)
-        for y, row in enumerate(board.cells)
-        for x, cell in enumerate(row)
-        if cell.cell_type == BoardCellType.GOAL
-    ]
-
 def dead_cells_of(board: SokobanBoard) -> frozenset[Coords]:
     """
     Cells where a box can never be pushed off again, so putting one there makes
@@ -120,7 +112,7 @@ def closest_goal_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     Returns infinity on a deadlocked state, which is still admissible: no
     solution exists from there, so its real cost is infinite too.
     """
-    goals: list[Coords] = goals_of(board)
+    goals: Sequence[Coords] = board.wins
     dead: frozenset[Coords] = dead_cells_of(board)
 
     if not goals:
@@ -163,7 +155,7 @@ def matching_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     visits the same box layout with many different player positions, so results
     are memoized by box layout.
     """
-    goals: list[Coords] = goals_of(board)
+    goals: Sequence[Coords] = board.wins
     dead: frozenset[Coords] = dead_cells_of(board)
 
     if not goals:
