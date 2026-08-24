@@ -37,11 +37,11 @@ def main() -> None:
 
     # Swap the active algorithm by commenting/uncommenting the corresponding block.
     # algorithm_name = "a_star"
-    # path = a_star(manager, start, board.h_trivial)
+    # path, expanded, frontier = a_star(manager, start, board.h_trivial)
     # algorithm_name = "greedy"
-    # path = greedy(manager, start, board.h_trivial)
+    # path, expanded, frontier = greedy(manager, start, board.h_trivial)
     # algorithm_name = "iddfs"
-    # path = iddfs(manager, start)
+    # path, expanded, frontier = iddfs(manager, start)
     # algorithm_name = "dfs"
     # path, expanded, frontier = dfs(manager, start)
     algorithm_name = "bfs"
