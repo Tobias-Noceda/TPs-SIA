@@ -19,22 +19,6 @@ def manhattan(a: Coords, b: Coords) -> int:
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def closest_goal_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
-    """
-    Sum, over every box, of the Manhattan distance to its closest goal.
-
-    Admissible: pushing a box one cell costs at least one player movement, so
-    moving a box to a goal costs at least the Manhattan distance between them
-    (walls can only make the real path longer). Pushes of different boxes are
-    always different player movements, so adding up the per box estimates never
-    overestimates the real cost.
-
-    Weak when several boxes pick the same closest goal: the estimate counts all
-    of them against it and underestimates by a lot. Fixing that needs a minimum
-    cost matching between boxes and goals, see matching_manhattan.
-
-    Returns infinity on a deadlocked state, which is still admissible: no
-    solution exists from there, so its real cost is infinite too.
-    """
     goals: Sequence[Coords] = board.wins
     dead: frozenset[Coords] = board.dead_cells()
 
@@ -52,39 +36,6 @@ def closest_goal_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
     return h
 
 def reduction_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
-    """
-    Row plus column reduction of the box/goal Manhattan cost matrix: the first
-    step of the Hungarian algorithm, used on its own as a lower bound on the
-    minimum cost assignment of boxes to goals.
-
-    Subtract from every row its minimum, then from every column of the result
-    its minimum, and add up everything subtracted.
-
-    Admissible: with as many boxes as goals every assignment uses exactly one
-    cell of each row and of each column, so subtracting a constant from a row or
-    a column lowers every assignment by the same amount. After both reductions
-    the matrix is non negative, hence for every assignment
-
-        real cost = reduced cost + row mins + col mins >= row mins + col mins
-
-    Dominates closest_goal_manhattan, which is the sum of the row minimums
-    alone: the column reduction is what charges for the goals that no box picked
-    as its closest one, the case where closest_goal_manhattan underestimates the
-    most.
-
-    Not exact: what it leaves out is the cost of the optimal assignment in the
-    twice reduced matrix, which the Hungarian algorithm goes on to close.
-    A* only needs a lower bound, and this one is a few lines and O(boxes*goals),
-    against O(goals!) for the exact brute force matching kept below.
-
-    Requires as many boxes as goals. With fewer boxes an assignment no longer
-    uses every column, so charging for the unused ones overestimates and breaks
-    admissibility.
-
-    The estimate only depends on the boxes, not on the player, and the search
-    visits the same box layout with many different player positions, so results
-    are memoized by box layout.
-    """
     goals: Sequence[Coords] = board.wins
     dead: frozenset[Coords] = board.dead_cells()
 
