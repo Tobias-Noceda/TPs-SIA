@@ -17,6 +17,15 @@ class BoardMovement(Enum):
     LEFT = (-1, 0)
     RIGHT = (1, 0)
 
+def path_to_movements(path: Sequence[SokobanBoardState]) -> list[BoardMovement]:
+    movements: list[BoardMovement] = []
+
+    for (prev_player, _), (next_player, _) in zip(path, path[1:]):
+        delta = (next_player[0] - prev_player[0], next_player[1] - prev_player[1])
+        movements.append(BoardMovement(delta))
+
+    return movements
+
 class BoardCell:
     def __init__(self, cell_type: BoardCellType):
         self.cell_type = cell_type
