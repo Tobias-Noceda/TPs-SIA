@@ -14,9 +14,10 @@ type MetaTuple[S] = tuple[float, int, S, float]
 
 # @link https://en.wikipedia.org/wiki/A*_search_algorithm
 # @generic S The state type MUST be comparable and hashable
-def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | None:
+def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> tuple[Sequence[S] | None, int, int]:
     counter: int = 0
     open_nodes: list[MetaTuple[S]] = [(h(start), counter, start, 0.0)]
+    closed_nodes = 0
 
     smallest_g_score: dict[S, float] = { start: 0.0 }
 
@@ -29,8 +30,12 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
         if smallest_g_score.get(current, math.inf) < g_score:
             continue
 
+        closed_nodes += 1
         if sm.is_goal(current):
-            return build_path(previous_state, current)
+            path = build_path(previous_state, current)
+            # Filter old inneficient states
+            open = len([n for n in open_nodes if smallest_g_score.get(current, math.inf) > g_score])
+            return (path, closed_nodes, open)
 
         for next in sm.next(current):
             tentative: float = g_score + sm.dist(current, next)
@@ -43,7 +48,7 @@ def a_star[S](sm: StateManager[S], start: S, h: Heuristic[S]) -> Sequence[S] | N
                 smallest_g_score[next] = tentative
                 previous_state[next] = current
 
-    return None
+    return (None, closed_nodes, 0)
 
 def build_path[S](came_from: dict[S, S], current: S) -> Sequence[S]:
     total_path = deque([current])
