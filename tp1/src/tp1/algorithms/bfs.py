@@ -8,20 +8,23 @@ type MetaTuple[S] = tuple[S, list[S]]
 
 # @link https://en.wikipedia.org/wiki/Breadth-first_search
 # @generic S The state type MUST be comparable and hashable
-def bfs[S](sm: StateManager[S], start: S) -> Sequence[S] | None:
+def bfs[S](sm: StateManager[S], start: S) -> tuple[Sequence[S] | None, int, int]:
     queue: Deque[MetaTuple[S]] = deque([(start, list())])
-    closed_nodes: Set[S] = {start}
+    visited: Set[S] = {start}
+    expanded_nodes: Set[S] = set()
 
     while len(queue):
         state, path = queue.popleft()
         path.append(state)
 
         if sm.is_goal(state):
-            return path
+            return path, len(expanded_nodes), len(queue)
 
         for next in sm.next(state):
-            if next not in closed_nodes:
-                closed_nodes.add(next)
+            if next not in visited:
+                visited.add(next)
                 queue.append((next, path.copy()))
 
-    return None
+        expanded_nodes.add(state)
+
+    return None, len(expanded_nodes), 0

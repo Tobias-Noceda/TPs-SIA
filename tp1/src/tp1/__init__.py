@@ -41,10 +41,10 @@ def main() -> None:
     # path = greedy(manager, start, board.h_trivial)
     # algorithm_name = "iddfs"
     # path = iddfs(manager, start)
-    algorithm_name = "dfs"
-    path, expanded, frontier = (dfs(manager, start), 0 , 0)
-    # algorithm_name = "bfs"
-    # path = bfs(manager, start)
+    # algorithm_name = "dfs"
+    # path, expanded, frontier = dfs(manager, start)
+    algorithm_name = "bfs"
+    path, expanded, frontier = bfs(manager, start)
     elapsed_time = time.perf_counter() - start_time
 
     print(path)
