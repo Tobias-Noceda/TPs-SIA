@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Set, Deque
 from collections import deque
 
 from tp1.interfaces.state_manager import StateManager
@@ -9,10 +9,8 @@ type MetaTuple[S] = tuple[S, list[S]]
 # @link https://en.wikipedia.org/wiki/Breadth-first_search
 # @generic S The state type MUST be comparable and hashable
 def bfs[S](sm: StateManager[S], start: S) -> Sequence[S] | None:
-    queue: deque[MetaTuple[S]] = deque()
-    queue.append((start, list()))
-
-    closed_nodes: set[S] = {start}
+    queue: Deque[MetaTuple[S]] = deque([(start, list())])
+    closed_nodes: Set[S] = {start}
 
     while len(queue):
         state, path = queue.popleft()
@@ -24,6 +22,6 @@ def bfs[S](sm: StateManager[S], start: S) -> Sequence[S] | None:
         for next in sm.next(state):
             if next not in closed_nodes:
                 closed_nodes.add(next)
-                queue.append((next, list(path)))
+                queue.append((next, path.copy()))
 
     return None
