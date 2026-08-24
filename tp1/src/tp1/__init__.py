@@ -61,11 +61,13 @@ def main() -> None:
 
     board, start = parse_board(board_path)
 
-    print(f"Board {board.width}x{board.height}")
-    print(f"Player at {start[0]}")
-    print(f"Walls at {board.walls}")
-    print(f"Cubes at {start[1]}")
-    print(f"Goals at {board.wins}")
+    # print(f"Board {board.width}x{board.height}")
+    # print(f"Player at {start[0]}")
+    # print(f"Walls at {board.walls}")
+    # print(f"Cubes at {start[1]}")
+    # print(f"Goals at {board.wins}")
+
+    print(f"Starting {algorithm_name}{f" ({h_name})" if uses_h else ""} in {board_path}")
 
     manager = BoardManager(board)
 
@@ -75,7 +77,7 @@ def main() -> None:
     path, expanded, frontier = algorithm(manager, start, heuristics.get(h_name, h.trivial)(board))
     elapsed_time = time.perf_counter() - start_time
 
-    print(path)
+    # print(path)
     print("Solution found!" if path is not None else ":/")
 
     save_result(board_path, board, start, algorithm_name, path,expanded, frontier, elapsed_time)
