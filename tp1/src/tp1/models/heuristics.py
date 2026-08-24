@@ -109,13 +109,20 @@ def reduction_manhattan(board: SokobanBoard) -> Heuristic[SokobanBoardState]:
             cache[boxes] = math.inf
             return math.inf
 
-        cost = [[manhattan(box, goal) for goal in goals] for box in boxes]
+        # Matriz de costos de cada box a cada goal
+        full_costs = [[manhattan(box, goal) for goal in goals] for box in boxes]
 
-        rows = [min(row) for row in cost]
-        reduced = [[c - m for c in row] for row, m in zip(cost, rows)]
+        # Agarro el minimo de cada fila
+        row_mins = [min(row) for row in full_costs]
+
+        # Resto el minimo de cada fila a cada elemento de la fila
+        reduced = [[cost - min for cost in row] for row, min in zip(full_costs, row_mins)]
+
+        # Busco el minimo de la columna de cada goal en la matriz ya reducida
         cols = [min(row[goal] for row in reduced) for goal in range(len(goals))]
 
-        best: float = sum(rows) + sum(cols)
+        # Sumo los minimos de cada fila y los minimos de cada columna para obtener la cota inferior
+        best: float = sum(row_mins) + sum(cols)
 
         cache[boxes] = best
 
