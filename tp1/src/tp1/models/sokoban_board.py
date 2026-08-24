@@ -112,7 +112,7 @@ class SokobanBoard(Board[SokobanBoardState]):
         return self.__is_out_of_bounds(x, y) or self.__lands_in_wall(x, y)
 
     def __is_goal_cell(self, x: int, y: int):
-        return self.cells[y][x] == BoardCellType.GOAL
+        return self.cells[y][x].cell_type == BoardCellType.GOAL
 
     def __is_corner(self, x: int, y: int) -> bool:
         """A box against a wall on both axes at once can never be moved again."""
