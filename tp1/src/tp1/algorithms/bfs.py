@@ -11,20 +11,19 @@ type MetaTuple[S] = tuple[S, list[S]]
 def bfs[S](sm: StateManager[S], start: S) -> tuple[Sequence[S] | None, int, int]:
     queue: Deque[MetaTuple[S]] = deque([(start, list())])
     visited: Set[S] = {start}
-    expanded_nodes: Set[S] = set()
+    expanded_nodes = 0
 
     while len(queue):
         state, path = queue.popleft()
+        expanded_nodes += 1
         path.append(state)
 
         if sm.is_goal(state):
-            return path, len(expanded_nodes), len(queue)
+            return path, expanded_nodes, len(queue)
 
         for next in sm.next(state):
             if next not in visited:
                 visited.add(next)
                 queue.append((next, path.copy()))
 
-        expanded_nodes.add(state)
-
-    return None, len(expanded_nodes), 0
+    return None, expanded_nodes, 0

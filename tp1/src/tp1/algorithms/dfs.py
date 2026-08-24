@@ -12,6 +12,7 @@ def dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
 def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     global expanded, frontier
 
+    expanded += 1
     if sm.is_goal(state):
         return ([state], expanded, frontier)
 
@@ -20,11 +21,8 @@ def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     childs = set(sm.next(state)) - visited
     frontier += len(childs)
 
-    for i, next in enumerate(childs):
+    for next in childs:
         frontier -= 1
-
-        if i == len(childs) - 1:
-            expanded += 1
 
         result = _dfs(sm, next)
         if result[0] is not None:
