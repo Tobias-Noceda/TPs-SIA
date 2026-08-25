@@ -25,7 +25,11 @@ def _dfs[S](sm: StateManager[S], state: S) -> tuple[list[S] | None, int, int]:
     frontier += len(childs)
 
     for next in childs:
-        result = _dfs(sm, next)
+        try:
+            result = _dfs(sm, next)
+        except:
+            result = (None, 0, 0)
+
         if result[0] is not None:
             result[0].append(state)
             return result

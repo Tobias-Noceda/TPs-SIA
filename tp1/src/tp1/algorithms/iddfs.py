@@ -6,7 +6,7 @@ visited: set[Any] = set()
 frontier = 1
 
 # https://es.wikipedia.org/wiki/B%C3%BAsqueda_en_profundidad_iterativa
-def iddfs[S](sm: StateManager[S], start: S, limit = 1_000) -> tuple[Sequence[S] | None, int, int]:
+def iddfs[S](sm: StateManager[S], start: S, limit = 990) -> tuple[Sequence[S] | None, int, int]:
     for depth in range(limit):
         path, expanded, frontier = dls(sm, start, depth)
         if path is not None:
