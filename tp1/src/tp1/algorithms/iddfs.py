@@ -2,10 +2,11 @@ from typing import Sequence, Any
 
 from tp1.interfaces.state_manager import StateManager
 
-visited: set[Any] = set()
+visited: dict[Any, int] = dict()
 frontier = 1
 
-# https://es.wikipedia.org/wiki/B%C3%BAsqueda_en_profundidad_iterativa
+# @link https://es.wikipedia.org/wiki/B%C3%BAsqueda_en_profundidad_iterativa
+# @generic S The state type MUST be comparable and hashable
 def iddfs[S](sm: StateManager[S], start: S, limit = 990) -> tuple[Sequence[S] | None, int, int]:
     for depth in range(limit):
         path, expanded, frontier = dls(sm, start, depth)
@@ -17,8 +18,12 @@ def iddfs[S](sm: StateManager[S], start: S, limit = 990) -> tuple[Sequence[S] | 
 def dls[S](sm: StateManager[S], state: S, depth: int) -> tuple[list[S] | None, int, int]:
     global visited, frontier
 
+    if visited.get(state, -1) > depth:
+        return (None, 0, 0)
+
+    visited[state] = depth
+
     if depth == 0:
-        visited.add(state)
         frontier -= 1
         frontier += len(sm.next(state))
 
