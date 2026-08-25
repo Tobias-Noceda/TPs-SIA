@@ -105,11 +105,11 @@ def save_result(
     output = {
         "algorithm": algorithm_name,
         "heuristic": h_name or None,
-        "board": board_data,
-        "steps": [movement.name for movement in path_to_movements(path)] if path is not None else [],
         "expanded_nodes": expanded,
         "frontier_nodes": frontier,
         "execution_time_seconds": elapsed_time,
+        "board": board_data,
+        "steps": [movement.name for movement in path_to_movements(path)] if path is not None else [],
     }
 
     output_dir = Path(__file__).resolve().parents[2] / "res" / "output"
