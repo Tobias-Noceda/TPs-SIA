@@ -92,6 +92,27 @@ def plot_board(board: str, algo_data: dict[str, dict], group: str) -> Path:
 
     return output_path
 
+def plot_execution_times(board: str, algo_data: dict[str, dict]) -> Path:
+    labels = list(algo_data)
+    execution_times = [data.get("execution_time_seconds") or 0 for data in algo_data.values()]
+
+    fig, ax = plt.subplots(figsize=(max(11, 1.2 * len(labels)), 4.5))
+    fig.suptitle(f"Tiempos de ejecución de algoritmos — {board}")
+    ax.bar(labels, execution_times, color="#4caf50")
+    ax.set_ylabel("Tiempo de ejecución (segundos)")
+    ax.set_title("Comparación de todos los métodos de búsqueda")
+    ax.tick_params(axis="x", rotation=30)
+    for label in ax.get_xticklabels():
+        label.set_ha("right")
+
+    fig.tight_layout()
+
+    output_path = OUTPUT_DIR / f"{board}_execution_time_comparison.png"
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+    return output_path
+
 def main() -> None:
     board_filter = set(sys.argv[1:]) or None
     results = load_results(board_filter)
@@ -101,6 +122,15 @@ def main() -> None:
         return
 
     for board, algo_data in sorted(results.items()):
+        all_labels = [
+            f"{algorithm} ({heuristic})"
+            for algorithm in INFORMED_ALGORITHMS
+            for heuristic in HEURISTICS
+        ] + UNINFORMED_ALGORITHMS
+        all_data = {label: algo_data.get(label, {}) for label in all_labels}
+        output_path = plot_execution_times(board, all_data)
+        print(f"{board}: gráfico de tiempos guardado en {output_path}")
+
         for group, algorithms in (
             ("informed", INFORMED_ALGORITHMS),
             ("uninformed", UNINFORMED_ALGORITHMS),
