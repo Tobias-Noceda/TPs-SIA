@@ -80,13 +80,14 @@ def main() -> None:
     # print(path)
     print("Solution found!" if path is not None else ":/")
 
-    save_result(board_path, board, start, algorithm_name, path,expanded, frontier, elapsed_time)
+    save_result(board_path, board, start, algorithm_name, h_name, path,expanded, frontier, elapsed_time)
 
 def save_result(
     board_path: Path,
     board: SokobanBoard,
     start: SokobanBoardState,
     algorithm_name: str,
+    h_name: str,
     path: Sequence[SokobanBoardState] | None,
     expanded: int,
     frontier: int,
@@ -103,6 +104,7 @@ def save_result(
 
     output = {
         "algorithm": algorithm_name,
+        "heuristic": h_name or None,
         "board": board_data,
         "steps": [movement.name for movement in path_to_movements(path)] if path is not None else [],
         "expanded_nodes": expanded,
@@ -112,7 +114,8 @@ def save_result(
 
     output_dir = Path(__file__).resolve().parents[2] / "res" / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"{board_path.stem}_{algorithm_name}.json"
+    suffix = f"_{h_name}" if h_name else ""
+    output_path = output_dir / f"{board_path.stem}_{algorithm_name}{suffix}.json"
 
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
