@@ -1,7 +1,7 @@
 # TP1 - Pathfinding algorithms
 
 > [!NOTE]  
-> Los comandos son relativos la carpeta de este archivo (`/tp1`)
+> Los comandos son relativos a la carpeta de este archivo (`/tp1`)
 
 ## Instalación
 
@@ -23,7 +23,7 @@ Algoritmos disponibles:
  - dfs
  - iddfs
 
-Heurísticas disponibles (solo para a_star y greedy):
+Heurísticas disponibles (solo para `a_star` y `greedy`):
  - trivial
  - closest
  - reduction
