@@ -6,7 +6,8 @@ from tp2.types.coords import Coords
 from tp2.types.color import Color
 
 
-@dataclass(frozen=True)
+
+@dataclass(unsafe_hash=True, frozen=True)
 class Polygon(ABC):
     vertices: Sequence[Coords]
     color: Color
