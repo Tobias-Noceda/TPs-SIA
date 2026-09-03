@@ -7,7 +7,10 @@ authors = [
     { name = "Tomás Raiti", email = "46955459+Secreto31126@users.noreply.github.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "numpy>=2.5.2",
+    "scikit-image>=0.26.0",
+]
 
 [project.scripts]
 tp2 = "tp2:main"
