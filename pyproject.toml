@@ -10,14 +10,18 @@ authors = [
     { name = "Tomás Raiti", email = "46955459+Secreto31126@users.noreply.github.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "tqdm>=4.70.0",
+]
 
 [tool.uv.sources]
 tp1 = { workspace = true }
+tp2 = { workspace = true }
 
 [tool.uv.workspace]
 members = [
-    "tp1"
+    "tp1",
+    "tp2",
 ]
 
 [build-system]
