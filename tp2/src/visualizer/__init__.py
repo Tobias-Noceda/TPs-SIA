@@ -1,6 +1,8 @@
 import json
 import sys
 
+from typing import Callable
+
 import pygame
 from multiprocessing import shared_memory
 
@@ -12,10 +14,14 @@ BACKGROUND_COLOR = WHITE
 WIDTH = 500
 HEIGHT = 500
 
+type State = dict
+
+type OnUpdate = Callable[[], State | None]
+
 def open_shm(name: str) -> shared_memory.SharedMemory:
     return shared_memory.SharedMemory(name)
 
-def read_state(shm: shared_memory.SharedMemory):
+def get_shm_state(shm: shared_memory.SharedMemory):
     if shm.buf is None:
         raise BufferError("Shared memory buffer is closed")
 
@@ -27,13 +33,20 @@ def read_state(shm: shared_memory.SharedMemory):
     data = bytes(shm.buf[4:4 + length])
     return json.loads(data.decode("utf-8"))
 
-def loop(shm_name: str) -> None:
-    try:
-        shm = open_shm(shm_name)
-    except:
-        print("Backend shared memory does not exist.")
-        return
+def draw(screen: pygame.Surface, state: State | None) -> None:
+    screen.fill(BACKGROUND_COLOR)
 
+    if state is not None:
+        for triangle in state["triangles"]:
+            a = tuple(triangle["a"])
+            b = tuple(triangle["b"])
+            c = tuple(triangle["c"])
+
+            color = triangle["color"]
+
+            pygame.draw.polygon(screen, color, (a, b, c))
+
+def loop(update: OnUpdate) -> None:
     pygame.init()
 
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
@@ -49,30 +62,31 @@ def loop(shm_name: str) -> None:
                 break
 
         try:
-            new_state = read_state(shm)
-
+            new_state = update()
             if new_state is not None:
                 state = new_state
-        except (json.JSONDecodeError, UnicodeDecodeError):
+        except:
             pass
 
-        screen.fill(BACKGROUND_COLOR)
-
-        if state is not None:
-            for triangle in state["triangles"]:
-                a = tuple(triangle["a"])
-                b = tuple(triangle["b"])
-                c = tuple(triangle["c"])
-
-                color = triangle["color"]
-
-                pygame.draw.polygon(screen, color, (a, b, c))
+        draw(screen, state)
 
         pygame.display.flip()
         clock.tick(30)
 
     pygame.quit()
 
-
 def main() -> None:
-    loop(sys.argv[1] if len(sys.argv) > 1 else "visualizer_state")
+    if len(sys.argv) > 1:
+        with open(sys.argv[1]) as f:
+            data = json.load(f)
+
+        loop(lambda: data)
+        return
+
+    try:
+        shm = open_shm("visualizer_state")
+    except:
+        print("Backend shared memory does not exist.")
+        return
+
+    loop(lambda: get_shm_state(shm))
