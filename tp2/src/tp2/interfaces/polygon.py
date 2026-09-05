@@ -45,6 +45,57 @@ class Polygon(ABC):
         return self.color
 
     @abstractmethod
+    def mutate_randomly(self, coordinates: bool = True, color: bool = True) -> Polygon:
+        """
+        Mutates the polygon randomly.
+        This method should be overridden in subclasses to provide specific mutation logic.
+        """
+        pass
+
+    @abstractmethod
+    def mutate_with_fitness(self, fitness: float, coordinates: bool = True, color: bool = True) -> Polygon:
+        """
+        Mutates the polygon taking current status as reference and based on a fitness value.
+        Fitness value should be a float between 0 and 1, where 1 indicates no mutation and 0 indicates maximum mutation.
+        This method should be overridden in subclasses to provide specific mutation logic based on fitness.
+        """
+        pass
+
+    # @abstractmethod
+    # def mutate_color_randomly(self) -> Polygon:
+    #     """
+    #     Mutates the color of the polygon randomly.
+    #     This method should be overridden in subclasses to provide specific color mutation logic.
+    #     """
+    #     pass
+
+    # @abstractmethod
+    # def mutate_color_with_fitness(self, fitness: float) -> Polygon:
+    #     """
+    #     Mutates the color of the polygon taking current status as reference and based on a fitness value.
+    #     Fitness value should be a float between 0 and 1, where 1 indicates no mutation and 0 indicates maximum mutation.
+    #     This method can be overridden in subclasses to provide specific color mutation logic based on fitness.
+    #     """
+    #     return self.mutate_color_randomly()
+
+    # @abstractmethod
+    # def mutate_vertices_randomly(self) -> Polygon:
+    #     """
+    #     Mutates the vertices of the polygon randomly.
+    #     This method should be overridden in subclasses to provide specific vertex mutation logic.
+    #     """
+    #     pass
+
+    # @abstractmethod
+    # def mutate_vertices_with_fitness(self, fitness: float) -> Polygon:
+    #     """
+    #     Mutates the vertices of the polygon taking current status as reference and based on a fitness value.
+    #     Fitness value should be a float between 0 and 1, where 1 indicates no mutation and 0 indicates maximum mutation.
+    #     This method should be overridden in subclasses to provide specific vertex mutation logic based on fitness.
+    #     """
+    #     pass
+
+    @abstractmethod
     def __str__(self) -> str:
         """
         Returns a string representation of the polygon.
