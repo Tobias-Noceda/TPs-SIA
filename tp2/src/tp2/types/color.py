@@ -57,8 +57,8 @@ class Color:
 
         return Color(new_r, new_g, new_b, new_a)
 
-    def __repr__(self):
-        return f"Color(r={self.r}, g={self.g}, b={self.b}, a={self.a})"
-
     def __str__(self):
-        return f"({self.r}, {self.g}, {self.b}, {self.a:.2f})"
+        return f"(r={self.r}, g={self.g}, b={self.b}, a={self.a})"
+
+    def __repr__(self):
+        return f"(r={self.r}, g={self.g}, b={self.b}, a={self.a})"

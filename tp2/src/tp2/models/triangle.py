@@ -91,3 +91,7 @@ class Triangle(Polygon):
         vertices_str = ', '.join(f'({v[0]}, {v[1]})' for v in self.vertices)
         color_str = f'{self.color}'
         return f'Triangle: Vertices: [{vertices_str}], Color: {color_str}'
+
+    @override
+    def __repr__(self) -> str:
+        return self.__str__()
