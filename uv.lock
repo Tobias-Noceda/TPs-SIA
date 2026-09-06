@@ -459,6 +459,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pygame" },
     { name = "scikit-image" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
@@ -467,6 +468,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "pygame", specifier = ">=2.6.1" },
     { name = "scikit-image", specifier = ">=0.26.0" },
+    { name = "tqdm", specifier = ">=4.70.0" },
 ]
 
 [[package]]
