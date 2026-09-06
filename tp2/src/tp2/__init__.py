@@ -3,11 +3,10 @@ import json
 
 from tqdm import trange
 
-from tp2.models.image_fitness_calculator import ImageFitnessCalculator
-from tp2.models.individual_fitness import IndividualFitness
 from tp2.models.triangle import Triangle
 from tp2.models.polygon_generator import PolygonGenerator
 
+from tp2.algorithms.fitness.fake import ImageFitnessCalculator
 from tp2.algorithms.mutation.gene_mutation import gene_mutation
 
 parser = argparse.ArgumentParser(description="Genetic image generator.")
@@ -27,7 +26,7 @@ def main() -> None:
 
     # print(f"Image {args.image} with {args.n} triangles and {data} params")
 
-    fitness_calculator = ImageFitnessCalculator([], image_top_left=(0, 0), image_bottom_right=(100, 100))
+    fitness_calculator = ImageFitnessCalculator.for_image("", (0, 0), (100, 100))
     mutation_rate = 0.5
     mutation = gene_mutation
 
@@ -36,9 +35,5 @@ def main() -> None:
 
     for _ in trange(args.cycles):
         fitness = fitness_calculator.calculate_fitness(triangles)
-        fitness_individual = IndividualFitness(triangles, fitness)
-
-        triangles = mutation(fitness_individual, mutation_rate)
-
-        print(f"Cycle {_ + 1} completed")
+        triangles = mutation(fitness, mutation_rate)
         print(f"Triangles: {triangles}\n")
