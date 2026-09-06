@@ -1,6 +1,8 @@
 import argparse
 import json
 
+from tqdm import trange
+
 from tp2.models.image_fitness_calculator import ImageFitnessCalculator
 from tp2.models.individual_fitness import IndividualFitness
 from tp2.models.triangle import Triangle
@@ -32,7 +34,7 @@ def main() -> None:
     triangles = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), (100, 100), args.n)
     print(f"Initial triangles: {triangles}\n")
 
-    for _ in range(args.cycles):
+    for _ in trange(args.cycles):
         fitness = fitness_calculator.calculate_fitness(triangles)
         fitness_individual = IndividualFitness(triangles, fitness)
 
@@ -40,4 +42,3 @@ def main() -> None:
 
         print(f"Cycle {_ + 1} completed")
         print(f"Triangles: {triangles}\n")
-        
