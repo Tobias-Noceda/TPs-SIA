@@ -5,7 +5,6 @@ from typing import Tuple
 # Represents a color in RGBA format
 @dataclass(frozen=True)
 class Color:
-
     r: int  # Red component (0-255)
     g: int  # Green component (0-255)
     b: int  # Blue component (0-255)
