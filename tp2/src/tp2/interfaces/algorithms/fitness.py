@@ -63,6 +63,7 @@ class FitnessCalculator(ABC):
         return None if colors is None else max(colors, key=lambda item: item[0])[1]
 
     @staticmethod
+    @cache
     def _get_individual_render(individual: Individual, w: int, h: int, bg: tuple[int, ...]) -> np.ndarray:
         img = Image.new("RGBA", (w, h), bg)
         draw = ImageDraw.Draw(img)
