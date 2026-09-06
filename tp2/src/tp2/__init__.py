@@ -62,6 +62,7 @@ def main() -> None:
 
     with RealTimeVis(size) as vis:
         vis.update(max(population).individual)
+
         time.sleep(10)
 
         for generation in trange(args.cycles):
