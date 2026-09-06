@@ -456,6 +456,7 @@ version = "0.1.0"
 source = { editable = "tp2" }
 dependencies = [
     { name = "numpy" },
+    { name = "pillow" },
     { name = "pygame" },
     { name = "scikit-image" },
 ]
@@ -463,6 +464,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.5.2" },
+    { name = "pillow", specifier = ">=12.3.0" },
     { name = "pygame", specifier = ">=2.6.1" },
     { name = "scikit-image", specifier = ">=0.26.0" },
 ]
