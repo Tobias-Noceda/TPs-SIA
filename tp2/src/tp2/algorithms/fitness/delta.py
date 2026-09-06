@@ -13,7 +13,7 @@ from skimage.color import rgb2lab, deltaE_ciede2000
 
 WHITE = (255, 255, 255, 255)
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False, unsafe_hash=False)
 class DeltaEFitnessCalculator(FitnessCalculator):
     reference_lab: np.ndarray
 
@@ -31,7 +31,7 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         right, bottom = img.size if rb is None else rb
 
         region = (left, top, right, bottom)
-        reference = np.asarray(img.crop(region)) / 255.0
+        reference = np.asarray(img.crop(region), dtype=np.float32) / 255.0
 
         width = right - left
         height = bottom - top
@@ -53,12 +53,12 @@ class DeltaEFitnessCalculator(FitnessCalculator):
 
         de: np.ndarray = deltaE_ciede2000(self.reference_lab, rendered_lab)
 
-        print("Mean ΔE:", de.mean())
+        print("Mean ΔE:", np.mean(de))
         print("Median ΔE:", np.median(de))
         print("95th percentile ΔE:", np.percentile(de, 95))
-        print("Max ΔE:", de.max())
+        print("Max ΔE:", np.max(de))
 
-        return IndividualFitness(individual, np.median(de))
+        return IndividualFitness(individual, 1 / (1 + np.mean(de)))
 
     @staticmethod
     def _get_individual_lab(individual: Individual, w: int, h: int, bg: tuple[int, ...]) -> np.ndarray:
@@ -68,7 +68,15 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         for polygon in individual:
             draw.polygon(polygon.vertices, fill=polygon.color.pillow())
 
-        img.convert("RGB")
-        rendered = np.asarray(img) / 255.0
+        img = img.convert("RGB")
+        rendered = np.asarray(img, dtype=np.float32) / 255.0
 
         return rgb2lab(rendered)
+
+    @override
+    def __eq__(self, value: object) -> bool:
+        return super().__eq__(value)
+
+    @override
+    def __hash__(self) -> int:
+        return super().__hash__()
