@@ -82,7 +82,8 @@ def main() -> None:
 
             scored = [
                 fitness.calculate_fitness(individual)
-                for individual in bred
+                for childs in bred
+                for individual in childs
             ]
 
             population = survival(population, scored)
