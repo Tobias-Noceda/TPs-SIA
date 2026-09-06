@@ -21,4 +21,4 @@ def gene_mutation(individual_fitness: IndividualFitness, mutation_rate: float) -
     if random.uniform(0, 1) < mutation_rate:
         new_genes[mutate_index] = new_genes[mutate_index].mutate_with_fitness(individual_fitness.score)
 
-    return new_genes
+    return tuple(new_genes)

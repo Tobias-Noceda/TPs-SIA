@@ -42,7 +42,7 @@ def main() -> None:
 
         for _ in trange(args.cycles):
             fitness = fitness_calculator.calculate_fitness(triangles)
-            triangles = tuple(mutation(fitness, mutation_rate))
+            triangles = mutation(fitness, mutation_rate)
 
             vis.update(triangles)
 
