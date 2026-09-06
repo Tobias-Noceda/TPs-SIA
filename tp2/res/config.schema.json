@@ -3,8 +3,14 @@
     "title": "TP2 config",
     "description": "TP2 configuration properties for the algorithms' hyperparameters",
     "type": "object",
-    "required": ["elite"],
+    "required": ["generation", "elite"],
     "properties": {
+        "generation": {
+            "type": "number",
+            "description": "A generation counter, passed along to the algorithms with the updated value",
+            "minimum": 0,
+            "maximum": 0
+        },
         "elite": {
             "type": "object",
             "description": "The elite selection algorithm configurations",

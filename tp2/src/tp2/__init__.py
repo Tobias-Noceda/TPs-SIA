@@ -64,7 +64,9 @@ def main() -> None:
         vis.update(max(population).individual)
         time.sleep(10)
 
-        for _ in trange(args.cycles):
+        for generation in trange(args.cycles):
+            data["generation"] = generation
+
             selected = selection(population, data)
 
             mutated = [

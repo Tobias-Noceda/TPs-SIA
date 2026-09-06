@@ -1,5 +1,6 @@
 {
     "$schema": "./config.schema.json",
+    "generation": 0,
     "elite": {
         "select": 10
     }
