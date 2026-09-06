@@ -43,8 +43,12 @@ def draw(screen: pygame.Surface, state: State | None) -> None:
             WIDTH, HEIGHT = state["size"]
             pygame.display.set_mode((WIDTH, HEIGHT))
 
+        surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
         for polygon in state["polygons"]:
-            pygame.draw.polygon(screen, polygon["color"], polygon["vertices"])
+            pygame.draw.polygon(surface, polygon["color"], polygon["vertices"])
+
+        screen.blit(surface, (0, 0))
 
     else:
         screen.fill(BACKGROUND_COLOR)
