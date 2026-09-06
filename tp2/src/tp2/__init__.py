@@ -1,10 +1,12 @@
 import argparse
 import json
+import time
 
 from tp2.types.individual import Individual
 
 from tqdm import trange
 
+from tp2.rt_vis import RealTimeVis
 from tp2.models.triangle import Triangle
 from tp2.models.polygon_generator import PolygonGenerator
 
@@ -35,7 +37,13 @@ def main() -> None:
     triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), (100, 100), args.n)
     print(f"Initial triangles: {triangles}\n")
 
-    for _ in trange(args.cycles):
-        fitness = fitness_calculator.calculate_fitness(triangles)
-        triangles = mutation(fitness, mutation_rate)
-        print(f"Triangles: {triangles}\n")
+    with RealTimeVis() as vis:
+        time.sleep(5)
+
+        for _ in trange(args.cycles):
+            fitness = fitness_calculator.calculate_fitness(triangles)
+            triangles = tuple(mutation(fitness, mutation_rate))
+
+            vis.update(triangles)
+
+            print(f"Triangles: {triangles}\n")
