@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from functools import total_ordering
 
-from tp2.interfaces.fitness_calculator import FitnessCalculator
 from tp2.types.individual import Individual
 
 @dataclass(eq=False, frozen=True)
