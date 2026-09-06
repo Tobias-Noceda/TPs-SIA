@@ -13,7 +13,7 @@ class Triangle(Polygon):
     bottom_right: Coords
 
     def __init__(self, vertices: list[Coords], color: Color, top_left: Coords, bottom_right: Coords):
-        super().__init__(vertices, color)
+        super().__init__(tuple(vertices), color)
         object.__setattr__(self, 'top_left', top_left)
         object.__setattr__(self, 'bottom_right', bottom_right)
 
