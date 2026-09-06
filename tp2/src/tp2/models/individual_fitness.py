@@ -9,13 +9,6 @@ from tp2.types.individual import Individual
 class IndividualFitness:
     individual: Individual
     score: float
-    
-    @staticmethod
-    def calculate(individual: Individual, calculator: FitnessCalculator) -> IndividualFitness:
-        """
-        Represents the fitness of an individual in the genetic algorithm.
-        """
-        return IndividualFitness(individual, calculator.calculate_fitness(individual))
 
     def __lt__(self, other: IndividualFitness) -> bool:
         """
