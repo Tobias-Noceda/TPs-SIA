@@ -3,5 +3,28 @@
     "generation": 0,
     "elite": {
         "select": 10
+    },
+    "roulette": {
+        "select": 10
+    },
+    "universal": {
+        "select": 10
+    },
+    "ranking": {
+        "select": 10
+    },
+    "boltzmann": {
+        "select": 10,
+        "t0": 1.0,
+        "tc": 0.05,
+        "k": 0.01
+    },
+    "deterministic_tournament": {
+        "select": 10,
+        "m": 3
+    },
+    "probabilistic_tournament": {
+        "select": 10,
+        "threshold": 0.75
     }
 }
