@@ -12,7 +12,8 @@
             "properties": {
                 "select": {
                     "type": "number",
-                    "description": "The selected cutting point"
+                    "description": "The selected cutting point",
+                    "multipleOf": 2
                 }
             }
         }
