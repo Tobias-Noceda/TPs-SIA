@@ -1,7 +1,17 @@
 {
     "$schema": "./config.schema.json",
-    "generation": 0,
-    "elite": {
-        "select": 10
+    "breeding": "double_point",
+    "fitness": "delta",
+    "mutation": {
+        "algorithm": "uniform",
+        "rate": 0.5
+    },
+    "selection": "elite",
+    "survival": "additive",
+    "hyperparameters": {
+        "generation": 0,
+        "elite": {
+            "select": 10
+        }
     }
 }

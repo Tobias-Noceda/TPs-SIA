@@ -3,23 +3,67 @@
     "title": "TP2 config",
     "description": "TP2 configuration properties for the algorithms' hyperparameters",
     "type": "object",
-    "required": ["generation", "elite"],
+    "required": ["breeding", "fitness", "mutation", "selection", "survival", "hyperparameters"],
     "properties": {
-        "generation": {
-            "type": "number",
-            "description": "A generation counter, passed along to the algorithms with the updated value",
-            "minimum": 0,
-            "maximum": 0
+        "breeding": {
+            "type": "string",
+            "description": "The breeding algorithm to use",
+            "enum": ["single_point", "double_point", "uniform", "anular"]
         },
-        "elite": {
+        "fitness": {
+            "type": "string",
+            "description": "The fitness algorithm to use",
+            "enum": ["delta", "mixed", "overlap", "ssim"]
+        },
+        "mutation": {
             "type": "object",
-            "description": "The elite selection algorithm configurations",
-            "required": ["select"],
+            "required": ["algorithm"],
             "properties": {
-                "select": {
+                "algorithm": {
+                    "type": "string",
+                    "description": "The mutation algorithm to use",
+                    "enum": ["gene", "uniform", "complete"]
+                },
+                "rate": {
                     "type": "number",
-                    "description": "The selected cutting point",
-                    "multipleOf": 2
+                    "description": "The mutation rate to use",
+                    "minimum": 0,
+                    "maximum": 1
+                }
+            }
+        },
+        "selection": {
+            "type": "string",
+            "description": "The selection algorithm to use",
+            "enum": ["elite", "roulette", "universal", "boltzmann", "deterministic_tournament", "stochastic_tournament", "rank"]
+        },
+        "survival": {
+            "type": "string",
+            "description": "The survival algorithm to use",
+            "enum": ["additive", "exclusive"]
+        },
+        "hyperparameters": {
+            "type": "object",
+            "description": "The hyperparameters for the genetic algorithm",
+            "required": ["generation", "elite"],
+            "properties": {
+                "generation": {
+                    "type": "number",
+                    "description": "A generation counter, passed along to the algorithms with the updated value",
+                    "minimum": 0,
+                    "maximum": 0
+                },
+                "elite": {
+                    "type": "object",
+                    "description": "The elite selection algorithm configurations",
+                    "required": ["select"],
+                    "properties": {
+                        "select": {
+                            "type": "number",
+                            "description": "The selected cutting point",
+                            "multipleOf": 2
+                        }
+                    }
                 }
             }
         }
