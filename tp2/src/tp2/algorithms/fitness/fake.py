@@ -10,7 +10,7 @@ class FakeFitnessCalculator(FitnessCalculator):
     @override
     @staticmethod
     def for_image(path, lt = (0, 0), rb = None):
-        return (FakeFitnessCalculator(), (500, 500))
+        return (FakeFitnessCalculator(), lt, (500, 500))
 
     @cache
     @override
