@@ -42,25 +42,30 @@ def main():
 
     try:
         counter = 0
-        triangles = []
+        polygons = []
 
         while True:
-            a = list(map(int, input("Ax,Ay: ").split(",")))
-            b = list(map(int, input("Bx,By: ").split(",")))
-            c = list(map(int, input("Cx,Cy: ").split(",")))
+            vertices = []
+
+            while True:
+                text = input("x,y (or empty to finish): ")
+
+                if text == "":
+                    break
+
+                point = tuple(map(int, text.split(",")))
+                vertices.append(point)
 
             color = input("Color: ")
 
-            triangles.append({
-                "a": a,
-                "b": b,
-                "c": c,
+            polygons.append({
+                "vertices": vertices,
                 "color": color
             })
 
             state = {
                 "counter": counter,
-                "triangles": triangles,
+                "polygons": polygons,
             }
 
             write_state(shm, state)

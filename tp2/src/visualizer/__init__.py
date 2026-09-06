@@ -37,14 +37,8 @@ def draw(screen: pygame.Surface, state: State | None) -> None:
     screen.fill(BACKGROUND_COLOR)
 
     if state is not None:
-        for triangle in state["triangles"]:
-            a = tuple(triangle["a"])
-            b = tuple(triangle["b"])
-            c = tuple(triangle["c"])
-
-            color = triangle["color"]
-
-            pygame.draw.polygon(screen, color, (a, b, c))
+        for polygon in state["polygons"]:
+            pygame.draw.polygon(screen, polygon["color"], polygon["vertices"])
 
 def loop(update: OnUpdate) -> None:
     pygame.init()
