@@ -36,7 +36,12 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         width = right - left
         height = bottom - top
 
-        return (DeltaEFitnessCalculator(rgb2lab(reference), width, height, WHITE), (width, height))
+        color = DeltaEFitnessCalculator._get_dominant_color(img)
+
+        if not isinstance(color, tuple):
+            color = WHITE
+
+        return (DeltaEFitnessCalculator(rgb2lab(reference), width, height, color), (width, height), color)
 
     @cache
     @override
@@ -72,6 +77,16 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         rendered = np.asarray(img, dtype=np.float32) / 255.0
 
         return rgb2lab(rendered)
+
+    @staticmethod
+    def _get_dominant_color(img: Image.Image):
+        colors = img \
+            .resize((150, 150)) \
+            .convert("P", palette=Image.Palette.ADAPTIVE, colors=256) \
+            .convert("RGB") \
+            .getcolors(150 * 150)
+
+        return None if colors is None else max(colors, key=lambda item: item[0])[1]
 
     @override
     def __eq__(self, value: object) -> bool:

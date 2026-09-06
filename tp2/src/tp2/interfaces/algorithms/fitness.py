@@ -13,7 +13,7 @@ class FitnessCalculator(ABC):
 
     @staticmethod
     @abstractmethod
-    def for_image(path: str, lt: Coords = (0, 0), rb: Coords | None = None) -> tuple[FitnessCalculator, Coords]:
+    def for_image(path: str, lt: Coords = (0, 0), rb: Coords | None = None) -> tuple[FitnessCalculator, Coords, tuple[int, ...]]:
         """
         Left-Top coords of the image region to check
         Right-Bottom coords of the image region to check

@@ -38,8 +38,8 @@ def main() -> None:
     with open(args.params, 'r') as file:
         data = json.load(file)
 
-    image_fitness: tuple[FitnessCalculator, Coords] = DeltaEFitnessCalculator.for_image(args.image)
-    fitness, size = image_fitness
+    image_fitness: tuple[FitnessCalculator, Coords, tuple[int, ...]] = DeltaEFitnessCalculator.for_image(args.image)
+    fitness, size, color = image_fitness
 
     selection: Selection = elite_selection
 
@@ -60,7 +60,7 @@ def main() -> None:
         for individual in initial
     ]
 
-    with RealTimeVis(size) as vis:
+    with RealTimeVis(size, color) as vis:
         vis.update(max(population).individual)
 
         time.sleep(10)

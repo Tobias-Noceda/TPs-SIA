@@ -9,10 +9,13 @@ SHM_SIZE = 4096
 
 class RealTimeVis:
     size: Coords
+    bg: tuple[int, ...]
+
     shm: shared_memory.SharedMemory
 
-    def __init__(self, size: Coords) -> None:
+    def __init__(self, size: Coords, bg: tuple[int, ...]) -> None:
         self.size = size
+        self.bg = bg
 
     def __enter__(self):
         try:
@@ -50,6 +53,7 @@ class RealTimeVis:
         state = {
             "counter": 0,
             "size": self.size,
+            "background": self.bg,
             "polygons": polygons,
         }
 

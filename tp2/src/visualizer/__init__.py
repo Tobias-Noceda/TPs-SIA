@@ -36,15 +36,18 @@ def get_shm_state(shm: shared_memory.SharedMemory):
 def draw(screen: pygame.Surface, state: State | None) -> None:
     global WIDTH, HEIGHT
 
-    screen.fill(BACKGROUND_COLOR)
-
     if state is not None:
+        screen.fill(state.get("background", BACKGROUND_COLOR))
+
         if "size" in state and tuple(state["size"]) != (WIDTH, HEIGHT):
             WIDTH, HEIGHT = state["size"]
             pygame.display.set_mode((WIDTH, HEIGHT))
 
         for polygon in state["polygons"]:
             pygame.draw.polygon(screen, polygon["color"], polygon["vertices"])
+
+    else:
+        screen.fill(BACKGROUND_COLOR)
 
 def loop(update: OnUpdate) -> None:
     pygame.init()
