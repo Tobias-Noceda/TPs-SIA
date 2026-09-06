@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import cache
 from typing import override
 
-from tp2.interfaces.fitness_calculator import FitnessCalculator
+from tp2.interfaces.algorithms.fitness import FitnessCalculator
 from tp2.models.individual_fitness import IndividualFitness
 
 @dataclass(frozen=True)
