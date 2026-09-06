@@ -7,11 +7,11 @@ from tp2.models.individual_fitness import IndividualFitness
 from tp2.types.coords import Coords
 
 @dataclass(frozen=True)
-class ImageFitnessCalculator(FitnessCalculator):
+class FakeFitnessCalculator(FitnessCalculator):
     @override
     @staticmethod
     def for_image(path, lt = (0, 0), rb = None) -> FitnessCalculator:
-        return ImageFitnessCalculator()
+        return FakeFitnessCalculator()
 
     @cache
     @override
