@@ -37,7 +37,7 @@ def main() -> None:
     triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), size, args.n)
     print(f"Initial triangles: {triangles}\n")
 
-    with RealTimeVis() as vis:
+    with RealTimeVis(size) as vis:
         time.sleep(10)
 
         for _ in trange(args.cycles):

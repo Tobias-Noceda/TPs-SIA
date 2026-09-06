@@ -1,13 +1,18 @@
 import json
 from multiprocessing import shared_memory
 
+from tp2.types.coords import Coords
 from tp2.types.individual import Individual
 
 SHM_NAME = "visualizer_state"
 SHM_SIZE = 4096
 
 class RealTimeVis:
+    size: Coords
     shm: shared_memory.SharedMemory
+
+    def __init__(self, size: Coords) -> None:
+        self.size = size
 
     def __enter__(self):
         try:
@@ -44,6 +49,7 @@ class RealTimeVis:
 
         state = {
             "counter": 0,
+            "size": self.size,
             "polygons": polygons,
         }
 
