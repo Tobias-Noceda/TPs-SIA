@@ -1,6 +1,8 @@
 import argparse
 import json
 
+from tp2.types.individual import Individual
+
 from tqdm import trange
 
 from tp2.models.triangle import Triangle
@@ -30,7 +32,7 @@ def main() -> None:
     mutation_rate = 0.5
     mutation = gene_mutation
 
-    triangles = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), (100, 100), args.n)
+    triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), (100, 100), args.n)
     print(f"Initial triangles: {triangles}\n")
 
     for _ in trange(args.cycles):
