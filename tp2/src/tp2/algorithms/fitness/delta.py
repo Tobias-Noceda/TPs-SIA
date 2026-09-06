@@ -36,11 +36,11 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         width = right - left
         height = bottom - top
 
-        return DeltaEFitnessCalculator(rgb2lab(reference), width, height, WHITE)
+        return (DeltaEFitnessCalculator(rgb2lab(reference), width, height, WHITE), (width, height))
 
     @cache
     @override
-    def calculate_fitness(self, individual) -> IndividualFitness:
+    def calculate_fitness(self, individual):
         """
         Calculates the fitness of an individual.
         """

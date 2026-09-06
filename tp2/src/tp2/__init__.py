@@ -30,11 +30,11 @@ def main() -> None:
 
     # print(f"Image {args.image} with {args.n} triangles and {data} params")
 
-    fitness_calculator = DeltaEFitnessCalculator.for_image(args.image)
+    fitness_calculator, size = DeltaEFitnessCalculator.for_image(args.image)
     mutation_rate = 0.5
     mutation = gene_mutation
 
-    triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), (100, 100), args.n)
+    triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), size, args.n)
     print(f"Initial triangles: {triangles}\n")
 
     with RealTimeVis() as vis:

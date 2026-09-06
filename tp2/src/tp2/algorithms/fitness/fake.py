@@ -4,18 +4,17 @@ from typing import override
 
 from tp2.interfaces.fitness_calculator import FitnessCalculator
 from tp2.models.individual_fitness import IndividualFitness
-from tp2.types.coords import Coords
 
 @dataclass(frozen=True)
 class FakeFitnessCalculator(FitnessCalculator):
     @override
     @staticmethod
-    def for_image(path, lt = (0, 0), rb = None) -> FitnessCalculator:
-        return FakeFitnessCalculator()
+    def for_image(path, lt = (0, 0), rb = None):
+        return (FakeFitnessCalculator(), (500, 500))
 
     @cache
     @override
-    def calculate_fitness(self, individual) -> IndividualFitness:
+    def calculate_fitness(self, individual):
         """
         Calculates the fitness of an image individual based on its similarity to the target image.
         The fitness is calculated as the inverse of the average pixel difference between the individual's image and the target image.
