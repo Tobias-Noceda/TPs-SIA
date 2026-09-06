@@ -28,16 +28,16 @@ from tp2.algorithms.survival.additive import additive_survival
 parser = argparse.ArgumentParser(description="Genetic image generator.")
 
 parser.add_argument("-i", "--image", type=str, required=True, help="Image target")
-parser.add_argument("-p", "--poligons", dest="n", type=int, required=True, help="Number of triangles")
+parser.add_argument("-p", "--polygons", dest="n", type=int, required=True, help="Number of triangles")
 parser.add_argument("-n", "--population", dest="population", type=int, required=True, help="Population size")
 parser.add_argument("-c", "--cycles", dest="cycles", type=int, required=True, help="Number of cycles")
-parser.add_argument("-hp", "--hyper", dest="params", type=str, required=True, help="Hyperparameters JSON file")
+parser.add_argument("-conf", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
 parser.add_argument("-o", "--output", dest="output", type=str, required=True, help="Output file name")
 
 def main() -> None:
     args = parser.parse_args()
 
-    with open(args.params, 'r') as file:
+    with open(args.config, 'r') as file:
         data = json.load(file)
 
     image_fitness: tuple[ImageFitnessCalculator, Coords, tuple[int, ...]] = DeltaEFitnessCalculator.for_image(args.image)
