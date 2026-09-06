@@ -2,6 +2,13 @@ import argparse
 import json
 import time
 
+from tp2.interfaces.algorithms.breeding import Breeding
+from tp2.interfaces.algorithms.fitness import FitnessCalculator
+from tp2.interfaces.algorithms.mutation import Mutation
+from tp2.interfaces.algorithms.selection import Selection
+from tp2.interfaces.algorithms.survival import Survival
+
+from tp2.types.coords import Coords
 from tp2.types.individual import Individual
 
 from tqdm import trange
@@ -10,8 +17,11 @@ from tp2.rt_vis import RealTimeVis
 from tp2.models.triangle import Triangle
 from tp2.models.polygon_generator import PolygonGenerator
 
+from tp2.algorithms.breeding.single_point import single_point_crossover
 from tp2.algorithms.fitness.delta import DeltaEFitnessCalculator
 from tp2.algorithms.mutation.gene_mutation import gene_mutation
+from tp2.algorithms.selection.elite import elite_selection
+from tp2.algorithms.survival.additive import additive_survival
 
 parser = argparse.ArgumentParser(description="Genetic image generator.")
 
@@ -25,25 +35,53 @@ parser.add_argument("-o", "--output", dest="output", type=str, required=True, he
 def main() -> None:
     args = parser.parse_args()
 
-    # with open(args.params, 'r') as file:
-    #     data = json.load(file)
+    with open(args.params, 'r') as file:
+        data = json.load(file)
 
-    # print(f"Image {args.image} with {args.n} triangles and {data} params")
+    image_fitness: tuple[FitnessCalculator, Coords] = DeltaEFitnessCalculator.for_image(args.image)
+    fitness, size = image_fitness
 
-    fitness_calculator, size = DeltaEFitnessCalculator.for_image(args.image)
+    selection: Selection = elite_selection
+
     mutation_rate = 0.5
-    mutation = gene_mutation
+    mutation: Mutation = gene_mutation
 
-    triangles: Individual = PolygonGenerator.generate_many_polygons(Triangle, (0, 0), size, args.n)
-    print(f"Initial triangles: {triangles}\n")
+    breeding: Breeding = single_point_crossover
+
+    survival: Survival = additive_survival
+
+    initial: list[Individual] = [
+        PolygonGenerator.generate_many_polygons(Triangle, (0, 0), size, args.n)
+        for _ in range(args.population)
+    ]
+
+    population = [
+        fitness.calculate_fitness(individual)
+        for individual in initial
+    ]
 
     with RealTimeVis(size) as vis:
+        vis.update(max(population).individual)
         time.sleep(10)
 
         for _ in trange(args.cycles):
-            fitness = fitness_calculator.calculate_fitness(triangles)
-            triangles = mutation(fitness, mutation_rate)
+            selected = selection(population, data)
 
-            vis.update(triangles)
+            mutated = [
+                mutation(individual, mutation_rate)
+                for individual in selected
+            ]
 
-            # print(f"Triangles: {triangles}\n")
+            bred = [
+                breeding(parents)
+                for parents in zip(mutated[::2], mutated[1::2])
+            ]
+
+            scored = [
+                fitness.calculate_fitness(individual)
+                for individual in bred
+            ]
+
+            population = survival(population, scored)
+
+            vis.update(population[0].individual)
