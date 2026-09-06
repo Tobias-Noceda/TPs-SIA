@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from functools import cache
 from typing import override
 
-from tp2.interfaces.algorithms.fitness import FitnessCalculator
+from tp2.interfaces.algorithms.fitness import ImageFitnessCalculator
+from tp2.models.image_parser import ImageParser
 from tp2.types.individual import Individual
 
 from tp2.models.individual_fitness import IndividualFitness
@@ -11,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 @dataclass(frozen=True, eq=False, unsafe_hash=False)
-class OverlapFitnessCalculator(FitnessCalculator):
+class OverlapFitnessCalculator(ImageFitnessCalculator):
     reference: np.ndarray
 
     width: int
@@ -20,7 +21,7 @@ class OverlapFitnessCalculator(FitnessCalculator):
     @override
     @staticmethod
     def for_image(path, lt = (0, 0), rb = None):
-        reference, width, height, color = FitnessCalculator._open_image(path, lt, rb)
+        reference, width, height, color = ImageParser._open_image(path, lt, rb)
         return (OverlapFitnessCalculator(reference, width, height), (width, height), color)
 
     @cache

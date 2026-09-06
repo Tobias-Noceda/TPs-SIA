@@ -3,7 +3,7 @@ import json
 import time
 
 from tp2.interfaces.algorithms.breeding import Breeding
-from tp2.interfaces.algorithms.fitness import FitnessCalculator
+from tp2.interfaces.algorithms.fitness import ImageFitnessCalculator
 from tp2.interfaces.algorithms.mutation import Mutation
 from tp2.interfaces.algorithms.selection import Selection
 from tp2.interfaces.algorithms.survival import Survival
@@ -40,7 +40,7 @@ def main() -> None:
     with open(args.params, 'r') as file:
         data = json.load(file)
 
-    image_fitness: tuple[FitnessCalculator, Coords, tuple[int, ...]] = DeltaEFitnessCalculator.for_image(args.image)
+    image_fitness: tuple[ImageFitnessCalculator, Coords, tuple[int, ...]] = DeltaEFitnessCalculator.for_image(args.image)
     fitness, size, color = image_fitness
 
     selection: Selection = elite_selection

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import cache
 from typing import override
 
-from tp2.interfaces.algorithms.fitness import FitnessCalculator
+from tp2.interfaces.algorithms.fitness import ImageFitnessCalculator
 
 from tp2.models.individual_fitness import IndividualFitness
 
@@ -10,7 +10,7 @@ from tp2.algorithms.fitness.delta import DeltaEFitnessCalculator
 from tp2.algorithms.fitness.overlap import OverlapFitnessCalculator
 
 @dataclass(frozen=True, eq=False, unsafe_hash=False)
-class MixedFitnessCalculator(FitnessCalculator):
+class MixedFitnessCalculator(ImageFitnessCalculator):
     overlap: OverlapFitnessCalculator
     delta: DeltaEFitnessCalculator
 
