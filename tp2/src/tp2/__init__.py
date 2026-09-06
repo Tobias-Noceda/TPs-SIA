@@ -19,6 +19,8 @@ from tp2.models.polygon_generator import PolygonGenerator
 
 from tp2.algorithms.breeding.single_point import single_point_crossover
 from tp2.algorithms.fitness.delta import DeltaEFitnessCalculator
+from tp2.algorithms.fitness.mixed import MixedFitnessCalculator
+from tp2.algorithms.fitness.ssim import SSIMFitnessCalculator
 from tp2.algorithms.mutation.gene_mutation import gene_mutation
 from tp2.algorithms.selection.elite import elite_selection
 from tp2.algorithms.survival.additive import additive_survival
