@@ -10,7 +10,7 @@ from tp2.rt_vis import RealTimeVis
 from tp2.models.triangle import Triangle
 from tp2.models.polygon_generator import PolygonGenerator
 
-from tp2.algorithms.fitness.fake import FakeFitnessCalculator
+from tp2.algorithms.fitness.delta import DeltaEFitnessCalculator
 from tp2.algorithms.mutation.gene_mutation import gene_mutation
 
 parser = argparse.ArgumentParser(description="Genetic image generator.")
@@ -30,7 +30,7 @@ def main() -> None:
 
     # print(f"Image {args.image} with {args.n} triangles and {data} params")
 
-    fitness_calculator = FakeFitnessCalculator.for_image("", (0, 0), (100, 100))
+    fitness_calculator = DeltaEFitnessCalculator.for_image(args.image)
     mutation_rate = 0.5
     mutation = gene_mutation
 
@@ -38,7 +38,7 @@ def main() -> None:
     print(f"Initial triangles: {triangles}\n")
 
     with RealTimeVis() as vis:
-        time.sleep(5)
+        time.sleep(10)
 
         for _ in trange(args.cycles):
             fitness = fitness_calculator.calculate_fitness(triangles)
@@ -46,4 +46,4 @@ def main() -> None:
 
             vis.update(triangles)
 
-            print(f"Triangles: {triangles}\n")
+            # print(f"Triangles: {triangles}\n")

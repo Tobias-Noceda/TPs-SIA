@@ -53,10 +53,10 @@ class DeltaEFitnessCalculator(FitnessCalculator):
 
         de: np.ndarray = deltaE_ciede2000(self.reference_lab, rendered_lab)
 
-        print("Mean ΔE:", np.mean(de))
-        print("Median ΔE:", np.median(de))
-        print("95th percentile ΔE:", np.percentile(de, 95))
-        print("Max ΔE:", np.max(de))
+        # print("Mean ΔE:", np.mean(de))
+        # print("Median ΔE:", np.median(de))
+        # print("95th percentile ΔE:", np.percentile(de, 95))
+        # print("Max ΔE:", np.max(de))
 
         return IndividualFitness(individual, 1 / (1 + np.mean(de)))
 
