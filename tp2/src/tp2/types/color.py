@@ -27,6 +27,9 @@ class Color:
         new_a = random.uniform(0, 1)
         return Color(new_r, new_g, new_b, new_a)
 
+    def pillow(self) -> tuple[int, ...]:
+        return (self.r, self.g, self.b, round(self.a * 255))
+
     def mutate_randomly(self) -> Color:
         """
         Mutates the color randomly.
