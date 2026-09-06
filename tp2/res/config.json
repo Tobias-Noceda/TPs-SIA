@@ -1,0 +1,6 @@
+{
+    "$schema": "./config.schema.json",
+    "elite": {
+        "select": 10
+    }
+}

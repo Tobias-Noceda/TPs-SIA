@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TP2 config",
+    "description": "TP2 configuration properties for the algorithms' hyperparameters",
+    "type": "object",
+    "required": ["elite"],
+    "properties": {
+        "elite": {
+            "type": "object",
+            "description": "The elite selection algorithm configurations",
+            "required": ["select"],
+            "properties": {
+                "select": {
+                    "type": "number",
+                    "description": "The selected cutting point"
+                }
+            }
+        }
+    }
+}
