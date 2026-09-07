@@ -15,6 +15,7 @@ from tp2.types.individual import Individual
 from tqdm import trange
 
 from tp2.rt_vis import RealTimeVis
+from tp2.output import save_result
 from tp2.models.triangle import Triangle
 from tp2.models.polygon_generator import PolygonGenerator
 
@@ -62,15 +63,16 @@ def main() -> None:
         for _ in range(args.population)
     ]
 
-    population = [
+    population = tuple(sorted([
         fitness.calculate_fitness(individual)
         for individual in initial
-    ]
+    ], reverse=True))
 
     with RealTimeVis(size, color) as vis:
-        vis.update(max(population).individual)
+        vis.update(population[0].individual)
 
         time.sleep(10)
+        start = time.perf_counter()
 
         for generation in trange(args.cycles):
             hyperparameters["generation"] = generation
@@ -100,3 +102,6 @@ def main() -> None:
                 break
 
             vis.update(population[0].individual)
+
+        duration = time.perf_counter() - start
+        save_result(args.output, population[0], hyperparameters["generation"], duration, size, color)

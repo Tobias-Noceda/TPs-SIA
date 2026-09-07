@@ -37,18 +37,21 @@ def draw(screen: pygame.Surface, state: State | None) -> None:
     global WIDTH, HEIGHT
 
     if state is not None:
-        screen.fill(state.get("background", BACKGROUND_COLOR))
+        if "individual" in state:
+            individual: dict = state["individual"]
 
-        if "size" in state and tuple(state["size"]) != (WIDTH, HEIGHT):
-            WIDTH, HEIGHT = state["size"]
-            pygame.display.set_mode((WIDTH, HEIGHT))
+            screen.fill(individual.get("background", BACKGROUND_COLOR))
 
-        surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            if "size" in individual and tuple(individual["size"]) != (WIDTH, HEIGHT):
+                WIDTH, HEIGHT = individual["size"]
+                pygame.display.set_mode((WIDTH, HEIGHT))
 
-        for polygon in state["polygons"]:
-            pygame.draw.polygon(surface, polygon["color"], polygon["vertices"])
+            surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
-        screen.blit(surface, (0, 0))
+            for polygon in individual["polygons"]:
+                pygame.draw.polygon(surface, polygon["color"], polygon["vertices"])
+
+            screen.blit(surface, (0, 0))
 
     else:
         screen.fill(BACKGROUND_COLOR)

@@ -52,9 +52,11 @@ class RealTimeVis:
 
         state = {
             "counter": 0,
-            "size": self.size,
-            "background": self.bg,
-            "polygons": polygons,
+            "individual": {
+                "size": self.size,
+                "background": self.bg,
+                "polygons": polygons,
+            }
         }
 
         self._write_shm(state)
