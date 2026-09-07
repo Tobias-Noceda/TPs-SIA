@@ -1,5 +1,6 @@
 import argparse
 import time
+from multiprocess.pool import Pool
 
 from tp2.config import load_config
 
@@ -29,6 +30,7 @@ parser.add_argument("-c", "--cycles", dest="cycles", type=int, required=False, d
 parser.add_argument("-f", "--fitness", dest="fitness", type=float, required=False, help="Fitness threshold to stop the algorithm")
 parser.add_argument("-conf", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
 parser.add_argument("-o", "--output", dest="output", type=str, required=True, help="Output file name")
+parser.add_argument("-mp", "--multiprocess", dest="mercado_pago", action='store_true', help="Wether to use multiprocessing")
 
 def main() -> None:
     args = parser.parse_args()
@@ -68,7 +70,7 @@ def main() -> None:
         for individual in initial
     ], reverse=True))
 
-    with RealTimeVis(size, color) as vis:
+    with RealTimeVis(size, color) as vis, Pool() as pool:
         vis.update(population[0].individual)
 
         time.sleep(10)
@@ -79,21 +81,35 @@ def main() -> None:
 
             selected = selection(population, hyperparameters)
 
-            mutated = [
-                mutation(individual, mutation_rate)
-                for individual in selected
-            ]
+            if args.mercado_pago:
+                mutated = pool.map(lambda i: mutation(i, mutation_rate), selected)
 
-            bred = [
-                breeding(parents)
-                for parents in zip(mutated[::2], mutated[1::2])
-            ]
+                bred = pool.map(breeding, zip(mutated[::2], mutated[1::2]))
 
-            scored = [
-                fitness.calculate_fitness(individual)
-                for childs in bred
-                for individual in childs
-            ]
+                flatted = [
+                    individual
+                    for childs in bred
+                    for individual in childs
+                ]
+
+                scored = pool.map(fitness.calculate_fitness, flatted)
+
+            else:
+                mutated = [
+                    mutation(individual, mutation_rate)
+                    for individual in selected
+                ]
+
+                bred = [
+                    breeding(parents)
+                    for parents in zip(mutated[::2], mutated[1::2])
+                ]
+
+                scored = [
+                    fitness.calculate_fitness(individual)
+                    for childs in bred
+                    for individual in childs
+                ]
 
             population = survival(population, scored)
 
