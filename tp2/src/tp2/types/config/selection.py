@@ -16,7 +16,7 @@ class SelectionAlgorithms(enum.Enum):
     UNIVERSAL = "universal"
     BOLTZMANN = "boltzmann"
     DETERMINISTIC_TOURNAMENT = "deterministic_tournament"
-    STOCHASTIC_TOURNAMENT = "stochastic_tournament"
+    PROBABILISTIC_TOURNAMENT = "probabilistic_tournament"
     RANKING = "rank"
 
     @property
@@ -27,7 +27,7 @@ class SelectionAlgorithms(enum.Enum):
             SelectionAlgorithms.UNIVERSAL: universal_selection,
             SelectionAlgorithms.BOLTZMANN: boltzmann_selection,
             SelectionAlgorithms.DETERMINISTIC_TOURNAMENT: deterministic_tournament_selection,
-            SelectionAlgorithms.STOCHASTIC_TOURNAMENT: probabilistic_tournament_selection,
+            SelectionAlgorithms.PROBABILISTIC_TOURNAMENT: probabilistic_tournament_selection,
             SelectionAlgorithms.RANKING: ranking_selection,
         }
 

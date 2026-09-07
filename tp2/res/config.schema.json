@@ -49,7 +49,7 @@
                 "ranking",
                 "boltzmann",
                 "deterministic_tournament",
-                "stochastic_tournament"
+                "probabilistic_tournament"
             ]
         },
         "survival": {
