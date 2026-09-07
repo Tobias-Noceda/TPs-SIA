@@ -9,6 +9,7 @@ def save_result(
     path: Path,
     individual: IndividualFitness,
     generation: int,
+    scores: list[float],
     seconds: float,
     size: Coords,
     bg: tuple[int, ...]
@@ -26,6 +27,7 @@ def save_result(
             "counter": generation,
             "duration": float(seconds),
             "fitness": float(individual.score),
+            "scores": scores,
             "individual": {
                 "size": size,
                 "background": bg,

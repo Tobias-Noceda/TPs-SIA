@@ -76,6 +76,7 @@ def main() -> None:
         time.sleep(10)
         start = time.perf_counter()
 
+        scores: list[float] = []
         for generation in trange(args.cycles):
             hyperparameters["generation"] = generation
 
@@ -113,11 +114,12 @@ def main() -> None:
 
             population = survival(population, scored)
 
+            scores.append(population[0].score)
+            vis.update(population[0].individual)
+
             if args.fitness is not None and population[0].score >= args.fitness:
                 print(f"Fitness threshold reached: {population[0].score} >= {args.fitness}")
                 break
 
-            vis.update(population[0].individual)
-
         duration = time.perf_counter() - start
-        save_result(args.output, population[0], hyperparameters["generation"], duration, size, color)
+        save_result(args.output, population[0], hyperparameters["generation"], scores, duration, size, color)
