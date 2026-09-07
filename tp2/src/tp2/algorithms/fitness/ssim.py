@@ -30,8 +30,8 @@ class SSIMFitnessCalculator(ImageFitnessCalculator):
 
         return (SSIMFitnessCalculator(reference, width, height, window_size, color), (width, height), color)
 
-    @cache
     @override
+    @cache
     def calculate_fitness(self, individual):
         rendered = ImageParser._get_individual_render(
             individual,
