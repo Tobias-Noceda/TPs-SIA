@@ -2,16 +2,18 @@ from dataclasses import dataclass
 import random
 from typing import Tuple
 
+MIN_ALPHA = 128
+
 # Represents a color in RGBA format
 @dataclass(frozen=True)
 class Color:
     r: int  # Red component (0-255)
     g: int  # Green component (0-255)
     b: int  # Blue component (0-255)
-    a: float  # Alpha component (0.0-1.0)
+    a: int  # Alpha component (0-255)
     
     @staticmethod
-    def from_tuple(color_tuple: Tuple[int, int, int, float]) -> Color:
+    def from_tuple(color_tuple: Tuple[int, int, int, int]) -> Color:
         r, g, b, a = color_tuple
         return Color(r, g, b, a)
 
@@ -24,11 +26,11 @@ class Color:
         new_r = random.randint(0, 255)
         new_g = random.randint(0, 255)
         new_b = random.randint(0, 255)
-        new_a = random.uniform(0, 1)
+        new_a = random.randint(MIN_ALPHA, 255)
         return Color(new_r, new_g, new_b, new_a)
 
     def pillow(self) -> tuple[int, ...]:
-        return (self.r, self.g, self.b, round(self.a * 255))
+        return (self.r, self.g, self.b, self.a)
 
     def mutate_randomly(self) -> Color:
         """
@@ -49,13 +51,13 @@ class Color:
         new_r = int(self.r + (random.randint(-255, 255) * (1 - fitness)))
         new_g = int(self.g + (random.randint(-255, 255) * (1 - fitness)))
         new_b = int(self.b + (random.randint(-255, 255) * (1 - fitness)))
-        new_a = self.a + (random.uniform(-1, 1) * (1 - fitness))
+        new_a = int(self.a + (random.randint(-255, 255) * (1 - fitness)))
 
         # Ensure values are within valid ranges
         new_r = max(0, min(255, new_r))
         new_g = max(0, min(255, new_g))
         new_b = max(0, min(255, new_b))
-        new_a = max(0.0, min(1.0, new_a))
+        new_a = max(MIN_ALPHA, min(255, new_a))
 
         return Color(new_r, new_g, new_b, new_a)
 

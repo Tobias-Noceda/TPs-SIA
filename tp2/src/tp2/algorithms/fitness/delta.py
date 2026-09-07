@@ -2,16 +2,16 @@ from dataclasses import dataclass
 from functools import cache
 from typing import override
 
-from tp2.interfaces.algorithms.fitness import FitnessCalculator
-from tp2.types.individual import Individual
+from tp2.interfaces.algorithms.fitness import ImageFitnessCalculator
 
+from tp2.models.image_parser import ImageParser
 from tp2.models.individual_fitness import IndividualFitness
 
 import numpy as np
 from skimage.color import rgb2lab, deltaE_ciede2000
 
 @dataclass(frozen=True, eq=False, unsafe_hash=False)
-class DeltaEFitnessCalculator(FitnessCalculator):
+class DeltaEFitnessCalculator(ImageFitnessCalculator):
     reference_lab: np.ndarray
 
     width: int
@@ -22,7 +22,7 @@ class DeltaEFitnessCalculator(FitnessCalculator):
     @override
     @staticmethod
     def for_image(path, lt = (0, 0), rb = None):
-        reference, width, height, color = FitnessCalculator._open_image(path, lt, rb)
+        reference, width, height, color = ImageParser._open_image(path, lt, rb)
         return (DeltaEFitnessCalculator(rgb2lab(reference), width, height, color), (width, height), color)
 
     @cache
@@ -31,7 +31,7 @@ class DeltaEFitnessCalculator(FitnessCalculator):
         """
         Calculates the fitness of an individual.
         """
-        rendered = self._get_individual_render(
+        rendered = ImageParser._get_individual_render(
             individual,
             self.width,
             self.height,

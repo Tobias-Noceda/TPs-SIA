@@ -2,15 +2,15 @@ from dataclasses import dataclass
 from functools import cache
 from typing import override
 
-from tp2.interfaces.algorithms.fitness import FitnessCalculator
+from tp2.interfaces.algorithms.fitness import ImageFitnessCalculator
 from tp2.models.individual_fitness import IndividualFitness
 
 @dataclass(frozen=True)
-class FakeFitnessCalculator(FitnessCalculator):
+class FakeFitnessCalculator(ImageFitnessCalculator):
     @override
     @staticmethod
     def for_image(path, lt = (0, 0), rb = None):
-        return (FakeFitnessCalculator(), lt, (500, 500))
+        return (FakeFitnessCalculator(), (500, 500), tuple())  # Placeholder values for width and height
 
     @cache
     @override

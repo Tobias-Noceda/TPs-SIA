@@ -4,108 +4,165 @@
     "description": "TP2 configuration properties for the algorithms' hyperparameters",
     "type": "object",
     "required": [
-        "generation",
-        "elite",
-        "roulette",
-        "universal",
-        "ranking",
-        "boltzmann",
-        "deterministic_tournament",
-        "probabilistic_tournament"
+        "breeding",
+        "fitness",
+        "mutation",
+        "selection",
+        "survival",
+        "hyperparameters"
     ],
-    "$defs": {
-        "select": {
-            "type": "number",
-            "description": "How many individuals the method selects (K). Must be even, since the breeding step pairs them up",
-            "minimum": 2,
-            "multipleOf": 2
-        }
-    },
     "properties": {
-        "generation": {
-            "type": "number",
-            "description": "A generation counter, passed along to the algorithms with the updated value. Boltzmann selection reads it to cool its temperature down",
-            "minimum": 0
+        "breeding": {
+            "type": "string",
+            "description": "The breeding algorithm to use",
+            "enum": ["single_point", "double_point", "uniform", "anular"]
         },
-        "elite": {
-            "type": "object",
-            "description": "The elite selection algorithm configurations",
-            "required": ["select"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" }
-            }
+        "fitness": {
+            "type": "string",
+            "description": "The fitness algorithm to use",
+            "enum": ["delta", "mixed", "overlap", "ssim"]
         },
-        "roulette": {
+        "mutation": {
             "type": "object",
-            "description": "The roulette (fitness proportionate) selection algorithm configurations",
-            "required": ["select"],
             "properties": {
-                "select": { "$ref": "#/$defs/select" }
-            }
-        },
-        "universal": {
-            "type": "object",
-            "description": "The universal (stochastic universal sampling) selection algorithm configurations",
-            "required": ["select"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" }
-            }
-        },
-        "ranking": {
-            "type": "object",
-            "description": "The ranking selection algorithm configurations",
-            "required": ["select"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" }
-            }
-        },
-        "boltzmann": {
-            "type": "object",
-            "description": "The Boltzmann selection algorithm configurations",
-            "required": ["select", "t0", "tc", "k"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" },
-                "t0": {
-                    "type": "number",
-                    "description": "Initial temperature. Higher means a flatter, more explorative distribution at generation 0",
-                    "exclusiveMinimum": 0
+                "algorithm": {
+                    "type": "string",
+                    "description": "The mutation algorithm to use",
+                    "enum": ["gene", "uniform", "complete"]
                 },
-                "tc": {
+                "rate": {
                     "type": "number",
-                    "description": "Asymptotic temperature the schedule cools down to. Lower means a more elitist endgame",
-                    "exclusiveMinimum": 0
-                },
-                "k": {
-                    "type": "number",
-                    "description": "Cooling rate of T(t) = tc + (t0 - tc) * exp(-k * t)",
-                    "exclusiveMinimum": 0
-                }
-            }
-        },
-        "deterministic_tournament": {
-            "type": "object",
-            "description": "The deterministic tournament selection algorithm configurations",
-            "required": ["select", "m"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" },
-                "m": {
-                    "type": "number",
-                    "description": "Tournament size. 1 is no selection pressure, the population size converges to elite",
-                    "minimum": 1
-                }
-            }
-        },
-        "probabilistic_tournament": {
-            "type": "object",
-            "description": "The probabilistic tournament selection algorithm configurations",
-            "required": ["select", "threshold"],
-            "properties": {
-                "select": { "$ref": "#/$defs/select" },
-                "threshold": {
-                    "type": "number",
-                    "description": "Probability of the fitter individual winning a duel. 0.5 is a coin flip, 1 is a deterministic tournament with m = 2",
-                    "minimum": 0.5,
+                    "description": "The mutation rate to use",
+                    "minimum": 0,
                     "maximum": 1
+                }
+            }
+        },
+        "selection": {
+            "type": "string",
+            "description": "The selection algorithm to use",
+            "enum": [
+                "elite",
+                "roulette",
+                "universal",
+                "boltzmann",
+                "deterministic_tournament",
+                "stochastic_tournament",
+                "rank"
+            ]
+        },
+        "survival": {
+            "type": "string",
+            "description": "The survival algorithm to use",
+            "enum": ["additive", "exclusive"]
+        },
+        "hyperparameters": {
+            "type": "object",
+            "description": "The hyperparameters for the genetic algorithm",
+            "required": ["generation", "elite"],
+            "$defs": {
+                "select": {
+                    "type": "number",
+                    "description": "How many individuals the method selects (K). Must be even, since the breeding step pairs them up",
+                    "minimum": 2,
+                    "multipleOf": 2
+                }
+            },
+            "properties": {
+                "generation": {
+                    "type": "number",
+                    "description": "A generation counter, passed along to the algorithms with the updated value",
+                    "minimum": 0,
+                    "maximum": 0
+                },
+                "elite": {
+                    "type": "object",
+                    "description": "The elite selection algorithm configurations",
+                    "required": ["select"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" }
+                    }
+                },
+                "mutation": {
+                    "type": "object",
+                    "required": ["select"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" }
+                    }
+                },
+                "roulette": {
+                    "type": "object",
+                    "description": "The roulette (fitness proportionate) selection algorithm configurations",
+                    "required": ["select"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" }
+                    }
+                },
+                "universal": {
+                    "type": "object",
+                    "description": "The universal (stochastic universal sampling) selection algorithm configurations",
+                    "required": ["select"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" }
+                    }
+                },
+                "ranking": {
+                    "type": "object",
+                    "description": "The ranking selection algorithm configurations",
+                    "required": ["select"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" }
+                    }
+                },
+                "boltzmann": {
+                    "type": "object",
+                    "description": "The Boltzmann selection algorithm configurations",
+                    "required": ["select", "t0", "tc", "k"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" },
+                        "t0": {
+                            "type": "number",
+                            "description": "Initial temperature. Higher means a flatter, more explorative distribution at generation 0",
+                            "exclusiveMinimum": 0
+                        },
+                        "tc": {
+                            "type": "number",
+                            "description": "Asymptotic temperature the schedule cools down to. Lower means a more elitist endgame",
+                            "exclusiveMinimum": 0
+                        },
+                        "k": {
+                            "type": "number",
+                            "description": "Cooling rate of T(t) = tc + (t0 - tc) * exp(-k * t)",
+                            "exclusiveMinimum": 0
+                        }
+                    }
+                },
+                "deterministic_tournament": {
+                    "type": "object",
+                    "description": "The deterministic tournament selection algorithm configurations",
+                    "required": ["select", "m"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" },
+                        "m": {
+                            "type": "number",
+                            "description": "Tournament size. 1 is no selection pressure, the population size converges to elite",
+                            "minimum": 1
+                        }
+                    }
+                },
+                "probabilistic_tournament": {
+                    "type": "object",
+                    "description": "The probabilistic tournament selection algorithm configurations",
+                    "required": ["select", "threshold"],
+                    "properties": {
+                        "select": { "$ref": "#/properties/hyperparameters/$defs/select" },
+                        "threshold": {
+                            "type": "number",
+                            "description": "Probability of the fitter individual winning a duel. 0.5 is a coin flip, 1 is a deterministic tournament with m = 2",
+                            "minimum": 0.5,
+                            "maximum": 1
+                        }
+                    }
                 }
             }
         }
