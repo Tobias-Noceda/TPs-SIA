@@ -98,4 +98,3 @@ def main() -> None:
             if args.fitness is not None and population[0].score >= args.fitness:
                 print(f"Fitness threshold reached: {population[0].score} >= {args.fitness}")
                 break
-            # vis.update(population[0].individual)
