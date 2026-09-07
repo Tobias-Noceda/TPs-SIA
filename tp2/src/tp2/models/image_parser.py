@@ -11,7 +11,7 @@ WHITE = (255, 255, 255, 255)
 class ImageParser:
     @staticmethod
     def _open_image(path: str, lt: Coords, rb: Coords | None = None):
-        img = Image.open(path).convert("RGB")
+        img = ImageParser._get_img(path)
 
         left, top = lt
         right, bottom = img.size if rb is None else rb
@@ -27,6 +27,11 @@ class ImageParser:
             color = WHITE
 
         return reference, width, height, color
+
+    @staticmethod
+    @cache
+    def _get_img(path: str):
+        return Image.open(path).convert("RGB")
 
     @staticmethod
     def _get_dominant_color(img: Image.Image):
