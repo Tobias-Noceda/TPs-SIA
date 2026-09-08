@@ -12,22 +12,12 @@ uv sync
 ## Uso
 
 ```bash
-uv run tp2 idk
-xdg-open res/output/idk.png
+tp2 -i path -p polygons -n individuals -c cycles --config res/config.json -o res/output/result.json
+head -n4 res/output/result.json
+visualizer res/output/result.json
 ```
 
-Algoritmos disponibles:
- - idk
-
-Heurísticas disponibles:
- - :shrug:
+Los algorítmos e hiperparámetros se editan desde el archivo de configuración.
+El json está tipado con un schema para conocer los parámetros válidos.
 
 Imágenes disponibles en `res/images/`
-
-<!--
-## Visualización
-
-```bash
-uv run python visualizer/visualizer.py res/output/board1_a_star_closest.json
-```
--->
