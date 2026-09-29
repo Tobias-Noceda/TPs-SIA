@@ -1,3 +1,3 @@
 import numpy as np
 
-type Float = np.float32
+type Float = np.float64

@@ -623,10 +623,14 @@ version = "0.1.0"
 source = { editable = "tp3" }
 dependencies = [
     { name = "numpy" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "numpy", specifier = ">=2.5.2" }]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.5.2" },
+    { name = "tqdm", specifier = ">=4.70.0" },
+]
 
 [[package]]
 name = "tps-sia"

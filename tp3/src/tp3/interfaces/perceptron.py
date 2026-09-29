@@ -2,18 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple
 
-import numpy.typing as npt
-
 from tp3.types.epoch_result import EpochResult
 from tp3.types.float import Float
-from tp3.types.loss_function import LossFunction
 from tp3.types.perceptron_input import PerceptronInput
 
-@dataclass(frozen=True)
+@dataclass(init=True)
 class Perceptron(ABC):
-    learning_rate: Float
-    loss_function: LossFunction
-    weights: npt.NDArray[Float]
 
     @abstractmethod
     def train(self, inputs: Tuple[PerceptronInput, ...], expected: Tuple[Float, ...], epochs: int) -> Tuple[EpochResult, ...]:
@@ -24,5 +18,5 @@ class Perceptron(ABC):
         pass
 
     @abstractmethod
-    def predict(self, inputs: Tuple[PerceptronInput, ...]) -> Float:
+    def predict(self, inputs: Tuple[PerceptronInput, ...]) -> Tuple[Float, ...]:
         pass

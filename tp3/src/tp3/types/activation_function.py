@@ -1,5 +1,5 @@
 from typing import Callable, Tuple
 
-import numpy as np
+from tp3.types.float import Float
 
-type ActivationFunction = Callable[[Tuple[np.float32, ...]], np.float32]
+type ActivationFunction = Callable[[Float], Float]
