@@ -2,5 +2,6 @@
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.extraPaths": [
         "./.venv"
-    ]
+    ],
+    "workbench.colorTheme": "Default Dark+"
 }

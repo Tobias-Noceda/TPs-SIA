@@ -5,14 +5,26 @@ import numpy as np
 import pandas as pd
 
 
+# def load_dataset(path: str) -> pd.DataFrame:
+#     """Load a digits CSV and deserialise the image column to numpy arrays."""
+#     df = pd.read_csv(path)
+#     df["image"] = df["image"].apply(
+#         lambda s: np.array(ast.literal_eval(s), dtype=np.float32)
+#     )
+#     return df
+
+def parse_image(s: object) -> np.ndarray:
+    return np.array(ast.literal_eval(str(s)), dtype=np.float32)
+
+
 def load_dataset(path: str) -> pd.DataFrame:
     """Load a digits CSV and deserialise the image column to numpy arrays."""
-    df = pd.read_csv(path)
-    df["image"] = df["image"].apply(
-        lambda s: np.array(ast.literal_eval(s), dtype=np.float32)
-    )
-    return df
 
+    df = pd.read_csv(path)
+
+    df["image"] = df["image"].map(parse_image)
+
+    return df
 
 def get_image(row: pd.Series, size: tuple[int, int] = (28, 28)) -> np.ndarray:
     """Reshape the flat image vector back to a 2-D array."""
@@ -29,5 +41,5 @@ def plot_sample(row: pd.Series) -> None:
 
 
 if __name__ == "__main__":
-    df = load_dataset("digits_test.csv")
-    plot_sample(df.iloc[0])
+    df = load_dataset("digits.csv")
+    plot_sample(df.iloc[6])
