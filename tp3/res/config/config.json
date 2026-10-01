@@ -1,0 +1,11 @@
+{
+    "$schema": "./config.schema.json",
+    "activation_functions": "linear",
+    "learning_rate": 0.1,
+    "epochs": 1000,
+    "dataset_path": {
+        "train": "tp3/res/datasets/train.csv",
+        "test": "tp3/res/datasets/test.csv",
+        "validation": "tp3/res/datasets/validation.csv"
+    }
+}

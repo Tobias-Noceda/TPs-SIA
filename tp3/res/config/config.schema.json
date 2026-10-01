@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TP3 config",
+    "description": "TP3 configuration properties for the algorithms' hyperparameters",
+    "type": "object",
+    "required": [
+        "activation_functions"
+    ],
+    "properties": {
+        "activation_functions": {
+            "type": "string",
+            "description": "The activation function to use",
+            "enum": ["step", "linear", "tanh", "logistic"]
+        },
+        "learning_rate": {
+            "type": "number",
+            "description": "The learning rate for the perceptron",
+            "minimum": 0
+        },
+        "epochs": {
+            "type": "integer",
+            "description": "The number of epochs to train the perceptron",
+            "minimum": 1
+        },
+        "dataset_path": {
+            "type": "object",
+            "description": "Paths to the datasets for training, testing and validation",
+            "required": ["train", "test", "validation"],
+            "properties": {
+                "train": {
+                    "type": "string",
+                    "description": "Path to the training dataset"
+                },
+                "test": {
+                    "type": "string",
+                    "description": "Path to the testing dataset"
+                },
+                "validation": {
+                    "type": "string",
+                    "description": "Path to the validation dataset"
+                }
+            }
+        }
+    }
+}
