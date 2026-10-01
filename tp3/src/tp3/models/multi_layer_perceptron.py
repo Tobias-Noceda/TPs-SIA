@@ -10,7 +10,7 @@ from tp3.types.float import Float
 
 import numpy.typing as npt
 
-@dataclass(frozen=True)
+@dataclass(init=True)
 class MultiLayerPerceptron(Perceptron):
    weights: npt.NDArray[Float]
    activation_function: ActivationFunction

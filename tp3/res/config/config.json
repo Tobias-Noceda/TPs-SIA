@@ -1,6 +1,6 @@
 {
     "$schema": "./config.schema.json",
-    "activation_functions": "linear",
+    "activation_functions": "step",
     "learning_rate": 0.1,
     "epochs": 1000,
     "dataset_path": {
