@@ -28,7 +28,7 @@ class SimplePerceptron(Perceptron):
    epsilon = np.float64(1e-6)
 
    @override
-   def train(self, inputs, expected, epochs):      
+   def train(self, inputs, expected, epochs) -> Tuple[tuple[int, Float], ...]:      
       if len(inputs) != len(expected):
          raise ValueError("The number of inputs and expected outputs must be the same.")
 
@@ -62,7 +62,7 @@ class SimplePerceptron(Perceptron):
       return tuple(results)
    
    @override
-   def test(self, inputs, expected):
+   def test(self, inputs, expected) -> Float:
       if self.weights is None or self.bias is None:
          raise ValueError("Perceptron must be trained before testing. Weights and bias are not initialized.")
 
@@ -74,7 +74,7 @@ class SimplePerceptron(Perceptron):
       return self.loss_function(np.array([self.predict(inputs)]), np.array([expected]))
 
    @override
-   def predict(self, inputs):
+   def predict(self, inputs) -> Tuple[Float, ...]:
       if self.weights is None or self.bias is None:
          raise ValueError("Perceptron must be trained before prediction. Weights and bias are not initialized.")
 

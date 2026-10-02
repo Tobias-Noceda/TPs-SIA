@@ -5,6 +5,8 @@ from tp3.config import load_config
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.functions.loss.loss_function import mean_squared_error
 
+from tp3.parsers.dataset_parser import parse_dataset
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -19,25 +21,25 @@ def main() -> None:
 
 
     functions = data["activation_functions"]
-    activation_function, derivative_function = functions.functions
+    activation_function, derivative_function = functions
     
     learning_rate = np.float64(data["learning_rate"])
     epochs = data["epochs"]
-    dataset_path = data["dataset_path"]
+    datasets = data["datasets"]
 
     perceptron = SimplePerceptron(mean_squared_error, learning_rate, activation_function, derivative_function)
 
     ## AND testing for step perceptron
-    ZERO = np.float64(0)
-    ONE = np.float64(1)
+    # ZERO = np.float64(0)
+    # ONE = np.float64(1)
 
-    inputs = (
-        np.array([ZERO, ZERO], dtype=np.float64),
-        np.array([ZERO, ONE], dtype=np.float64),
-        np.array([ONE, ZERO], dtype=np.float64),
-        np.array([ONE, ONE], dtype=np.float64)
-    )
-    expected = (ZERO, ZERO, ZERO, ONE)
+    # inputs = (
+    #     np.array([ZERO, ZERO], dtype=np.float64),
+    #     np.array([ZERO, ONE], dtype=np.float64),
+    #     np.array([ONE, ZERO], dtype=np.float64),
+    #     np.array([ONE, ONE], dtype=np.float64)
+    # )
+    # expected = (ZERO, ZERO, ZERO, ONE)
 
     ## y = 2x testing for linear perceptron
     # numbers from 1 to 50, normalized to keep gradient steps stable
@@ -54,7 +56,18 @@ def main() -> None:
     # inputs = tuple(np.array([i], dtype=np.float64) / INPUT_SCALE for i in range(1, 51))
     # expected = tuple(np.tanh(np.float64(i)) for i in range(1, 51))
 
-    result = perceptron.train(inputs, expected, epochs)
+    inputs, expected = parse_dataset(
+        datasets["train"],
+        input_columns=datasets["columns"]["input"],
+        expected_output=datasets["columns"]["output"],
+    )
+
+    # result = perceptron.train(tuple(inputs), expected as tuple[float, ...], epochs)
+    result = perceptron.train(
+        inputs=tuple(np.array(input, dtype=np.float64) for input in inputs),
+        expected=tuple(e[0] for e in expected),
+        epochs=epochs
+    )
 
     # Plot the loss over epochs
     epoch_numbers, errors = zip(*result)
@@ -70,5 +83,5 @@ def main() -> None:
     print("Testing the perceptron:")
     # predict_inputs = tuple(np.array([i], dtype=np.float64) / INPUT_SCALE for i in range(51, 61))
     # predictions = tuple(p * EXPECTED_SCALE for p in perceptron.predict(predict_inputs))
-    predictions = perceptron.predict(inputs)
-    print(f"Predicted: {predictions}")
+    predictions = perceptron.predict(tuple(np.array(input, dtype=np.float64) for input in inputs))
+    print(f"Predicted: {[round(float(p), 4) for p in predictions]}")

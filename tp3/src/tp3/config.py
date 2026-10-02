@@ -69,6 +69,9 @@ def load_config(path: str) -> PerceptronConfig:
             f"Expected structure:\n{_describe(schema)}"
         )
 
-    data["activation_functions"] = ActivationFunctions(data["activation_functions"])
+    hyperparameters = data["activation_functions"].get("hyperparameters", None)
+    data["activation_functions"] = ActivationFunctions(data["activation_functions"]["name"]).functions(hyperparameters)
+    data["learning_rate"] = float(data["learning_rate"])
+    data["epochs"] = int(data["epochs"])
 
     return cast(PerceptronConfig, data)

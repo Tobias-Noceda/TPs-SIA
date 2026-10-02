@@ -2,30 +2,32 @@ from tp3.types.float import Float
 
 import numpy as np
 
-def tanh_function(x: Float) -> Float:
+def tanh_function(x: Float, beta: Float = np.float64(1.0)) -> Float:
     """
-    Compute the hyperbolic tangent function of x, with beta=1: tanh(x).
+    Compute the hyperbolic tangent function of x: tanh(beta * x).
 
     Parameters:
-    x : array-like
-        Input value(s).
+    x : Input value.
+    beta : float, optional
+        The beta parameter for the hyperbolic tangent function.
+        Default is 1.0.
 
     Returns:
-    array-like
-        Hyperbolic tangent applied to each element of x.
+        Hyperbolic tangent applied to x.
     """
-    return np.tanh(1 * x) # Beta = 1 explisitly
+    return np.tanh(beta * x)
 
-def tanh_function_derivative(x: Float) -> Float:
+def tanh_function_derivative(x: Float, beta: Float = np.float64(1.0)) -> Float:
     """
-    Compute the derivative of the hyperbolic tangent function of x, with beta=1: 1 - tanh(x)^2.
+    Compute the derivative of the hyperbolic tangent function of x: beta * (1 - tanh(beta * x)^2).
 
     Parameters:
-    x : array-like
-        Input value(s).
+    x : Input value.
+    beta : float, optional
+        The beta parameter for the hyperbolic tangent function.
+        Default is 1.0.
 
     Returns:
-    array-like
-        Derivative of the hyperbolic tangent function applied to each element of x.
+        Derivative of the hyperbolic tangent function applied to x.
     """
-    return 1 - tanh_function(x) ** 2
+    return beta * (1 - tanh_function(x, beta) ** 2)

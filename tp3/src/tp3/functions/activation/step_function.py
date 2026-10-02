@@ -7,12 +7,10 @@ def step_function(x: Float) -> Float:
     Compute the step activation function of x.
 
     Parameters:
-    x : array-like
-        Input value(s).
+    x : Input value.
 
     Returns:
-    array-like
-        1 if x >= 0, 0 otherwise, applied to each element of x.
+        1 if x >= 0, 0 otherwise.
     """
     value = 1 if x >= 0 else 0
     return np.float64(value)
@@ -22,11 +20,9 @@ def step_function_derivative(x: Float) -> Float:
     Compute the derivative of the step activation function of x.
 
     Parameters:
-    x : array-like
-        Input value(s).
+    x : Input value.
 
     Returns:
-    array-like
-        0 for each element of x, since the derivative of the step function is not defined at x=0 and is 0 elsewhere.
+        1.
     """
     return np.float64(1.0)

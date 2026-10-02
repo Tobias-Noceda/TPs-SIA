@@ -1,16 +1,27 @@
-import argparse
+from typing import List
+
+from tp3.types.float import Float
 
 import numpy as np
+import numpy.typing as npt
+
 import pandas as pd
 
-
 def parse_dataset(
-    path: str, input_columns: list[str], expected_output: list[str]
-) -> tuple[np.ndarray, np.ndarray]:
+    path: str, input_columns: List[str], expected_output: List[str]
+) -> tuple[npt.NDArray[Float], npt.NDArray[Float]]:
     """
     Parse a numeric CSV into an input matrix X (rows x len(input_columns))
     and an expected output vector y, selecting columns by name.
     """
+    if not path.endswith(".csv"):
+        raise ValueError(f"Dataset path must be a CSV file: {path}")
+    ## Check if file exists
+    try:
+        with open(path, "r") as f:
+            pass
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Dataset file not found: {path}")
 
     df = pd.read_csv(path)
 

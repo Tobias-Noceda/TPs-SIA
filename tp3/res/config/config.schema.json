@@ -4,13 +4,43 @@
     "description": "TP3 configuration properties for the algorithms' hyperparameters",
     "type": "object",
     "required": [
-        "activation_functions"
+        "activation_functions",
+        "learning_rate",
+        "epochs",
+        "datasets"
     ],
     "properties": {
         "activation_functions": {
-            "type": "string",
-            "description": "The activation function to use",
-            "enum": ["step", "linear", "tanh", "logistic"]
+            "type": "object",
+            "description": "The activation function to use for the perceptron (name and hyperparameters if needed)",
+            "required": ["name"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the activation function to use for the perceptron",
+                    "enum": ["step", "linear", "tanh", "logistic"]
+                },
+                "hyperparameters": {
+                    "type": "object",
+                    "description": "The hyperparameters for the activation function (if needed)",
+                    "properties": {
+                        "beta": {
+                            "type": "number",
+                            "description": "The beta hyperparameter for the activation function (if needed), default is 1.0",
+                            "default": 1.0
+                        },
+                        "L": {
+                            "type": "number",
+                            "description": "The L hyperparameter for the activation function (if needed), default is 1.0",
+                            "default": 1.0
+                        }
+                    },
+                    "default": {
+                        "beta": 1.0,
+                        "L": 1.0
+                    }
+                }
+            }
         },
         "learning_rate": {
             "type": "number",
@@ -22,10 +52,10 @@
             "description": "The number of epochs to train the perceptron",
             "minimum": 1
         },
-        "dataset_path": {
+        "datasets": {
             "type": "object",
-            "description": "Paths to the datasets for training, testing and validation",
-            "required": ["train", "test", "validation"],
+            "description": "Paths to the datasets for training, testing and validation and the columns to use for the input and output of the perceptron",
+            "required": ["train", "test", "validation", "columns"],
             "properties": {
                 "train": {
                     "type": "string",
@@ -38,6 +68,27 @@
                 "validation": {
                     "type": "string",
                     "description": "Path to the validation dataset"
+                },
+                "columns": {
+                    "type": "object",
+                    "description": "Columns to use for the input and output of the perceptron",
+                    "required": ["input", "output"],
+                    "properties": {
+                        "input": {
+                            "type": "array",
+                            "description": "Columns to use for the input of the perceptron",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "output": {
+                            "type": "array",
+                            "description": "Columns to use for the output of the perceptron",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
                 }
             }
         }
