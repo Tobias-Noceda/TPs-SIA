@@ -1,9 +1,13 @@
 {
     "$schema": "./config.schema.json",
-    "activation_functions": {
-        "name": "tanh"
+    "perceptron": {
+        "type": "single_layer",
+        "activation_function": {
+            "name": "step"
+        }
     },
     "learning_rate": 0.1,
+    "loss_function": "mse",
     "epochs": 1000,
     "datasets": {
         "train": "res/fraud_mini_dataset.csv",

@@ -1,0 +1,27 @@
+{
+    "$schema": "./config.schema.json",
+    "perceptron": {
+        "type": "multi_layer",
+        "arquitecture": [
+            [
+                {
+                    "activation_function": {
+                        "name": "step"
+                    }
+                }
+            ]
+        ]
+    },
+    "learning_rate": 0.1,
+    "loss_function": "mse",
+    "epochs": 1000,
+    "datasets": {
+        "train": "res/fraud_mini_dataset.csv",
+        "test": "tp3/res/datasets/test.csv",
+        "validation": "tp3/res/datasets/validation.csv",
+        "columns": {
+            "input": ["timestamp", "amount_usd", "quantity_purchased", "session_duration_seconds", "days_since_last_purchase", "account_age_days", "device_screen_resolution", "time_since_last_login_s", "items_viewed_before_purchase"],
+            "output": ["big_model_fraud_probability"]
+        }
+    }
+}

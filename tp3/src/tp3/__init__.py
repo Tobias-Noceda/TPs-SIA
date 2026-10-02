@@ -3,7 +3,7 @@ import argparse
 from tp3.config import load_config
 
 from tp3.models.simple_perceptron import SimplePerceptron
-from tp3.functions.loss.loss_function import mean_squared_error
+from tp3.functions.loss.mean_squared_error import mean_squared_error
 
 from tp3.parsers.dataset_parser import parse_dataset
 
@@ -19,27 +19,34 @@ def main() -> None:
 
     data = load_config(args.config)
 
-
-    functions = data["activation_functions"]
-    activation_function, derivative_function = functions
-    
+    loss_function = data["loss_function"]
     learning_rate = np.float64(data["learning_rate"])
     epochs = data["epochs"]
     datasets = data["datasets"]
 
-    perceptron = SimplePerceptron(mean_squared_error, learning_rate, activation_function, derivative_function)
+    print(f"Perceptron definition: {data["perceptron"]}")
 
-    ## AND testing for step perceptron
-    # ZERO = np.float64(0)
-    # ONE = np.float64(1)
+    if data["perceptron"]["activation_function"] is not None:
+        activation_function, derivative_function = data["perceptron"]["activation_function"]
 
-    # inputs = (
-    #     np.array([ZERO, ZERO], dtype=np.float64),
-    #     np.array([ZERO, ONE], dtype=np.float64),
-    #     np.array([ONE, ZERO], dtype=np.float64),
-    #     np.array([ONE, ONE], dtype=np.float64)
-    # )
-    # expected = (ZERO, ZERO, ZERO, ONE)
+        perceptron = SimplePerceptron(loss_function, learning_rate, activation_function, derivative_function)
+    elif data["perceptron"]["arquitecture"] is not None:
+        arquitecture = data["perceptron"]["arquitecture"]
+        perceptron = SimplePerceptron(loss_function, learning_rate, arquitecture[0][0][0], arquitecture[0][0][1])
+    else:
+        raise ValueError("Perceptron configuration must have either an activation function or an architecture defined.")
+
+    # AND testing for step perceptron
+    ZERO = np.float64(0)
+    ONE = np.float64(1)
+
+    inputs = (
+        np.array([ZERO, ZERO], dtype=np.float64),
+        np.array([ZERO, ONE], dtype=np.float64),
+        np.array([ONE, ZERO], dtype=np.float64),
+        np.array([ONE, ONE], dtype=np.float64)
+    )
+    expected = (ZERO, ZERO, ZERO, ONE)
 
     ## y = 2x testing for linear perceptron
     # numbers from 1 to 50, normalized to keep gradient steps stable
@@ -56,18 +63,19 @@ def main() -> None:
     # inputs = tuple(np.array([i], dtype=np.float64) / INPUT_SCALE for i in range(1, 51))
     # expected = tuple(np.tanh(np.float64(i)) for i in range(1, 51))
 
-    inputs, expected = parse_dataset(
-        datasets["train"],
-        input_columns=datasets["columns"]["input"],
-        expected_output=datasets["columns"]["output"],
-    )
+    result = perceptron.train(inputs, expected, epochs)
+    
+    # inputs, expected = parse_dataset(
+    #     datasets["train"],
+    #     input_columns=datasets["columns"]["input"],
+    #     expected_output=datasets["columns"]["output"],
+    # )
 
-    # result = perceptron.train(tuple(inputs), expected as tuple[float, ...], epochs)
-    result = perceptron.train(
-        inputs=tuple(np.array(input, dtype=np.float64) for input in inputs),
-        expected=tuple(e[0] for e in expected),
-        epochs=epochs
-    )
+    # result = perceptron.train(
+    #     inputs=tuple(np.array(input, dtype=np.float64) for input in inputs),
+    #     expected=tuple(e[0] for e in expected),
+    #     epochs=epochs
+    # )
 
     # Plot the loss over epochs
     epoch_numbers, errors = zip(*result)
