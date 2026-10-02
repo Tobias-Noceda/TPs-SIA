@@ -8,3 +8,6 @@ def mean_squared_error(arr1: npt.NDArray[Float], arr2: npt.NDArray[Float]) -> Fl
     Compute the Mean Squared Error (MSE) between two arrays.
     """
     return np.float64(0.5 * np.sum((arr1 - arr2) ** 2))
+
+def mean_squared_error_derivative(arr1: npt.NDArray[Float], arr2: npt.NDArray[Float]) -> Float:
+    return np.sum(arr1 - arr2)
