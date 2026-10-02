@@ -6,17 +6,18 @@ from tp3.types.epoch_result import EpochResult
 from tp3.types.float import Float
 from tp3.types.perceptron_input import PerceptronInput
 
+# Generic perceptron interface (outputs type determined by the implementation)
 @dataclass(init=True)
-class Perceptron(ABC):
+class Perceptron[OT](ABC):
 
     @abstractmethod
-    def train(self, inputs: Tuple[PerceptronInput, ...], expected: Tuple[Float, ...], epochs: int) -> Tuple[EpochResult, ...]:
+    def train(self, inputs: Tuple[PerceptronInput, ...], expected: Tuple[OT, ...], epochs: int) -> Tuple[EpochResult, ...]:
         pass
 
     @abstractmethod
-    def test(self, inputs: Tuple[PerceptronInput, ...], expected: Tuple[Float, ...]) -> Float:
+    def test(self, inputs: Tuple[PerceptronInput, ...], expected: Tuple[OT, ...]) -> Float:
         pass
 
     @abstractmethod
-    def predict(self, inputs: Tuple[PerceptronInput, ...]) -> Tuple[Float, ...]:
+    def predict(self, inputs: Tuple[PerceptronInput, ...]) -> Tuple[OT, ...]:
         pass

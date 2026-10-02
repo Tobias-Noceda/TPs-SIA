@@ -14,7 +14,7 @@ import numpy.typing as npt
 from tqdm import trange
 
 @dataclass(init=True)
-class SimplePerceptron(Perceptron):
+class SimplePerceptron(Perceptron[Float]):
 
    loss_function: LossFunction
    learning_rate: Float
