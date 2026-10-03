@@ -103,12 +103,12 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             next_w = self.layers[-1].weights
             next_delta = loss_prime * activation_derivatives[-1]
 
-            for layer, prediction, derivatives in zip(
+            for layer, ingress, derivatives in zip(
                reversed(self.layers),
                reversed(outputs[:-1]),
                reversed(activation_derivatives),
             ):
-               next_w, next_delta = layer.backwards(prediction, self.learning_rate, derivatives, next_w, next_delta)
+               next_w, next_delta = layer.backwards(ingress, self.learning_rate, derivatives, next_w, next_delta)
 
             results.append((epoch, loss))
 
