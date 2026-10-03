@@ -26,6 +26,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
    perceptrons: List[Tuple[SimplePerceptron]]
    layers: List[Layer] = field(init=False, repr=False, hash=False)
 
+   epsilon = np.float64(1e-6)
+
    def __post_init__(self):
       super().__init__()
 
@@ -44,6 +46,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
       results: List[EpochResult] = []
       for epoch in trange(epochs):
+         loss = np.float64(0)
+
          for u, data in enumerate(inputs):
             expect = expected[u]
 
@@ -58,7 +62,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
             prediction = outputs[-1]
 
-            loss = self.loss_function(prediction, expect)
+            loss += self.loss_function(prediction, expect)
+
             loss_prime = self.derivative_loss_function(prediction, expect)
 
             next_w = self.layers[-1].weights
@@ -71,7 +76,10 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             ):
                next_w, next_delta = layer.backwards(ingress, self.learning_rate, derivatives, next_w, next_delta)
 
-            results.append((epoch, loss))
+         results.append((epoch, loss))
+
+         if loss < 1e-9:
+            break
 
       return tuple(results)
 
