@@ -8,6 +8,7 @@ from jsonschema.exceptions import best_match
 from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
+from tp3.types.config.loss import LossFunctions
 
 # Schema is read at runtime so any edit to this file drives validation automatically.
 # @link https://json-schema.org/
@@ -69,9 +70,18 @@ def load_config(path: str) -> PerceptronConfig:
             f"Expected structure:\n{_describe(schema)}"
         )
 
-    hyperparameters = data["activation_functions"].get("hyperparameters", None)
-    data["activation_functions"] = ActivationFunctions(data["activation_functions"]["name"]).functions(hyperparameters)
+    data["loss_function"] = LossFunctions(data["loss_function"]).function()
     data["learning_rate"] = float(data["learning_rate"])
     data["epochs"] = int(data["epochs"])
+
+    activation_function_hyper = data["perceptron"].get("activation_function", {}).get("hyperparameters", None)
+    data["perceptron"] = {
+        "type": data["perceptron"]["type"],
+        "activation_function": ActivationFunctions(data["perceptron"]["activation_function"]["name"]).functions(activation_function_hyper) if "activation_function" in data["perceptron"] else None,
+        "arquitecture": [
+            [ActivationFunctions(func["activation_function"]["name"]).functions(func["activation_function"].get("hyperparameters", None)) for func in layer]
+            for layer in data["perceptron"].get("arquitecture", [])
+        ] if "arquitecture" in data["perceptron"] else None
+    }
 
     return cast(PerceptronConfig, data)
