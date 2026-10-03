@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, override
+from typing import Tuple, List, override
 
 from tp3.interfaces.perceptron import Perceptron
 
@@ -44,16 +44,19 @@ class SimplePerceptron(Perceptron[Float]):
    
       results = []
       for epoch in trange(epochs):
+         outputs: List[Float] = []
          for u in range(len(inputs)):
             h_u = np.dot(self.weights, inputs[u]) + self.bias
             
             output = self.activation_function(h_u)
             delta = self.learning_rate * (expected[u] - output) * self.derivative_activation_function(h_u)
 
+            outputs.append(output)
+
             self.bias = self.bias + delta
             self.weights = self.weights + delta * inputs[u]
 
-         error = self.test(inputs, expected)
+         error = self.loss_function(np.array(outputs), np.array(expected))
          results.append((epoch, error))
 
          if error < self.epsilon:
@@ -71,7 +74,7 @@ class SimplePerceptron(Perceptron[Float]):
       if len(inputs) != len(expected):
          raise ValueError("The number of inputs and expected outputs must be the same.")
 
-      return self.loss_function(np.array([self.predict(inputs)]), np.array([expected]))
+      return self.loss_function(np.array(self.predict(inputs)), np.array([expected]))
 
    @override
    def predict(self, inputs) -> Tuple[Float, ...]:
