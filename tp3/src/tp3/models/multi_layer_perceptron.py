@@ -3,6 +3,7 @@ from typing import List, Tuple, override
 
 from tp3.interfaces.perceptron import Perceptron
 
+from tp3.models.layer import Layer
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.types.epoch_result import EpochResult
 from tp3.types.loss_function import LossFunction
@@ -14,48 +15,6 @@ import numpy.typing as npt
 import numpy as np
 from tqdm import trange
 
-from itertools import zip_longest
-
-@dataclass
-class Layer:
-   perceptrons: Tuple[SimplePerceptron, ...]
-   next_layer_size: int
-
-   bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
-   weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
-
-   def __post_init__(self) -> None:
-      self.weights = np.random.uniform(-0.5, 0.5, size=(len(self.perceptrons), self.next_layer_size))
-      self.bias = np.random.uniform(-0.5, 0.5, size=self.next_layer_size)
-
-   def fowards(self, data: npt.NDArray[Float]):
-      h_us = (self.weights @ data) + self.bias
-
-      activations: List[Float] = []
-      derivatives: List[Float] = []
-      for i, perceptron in enumerate(self.perceptrons):
-         activations.append(perceptron.activation_function(h_us[i]))
-         # NOTE: The derivatives are always calculated, even outside of training
-         derivatives.append(perceptron.derivative_activation_function(h_us[i]))
-
-      return np.array(activations), np.array(derivatives)
-
-   def backwards(
-      self,
-      data: npt.NDArray[Float],
-      learning_rate: Float,
-      derivatives: npt.NDArray[Float],
-      next_w: npt.NDArray[Float],
-      next_delta: npt.NDArray[Float]
-   ):
-      old_weights = np.copy(self.weights)
-      delta = (next_w.T @ next_delta) * derivatives
-
-      self.weights -= learning_rate * (delta @ data.T)
-      self.bias -= learning_rate * delta
-
-      return old_weights, delta
-
 @dataclass
 class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
    learning_rate: Float
@@ -63,16 +22,18 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
    loss_function: LossFunction
    derivative_loss_function: LossFunction
 
+   input_size: int
    perceptrons: List[Tuple[SimplePerceptron]]
    layers: List[Layer] = field(init=False, repr=False, hash=False)
 
    def __post_init__(self):
       super().__init__()
 
-      self.layers = [
-         Layer(perceptrons, 3 if next is None else len(next)) # TODO: hardcoded output size
-         for perceptrons, next in zip_longest(self.perceptrons, self.perceptrons[1::])
-      ]
+      self.layers = []
+      prev_size = self.input_size
+      for l in self.perceptrons:
+         self.layers.append(Layer(prev_size, l))
+         prev_size = len(l)
 
    @override
    def train(self, inputs, expected, epochs):
