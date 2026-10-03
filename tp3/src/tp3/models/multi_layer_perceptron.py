@@ -19,28 +19,26 @@ from itertools import zip_longest
 @dataclass
 class Layer:
    perceptrons: Tuple[SimplePerceptron, ...]
-   next_layer_size: int | None
+   next_layer_size: int
 
    bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
    weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
    def __post_init__(self) -> None:
-      if self.next_layer_size is not None:
-         self.weights = np.random.uniform(-0.5, 0.5, size=(len(self.perceptrons), self.next_layer_size))
-         self.bias = np.random.uniform(-0.5, 0.5, size=self.next_layer_size)
+      self.weights = np.random.uniform(-0.5, 0.5, size=(len(self.perceptrons), self.next_layer_size))
+      self.bias = np.random.uniform(-0.5, 0.5, size=self.next_layer_size)
 
-   # NOTE: The last layer (output) will throw an error,
-   # as it doesn't define weight and bias values
-   def fowards(self, data: npt.NDArray[Float]) -> Tuple[npt.NDArray[Float], npt.NDArray[Float]]:
+   def fowards(self, data: npt.NDArray[Float]):
       h_us = (self.weights @ data) + self.bias
 
-      output = []
-      derivatives = []
+      activations: List[Float] = []
+      derivatives: List[Float] = []
       for i, perceptron in enumerate(self.perceptrons):
-         output.append(perceptron.activation_function(h_us[i]))
+         activations.append(perceptron.activation_function(h_us[i]))
+         # NOTE: The derivatives are always calculated, even outside of training
          derivatives.append(perceptron.derivative_activation_function(h_us[i]))
 
-      return np.array(output), np.array(derivatives)
+      return np.array(activations), np.array(derivatives)
 
    def backwards(
       self,
@@ -49,11 +47,11 @@ class Layer:
       derivatives: npt.NDArray[Float],
       next_w: npt.NDArray[Float],
       next_delta: npt.NDArray[Float]
-   ) -> Tuple[npt.NDArray[Float], npt.NDArray[Float]]:
-      old_weights = np.array(self.weights)
+   ):
+      old_weights = np.copy(self.weights)
       delta = (next_w.T @ next_delta) * derivatives
 
-      self.weights -= learning_rate * (delta * data.T)
+      self.weights -= learning_rate * (delta @ data.T)
       self.bias -= learning_rate * delta
 
       return old_weights, delta
@@ -72,7 +70,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
       super().__init__()
 
       self.layers = [
-         Layer(perceptrons, None if next is None else len(next))
+         Layer(perceptrons, 3 if next is None else len(next)) # TODO: hardcoded output size
          for perceptrons, next in zip_longest(self.perceptrons, self.perceptrons[1::])
       ]
 
@@ -83,27 +81,34 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
       self.__validate_parameters(inputs)
 
-      expect = np.array(expected)
       results: List[EpochResult] = []
       for epoch in trange(epochs):
          for u, data in enumerate(inputs):
-            predictions = [data]
+            expect = expected[u]
+
+            outputs = [data]
             activation_derivatives: List[npt.NDArray[Float]] = []
 
             for layer in self.layers:
-               output, derivative = layer.fowards(predictions[-1])
+               activations, derivative = layer.fowards(outputs[-1])
 
-               predictions.append(output)
+               outputs.append(activations)
                activation_derivatives.append(derivative)
 
-            loss = self.loss_function(predictions[-1], expect)
-            loss_prime = self.derivative_loss_function(predictions[-1], expect)
+            prediction = outputs[-1]
 
-            next_d = loss_prime * activation_derivatives[-1]
-            next_w = np.array(self.layers[-1].weights)
+            loss = self.loss_function(prediction, expect)
+            loss_prime = self.derivative_loss_function(prediction, expect)
 
-            for layer, derivatives in zip(self.layers[:-1], activation_derivatives[:-1]):
-               next_w, next_d = layer.backwards(data, self.learning_rate, derivatives, next_w, next_d)
+            next_w = self.layers[-1].weights
+            next_delta = loss_prime * activation_derivatives[-1]
+
+            for layer, prediction, derivatives in zip(
+               reversed(self.layers),
+               reversed(outputs[:-1]),
+               reversed(activation_derivatives),
+            ):
+               next_w, next_delta = layer.backwards(prediction, self.learning_rate, derivatives, next_w, next_delta)
 
             results.append((epoch, loss))
 
@@ -111,13 +116,19 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
    @override
    def test(self, inputs, expected):
-      # Implement the testing logic here
-      return np.float64(0)
+      return self.loss_function(np.array([self.predict(inputs)]), np.array([expected]))
 
    @override
-   def predict(self, inputs: Tuple[PerceptronInput, ...]):
-      # Implement the prediction logic here
-      pass
+   def predict(self, inputs):
+      return tuple([
+         self.single_predict(data)
+         for data in inputs
+      ])
+
+   def single_predict(self, data: npt.NDArray[Float]):
+      for layer in self.layers:
+         data, _ = layer.fowards(data)
+      return data
 
    def __validate_parameters(self, inputs: Tuple[PerceptronInput, ...]):
       input_dim = len(inputs[0])
