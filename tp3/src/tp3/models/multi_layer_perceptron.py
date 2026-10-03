@@ -77,7 +77,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
    @override
    def test(self, inputs, expected):
-      return self.loss_function(np.array([self.predict(inputs)]), np.array([expected]))
+      return self.loss_function(np.array(self.predict(inputs)), np.array([expected]))
 
    @override
    def predict(self, inputs):
