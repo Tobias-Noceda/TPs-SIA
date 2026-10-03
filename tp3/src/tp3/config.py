@@ -70,7 +70,7 @@ def load_config(path: str) -> PerceptronConfig:
             f"Expected structure:\n{_describe(schema)}"
         )
 
-    data["loss_function"] = LossFunctions(data["loss_function"]).function()
+    data["loss_function"] = LossFunctions(data["loss_function"]).functions()
     data["learning_rate"] = float(data["learning_rate"])
     data["epochs"] = int(data["epochs"])
 

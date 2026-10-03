@@ -4,9 +4,10 @@ from typing import List, Tuple, override
 from tp3.interfaces.perceptron import Perceptron
 
 from tp3.models.layer import Layer
-from tp3.models.simple_perceptron import SimplePerceptron
+from tp3.models.neuron import Neuron
+
 from tp3.types.epoch_result import EpochResult
-from tp3.types.loss_function import LossFunction
+from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.perceptron_input import PerceptronInput
 from tp3.types.float import Float
 
@@ -17,13 +18,14 @@ from tqdm import trange
 
 @dataclass
 class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
+    neurons: List[Tuple[Neuron, ...]]
+    
     learning_rate: Float
 
     loss_function: LossFunction
-    derivative_loss_function: LossFunction
+    derivative_loss_function: DerivativeLossFunction
 
     input_size: int
-    perceptrons: List[Tuple[SimplePerceptron]]
     layers: List[Layer] = field(init=False, repr=False, hash=False)
 
     epsilon = np.float64(1e-6)
@@ -33,7 +35,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
         self.layers = []
         prev_size = self.input_size
-        for l in self.perceptrons:
+        for l in self.neurons:
             self.layers.append(Layer(prev_size, l))
             prev_size = len(l)
 

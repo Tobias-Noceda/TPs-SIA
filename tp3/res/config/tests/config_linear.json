@@ -1,0 +1,25 @@
+{
+    "$schema": "../config.schema.json",
+    "perceptron": {
+        "type": "single_layer",
+        "activation_function": {
+            "name": "linear"
+        }
+    },
+    "learning_rate": 0.1,
+    "loss_function": "mse",
+    "epochs": 1000,
+    "datasets": {
+        "train": "res/datasets/tests/linear.csv",
+        "test": "res/datasets/tests/linear.csv",
+        "validation": "res/datasets/tests/linear.csv",
+        "columns": {
+            "input": [
+                "x"
+            ],
+            "output": [
+                "y"
+            ]
+        }
+    }
+}

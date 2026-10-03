@@ -1,10 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple, List, override
 
 from tp3.interfaces.perceptron import Perceptron
 
-from tp3.types.activation_function import ActivationFunction
-from tp3.types.derivative_function import DerivativeFunction
+from tp3.models.neuron import Neuron
 from tp3.types.float import Float
 from tp3.types.loss_function import LossFunction
 from tp3.types.perceptron_input import PerceptronInput
@@ -13,34 +12,29 @@ import numpy as np
 import numpy.typing as npt
 from tqdm import trange
 
-@dataclass(init=True)
-class SimplePerceptron(Perceptron[Float]):
+@dataclass
+class SimplePerceptron(Perceptron[Float], Neuron):
 
-    loss_function: LossFunction
     learning_rate: Float
-
-    activation_function: ActivationFunction
-    derivative_activation_function: DerivativeFunction
-
-    bias: Float | None = None
-    weights: npt.NDArray[Float] | None = None
+    loss_function: LossFunction
+    
+    input_size: int
+    
+    bias: Float = field(init=False, repr=False, hash=False)
+    weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
     epsilon = np.float64(1e-6)
+
+    def __post_init__(self):
+        self.weights = np.random.uniform(-0.5, 0.5, size=self.input_size)
+        self.bias = np.random.uniform(-0.5, 0.5, size=1)[0]
 
     @override
     def train(self, inputs, expected, epochs) -> Tuple[tuple[int, Float], ...]:        
         if len(inputs) != len(expected):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
-        if self.weights is None:
-            self.weights = np.random.uniform(-0.5, 0.5, size=len(inputs[0]))
-        if self.bias is None:
-            self.bias = np.random.uniform(-0.5, 0.5, size=1)[0]
-
         self.__validate_parameters(inputs)
-
-        if self.weights is None or self.bias is None:
-            raise ValueError("Weights and bias must be initialized before training.")
     
         results = []
         for epoch in trange(epochs):
@@ -48,8 +42,9 @@ class SimplePerceptron(Perceptron[Float]):
             for u in range(len(inputs)):
                 h_u = np.dot(self.weights, inputs[u]) + self.bias
                 
-                output = self.activation_function(h_u)
-                delta = self.learning_rate * (expected[u] - output) * self.derivative_activation_function(h_u)
+                output = self.activate(h_u)
+
+                delta = self.learning_rate * (expected[u] - output) * self.derivate(h_u)
 
                 outputs.append(output)
 
@@ -66,9 +61,6 @@ class SimplePerceptron(Perceptron[Float]):
     
     @override
     def test(self, inputs, expected) -> Float:
-        if self.weights is None or self.bias is None:
-            raise ValueError("Perceptron must be trained before testing. Weights and bias are not initialized.")
-
         self.__validate_parameters(inputs)
         
         if len(inputs) != len(expected):
@@ -78,15 +70,12 @@ class SimplePerceptron(Perceptron[Float]):
 
     @override
     def predict(self, inputs) -> Tuple[Float, ...]:
-        if self.weights is None or self.bias is None:
-            raise ValueError("Perceptron must be trained before prediction. Weights and bias are not initialized.")
-
         self.__validate_parameters(inputs)
 
         results = []
         for u in range(len(inputs)):
             h_u = np.dot(self.weights, inputs[u]) + self.bias
-            results.append(self.activation_function(h_u))
+            results.append(self.activate(h_u))
 
         return tuple(results)
 
@@ -102,5 +91,3 @@ class SimplePerceptron(Perceptron[Float]):
         if self.learning_rate <= 0:
             raise ValueError("The learning rate must be a positive value.")
 
-        if self.activation_function is None or self.derivative_activation_function is None:
-            raise ValueError("Activation function and its derivative must be provided.")

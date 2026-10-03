@@ -1,7 +1,7 @@
-from typing import TypedDict
+from typing import Tuple, TypedDict
 
 from tp3.types.config.datasets import Datasets
-from tp3.types.loss_function import LossFunction
+from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.config.perceptron import PerceptronDefinition
 
 class PerceptronConfig(TypedDict):
@@ -15,7 +15,7 @@ class PerceptronConfig(TypedDict):
         datasets: Dataset paths for train, test, and validation sets along with the input and output columns.
     """
     perceptron: PerceptronDefinition
-    loss_function: LossFunction
+    loss_function: Tuple[LossFunction, DerivativeLossFunction]
     learning_rate: float
     epochs: int
     datasets: Datasets

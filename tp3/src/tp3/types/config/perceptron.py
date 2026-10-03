@@ -2,8 +2,7 @@ import enum
 
 from typing import List, Tuple, TypedDict
     
-from tp3.types.activation_function import ActivationFunction
-from tp3.types.derivative_function import DerivativeFunction
+from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
 
 class PerceptronType(enum.Enum):
     SIMPLE = "simple_layer"
@@ -20,5 +19,5 @@ class PerceptronDefinition(TypedDict):
         datasets: Dataset paths for train, test, and validation sets along with the input and output columns.
     """
     type: PerceptronType
-    activation_function: Tuple[ActivationFunction, DerivativeFunction] | None
-    arquitecture: List[List[Tuple[ActivationFunction, DerivativeFunction]]] | None
+    activation_function: Tuple[ActivationFunction, DerivativeActivationFunction] | None
+    arquitecture: List[List[Tuple[ActivationFunction, DerivativeActivationFunction]]] | None

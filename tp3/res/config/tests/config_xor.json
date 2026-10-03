@@ -1,0 +1,44 @@
+{
+    "$schema": "../config.schema.json",
+    "perceptron": {
+        "type": "multi_layer",
+        "arquitecture": [
+            [
+                {
+                    "activation_function": {
+                        "name": "step"
+                    }
+                },
+                {
+                    "activation_function": {
+                        "name": "step"
+                    }
+                }
+            ],
+            [
+                {
+                    "activation_function": {
+                        "name": "step"
+                    }
+                }
+            ]
+        ]
+    },
+    "learning_rate": 0.1,
+    "loss_function": "mse",
+    "epochs": 1000,
+    "datasets": {
+        "train": "res/datasets/tests/xor.csv",
+        "test": "res/datasets/tests/xor.csv",
+        "validation": "res/datasets/tests/xor.csv",
+        "columns": {
+            "input": [
+                "x1",
+                "x2"
+            ],
+            "output": [
+                "XOR"
+            ]
+        }
+    }
+}
