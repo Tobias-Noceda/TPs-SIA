@@ -2,24 +2,18 @@
     "$schema": "../config.schema.json",
     "perceptron": {
         "type": "single_layer",
-        "activation_function": {
-            "name": "tanh"
-        }
+        "activation_function": { "name": "tanh" }
     },
     "learning_rate": 0.1,
-    "loss_function": "mse",
-    "epochs": 1000,
+    "loss_function": "hse",
+    "epochs": 10000,
     "datasets": {
         "train": "res/datasets/tests/tanh.csv",
         "test": "res/datasets/tests/tanh.csv",
         "validation": "res/datasets/tests/tanh.csv",
         "columns": {
-            "input": [
-                "x"
-            ],
-            "output": [
-                "y"
-            ]
+            "input": ["x"],
+            "output": ["y"]
         }
     }
 }

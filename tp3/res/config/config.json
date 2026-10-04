@@ -2,12 +2,10 @@
     "$schema": "./config.schema.json",
     "perceptron": {
         "type": "single_layer",
-        "activation_function": {
-            "name": "step"
-        }
+        "activation_function": { "name": "step" }
     },
     "learning_rate": 0.1,
-    "loss_function": "mse",
+    "loss_function": "hse",
     "epochs": 1000,
     "datasets": {
         "train": "res/fraud_mini_dataset.csv",

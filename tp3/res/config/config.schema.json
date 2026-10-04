@@ -112,8 +112,8 @@
         "loss_function": {
             "type": "string",
             "description": "The loss function to use for the perceptron",
-            "enum": ["mse"],
-            "default": "mse"
+            "enum": ["hse", "mse"],
+            "default": "hse"
         },
         "learning_rate": {
             "type": "number",
