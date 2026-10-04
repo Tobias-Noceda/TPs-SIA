@@ -25,10 +25,10 @@ class Layer:
 
         activations: List[Float] = []
         derivatives: List[Float] = []
-        for i, perceptron in enumerate(self.neurons):
-            activations.append(perceptron.activate(h_us[i]))
+        for i, neuron in enumerate(self.neurons):
+            activations.append(neuron.activate(h_us[i]))
             # NOTE: The derivatives are always calculated, even outside of training
-            derivatives.append(perceptron.derivate(h_us[i]))
+            derivatives.append(neuron.derivate(h_us[i]))
 
         return np.array(activations), np.array(derivatives)
 
