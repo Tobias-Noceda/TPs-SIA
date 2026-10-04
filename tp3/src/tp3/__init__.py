@@ -105,4 +105,4 @@ def main() -> None:
 
     predictions = perceptron.predict(tuple(validation_inputs))
 
-    print(f"Predicted: {[float(p) for p in predictions]}")
+    print(f"Predicted: {[float(p) if isinstance(p, np.float64) else p for p in predictions]}")
