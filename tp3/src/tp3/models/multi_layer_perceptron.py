@@ -68,15 +68,14 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
                 loss_prime = self.derivative_loss_function(prediction, expect)
 
-                next_w = self.layers[-1].weights
-                next_delta = loss_prime * activation_derivatives[-1]
+                deltas = [loss_prime * activation_derivatives[-1]]
+                for layer, derivatives in zip(reversed(self.layers), reversed(activation_derivatives[:-1])):
+                    delta_n = layer.delta(deltas[-1]) * derivatives
+                    deltas.append(delta_n)
+                deltas.reverse()
 
-                for layer, ingress, derivatives in zip(
-                    reversed(self.layers),
-                    reversed(outputs[:-1]),
-                    reversed(activation_derivatives),
-                ):
-                    next_w, next_delta = layer.backwards(ingress, self.learning_rate, derivatives, next_w, next_delta)
+                for layer, data, delta in zip(self.layers, outputs, deltas):
+                    layer.update(self.learning_rate, data, delta)
 
             results.append((epoch, loss))
 

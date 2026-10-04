@@ -17,11 +17,11 @@ class Layer:
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
     def __post_init__(self) -> None:
-        self.weights = np.random.uniform(-0.5, 0.5, size=(len(self.neurons), self.input_size))
+        self.weights = np.random.uniform(-0.5, 0.5, size=(self.input_size, len(self.neurons)))
         self.bias = np.random.uniform(-0.5, 0.5, size=len(self.neurons))
 
     def fowards(self, data: npt.NDArray[Float]):
-        h_us = (self.weights @ data) + self.bias
+        h_us = (data @ self.weights) + self.bias
 
         activations: List[Float] = []
         derivatives: List[Float] = []
@@ -32,18 +32,14 @@ class Layer:
 
         return np.array(activations), np.array(derivatives)
 
-    def backwards(
+    def delta(self, delta: npt.NDArray[Float]):
+        return delta @ self.weights.T
+
+    def update(
         self,
-        data: npt.NDArray[Float],
         learning_rate: Float,
-        derivatives: npt.NDArray[Float],
-        next_w: npt.NDArray[Float],
-        next_delta: npt.NDArray[Float]
+        data: npt.NDArray[Float],
+        delta: npt.NDArray[Float],
     ):
-        old_weights = np.copy(self.weights)
-        delta = (next_w.T @ next_delta) * derivatives
-
-        self.weights -= learning_rate * (delta @ data.T)
-        self.bias -= learning_rate * delta
-
-        return old_weights, delta
+        self.weights -= learning_rate * np.outer(data.T, delta)
+        self.bias -= learning_rate * np.sum(delta, axis=0, keepdims=True)
