@@ -19,8 +19,8 @@ class ActivationFunctions(enum.Enum):
     LOGISTIC = "logistic"
 
     def functions(self, hyperparameters: Hyperparameters | None) -> Tuple[ActivationFunction, DerivativeActivationFunction]:
-        beta = np.float64(hyperparameters["beta"]) if hyperparameters and "beta" in hyperparameters else np.float64(1.0)
-        L = np.float64(hyperparameters["L"]) if hyperparameters and "L" in hyperparameters else np.float64(1.0)
+        beta = np.float64(hyperparameters.get("beta", 1.0)) if hyperparameters else np.float64(1.0)
+        L = np.float64(hyperparameters.get("L", 1.0)) if hyperparameters else np.float64(1.0)
 
         functions: dict[ActivationFunctions, Tuple[ActivationFunction, DerivativeActivationFunction]] = {
             ActivationFunctions.STEP: (step_function, step_function_derivative),

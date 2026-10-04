@@ -54,6 +54,11 @@ class SimplePerceptron(Perceptron[Float], Neuron):
             error = self.loss_function(np.array(outputs), np.array(expected))
             results.append((epoch, error))
 
+            if not np.isfinite(error):
+                raise FloatingPointError(
+                    f"Training diverged at epoch {epoch} (loss={error}). "
+                    "Try a lower learning rate or normalize the inputs."
+                )
             if error < self.epsilon:
                 break
 

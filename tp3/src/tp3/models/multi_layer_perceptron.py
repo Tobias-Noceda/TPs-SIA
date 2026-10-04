@@ -79,6 +79,11 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
             results.append((epoch, loss))
 
+            if not np.isfinite(loss):
+                raise FloatingPointError(
+                    f"Training diverged at epoch {epoch} (loss={loss}). "
+                    "Try a lower learning rate or normalize the inputs."
+                )
             if loss < self.epsilon:
                 break
 

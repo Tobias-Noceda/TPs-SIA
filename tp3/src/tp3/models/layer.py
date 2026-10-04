@@ -42,4 +42,4 @@ class Layer:
         delta: npt.NDArray[Float],
     ):
         self.weights -= learning_rate * np.outer(data.T, delta)
-        self.bias -= learning_rate * np.sum(delta, axis=0, keepdims=True)
+        self.bias -= learning_rate * delta

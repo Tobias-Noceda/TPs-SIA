@@ -5,18 +5,17 @@ from typing import List, Tuple, TypedDict
 from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
 
 class PerceptronType(enum.Enum):
-    SIMPLE = "simple_layer"
+    SIMPLE = "single_layer"
     MULTI_LAYER = "multi_layer"
 
 class PerceptronDefinition(TypedDict):
     """
-    Configuration for the perceptron model.
+    Definition of the perceptron model.
 
     Attributes:
-        activation_functions: Activation and derivative functions to be used in the perceptron.
-        learning_rate: The learning rate for the perceptron.
-        epochs: Number of training epochs.
-        datasets: Dataset paths for train, test, and validation sets along with the input and output columns.
+        type: Kind of perceptron (single or multi layer).
+        activation_function: Activation and derivative functions (single layer only).
+        arquitecture: Activation and derivative functions per neuron, per layer (multi layer only).
     """
     type: PerceptronType
     activation_function: Tuple[ActivationFunction, DerivativeActivationFunction] | None

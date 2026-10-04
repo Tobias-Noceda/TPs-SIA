@@ -11,6 +11,7 @@ from tp3.parsers.dataset_parser import parse_dataset
 
 import numpy as np
 import matplotlib.pyplot as plt
+from tp3.types.config.perceptron import PerceptronType
 from tp3.types.float import Float
 
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
@@ -40,8 +41,13 @@ def main() -> None:
     )
 
     perceptron: Perceptron
-    if data["perceptron"]["activation_function"] is not None:
-        activation_function, derivative_function = data["perceptron"]["activation_function"]
+    perceptron_type = data["perceptron"]["type"]
+    if perceptron_type is PerceptronType.SIMPLE:
+        activation = data["perceptron"]["activation_function"]
+        if activation is None:
+            raise ValueError("A single_layer perceptron requires an 'activation_function'.")
+        
+        activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
         perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, len(datasets["columns"]["input"]))
@@ -57,10 +63,12 @@ def main() -> None:
             tuple(test_inputs),
             tuple(e[0] for e in test_expected)
         )
-    elif data["perceptron"]["arquitecture"] is not None:
-        loss_function, derivative_loss_function = loss_functions
+    elif perceptron_type is PerceptronType.MULTI_LAYER:
         arquitecture = data["perceptron"]["arquitecture"]
+        if arquitecture is None:
+            raise ValueError("A multi_layer perceptron requires an 'arquitecture'.")
 
+        loss_function, derivative_loss_function = loss_functions
         layers = [
             tuple(
                 Neuron(activation_function, derivative_function)
@@ -82,7 +90,7 @@ def main() -> None:
             tuple(np.array(e, dtype=np.float64) for e in test_expected)
         )
     else:
-        raise ValueError("Perceptron configuration must have either an activation function or an architecture defined.")
+        raise ValueError(f"Unknown perceptron type: {perceptron_type}")
 
     # Plot the loss over epochs
     print("Plotting training error over epochs...")

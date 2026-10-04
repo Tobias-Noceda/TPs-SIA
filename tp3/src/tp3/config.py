@@ -9,6 +9,7 @@ from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
 from tp3.types.config.loss import LossFunctions
+from tp3.types.config.perceptron import PerceptronType
 
 # Schema is read at runtime so any edit to this file drives validation automatically.
 # @link https://json-schema.org/
@@ -76,7 +77,7 @@ def load_config(path: str) -> PerceptronConfig:
 
     activation_function_hyper = data["perceptron"].get("activation_function", {}).get("hyperparameters", None)
     data["perceptron"] = {
-        "type": data["perceptron"]["type"],
+        "type": PerceptronType(data["perceptron"]["type"]),
         "activation_function": ActivationFunctions(data["perceptron"]["activation_function"]["name"]).functions(activation_function_hyper) if "activation_function" in data["perceptron"] else None,
         "arquitecture": [
             [ActivationFunctions(func["activation_function"]["name"]).functions(func["activation_function"].get("hyperparameters", None)) for func in layer]
