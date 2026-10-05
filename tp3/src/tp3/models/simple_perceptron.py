@@ -4,12 +4,14 @@ from typing import Tuple, List, override
 from tp3.interfaces.perceptron import Perceptron
 
 from tp3.models.neuron import Neuron
+from tp3.types.classification_option import ClassificationOption
 from tp3.types.float import Float
 from tp3.types.loss_function import LossFunction
 from tp3.types.perceptron_input import PerceptronInput
 
 import numpy as np
 import numpy.typing as npt
+from tp3.types.test_result import TestResult
 from tqdm import trange
 
 @dataclass
@@ -65,13 +67,34 @@ class SimplePerceptron(Perceptron[Float], Neuron):
         return tuple(results)
     
     @override
-    def test(self, inputs, expected) -> Float:
+    def test(self, inputs, expected, classification_function) -> TestResult:
         self.__validate_parameters(inputs)
         
         if len(inputs) != len(expected):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
-        return self.loss_function(np.array(self.predict(inputs)), np.array(expected))
+        true_positives = 0
+        true_negatives = 0
+        false_positives = 0
+        false_negatives = 0
+
+        classifications = classification_function(self.predict(inputs), tuple(expected))
+        for i in range(len(classifications)):
+            if classifications[i] == ClassificationOption.TRUE_POSITIVE:
+                true_positives += 1
+            elif classifications[i] == ClassificationOption.TRUE_NEGATIVE:
+                true_negatives += 1
+            elif classifications[i] == ClassificationOption.FALSE_POSITIVE:
+                false_positives += 1
+            elif classifications[i] == ClassificationOption.FALSE_NEGATIVE:
+                false_negatives += 1
+
+        return {
+            "true_positive": true_positives,
+            "true_negative": true_negatives,
+            "false_positive": false_positives,
+            "false_negative": false_negatives,
+        }
 
     @override
     def predict(self, inputs) -> Tuple[Float, ...]:

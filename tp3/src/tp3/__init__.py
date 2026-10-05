@@ -26,6 +26,7 @@ def main() -> None:
     loss_functions = data["loss_function"]
     learning_rate = np.float64(data["learning_rate"])
     epochs = data["epochs"]
+    classification_function = data["classification_function"]
     datasets = data["datasets"]
 
     train_inputs, train_expected = parse_dataset(
@@ -61,7 +62,8 @@ def main() -> None:
 
         test_results = perceptron.test(
             tuple(test_inputs),
-            tuple(e[0] for e in test_expected)
+            tuple(e[0] for e in test_expected),
+            classification_function
         )
     elif perceptron_type is PerceptronType.MULTI_LAYER:
         arquitecture = data["perceptron"]["arquitecture"]
@@ -87,7 +89,8 @@ def main() -> None:
 
         test_results = perceptron.test(
             tuple(np.array(input, dtype=np.float64) for input in test_inputs),
-            tuple(np.array(e, dtype=np.float64) for e in test_expected)
+            tuple(np.array(e, dtype=np.float64) for e in test_expected),
+            classification_function
         )
     else:
         raise ValueError(f"Unknown perceptron type: {perceptron_type}")

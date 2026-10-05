@@ -7,6 +7,7 @@
     "learning_rate": 0.1,
     "loss_function": "hse",
     "epochs": 10000,
+    "classification_function": "similar",
     "datasets": {
         "train": "res/datasets/tests/tanh.csv",
         "test": "res/datasets/tests/tanh.csv",

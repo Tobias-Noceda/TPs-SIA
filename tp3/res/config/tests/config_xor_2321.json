@@ -20,6 +20,7 @@
     "learning_rate": 0.05,
     "loss_function": "hse",
     "epochs": 1000,
+    "classification_function": "sign",
     "datasets": {
         "train": "res/datasets/tests/xor.csv",
         "test": "res/datasets/tests/xor.csv",
