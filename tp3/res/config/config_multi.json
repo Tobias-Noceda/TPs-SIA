@@ -4,7 +4,7 @@
         "type": "multi_layer",
         "arquitecture": [
             [
-                { "activation_function": { "name": "step" } }
+                { "activation_function": { "name": "linear" } }
             ]
         ]
     },
