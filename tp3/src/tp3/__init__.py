@@ -102,6 +102,7 @@ def main() -> None:
         datasets["validation"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["expected"],
+        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
 
     print(f"Perceptron accuracy: {test_results}")
