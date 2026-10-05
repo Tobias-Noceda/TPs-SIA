@@ -14,7 +14,8 @@
         "validation": "res/datasets/tests/linear.csv",
         "columns": {
             "input": ["x"],
-            "output": ["y"]
+            "output": ["y"],
+            "expected": ["y"]
         }
     }
 }

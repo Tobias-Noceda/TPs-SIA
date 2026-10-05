@@ -14,7 +14,8 @@
         "validation": "res/datasets/tests/and.csv",
         "columns": {
             "input": ["x1", "x2"],
-            "output": ["AND"]
+            "output": ["AND"],
+            "expected": ["AND"]
         }
     }
 }

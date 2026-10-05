@@ -22,7 +22,8 @@
         "validation": "res/datasets/tests/xor.csv",
         "columns": {
             "input": ["x1", "x2"],
-            "output": ["XOR"]
+            "output": ["XOR"],
+            "expected": ["XOR"]
         }
     }
 }
