@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from tp3.types.config.columns import Columns
 
@@ -8,3 +8,5 @@ class Datasets(TypedDict):
     test: str
     validation: str
     columns: Columns
+    # Standardize inputs (z-score) with the training set statistics
+    normalize: NotRequired[bool]

@@ -154,6 +154,11 @@
                     "type": "string",
                     "description": "Path to the validation dataset"
                 },
+                "normalize": {
+                    "type": "boolean",
+                    "description": "Standardize every input column (z-score) using the training set mean and standard deviation, also applied to test and validation",
+                    "default": false
+                },
                 "columns": {
                     "type": "object",
                     "description": "Columns to use for the input and output of the perceptron",

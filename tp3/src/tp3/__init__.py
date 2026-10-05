@@ -8,6 +8,7 @@ from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.models.multi_layer_perceptron import MultiLayerPerceptron
 
 from tp3.parsers.dataset_parser import parse_dataset
+from tp3.functions.normalization.z_score import fit_z_score, z_score
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53,6 +54,13 @@ def main() -> None:
         expected_output=datasets["columns"]["expected"],
         labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
+
+    # Statistics come from the training set only, then are reused for test and validation
+    normalize = datasets.get("normalize", False)
+    if normalize:
+        mean, std = fit_z_score(train_inputs)
+        train_inputs = z_score(train_inputs, mean, std)
+        test_inputs = z_score(test_inputs, mean, std)
 
     perceptron: Perceptron
     if perceptron_type is PerceptronType.SIMPLE:
@@ -104,6 +112,9 @@ def main() -> None:
         expected_output=datasets["columns"]["expected"],
         labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
+
+    if normalize:
+        validation_inputs = z_score(validation_inputs, mean, std)
 
     print(f"Perceptron accuracy: {test_results}")
 

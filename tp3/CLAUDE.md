@@ -88,6 +88,7 @@ uv run tp3 --config res/config/tests/config_linear.json
 uv run tp3 --config res/config/tests/config_tanh.json
 uv run tp3 --config res/config/tests/config_xor.json        # MLP 2-2-1
 uv run tp3 --config res/config/tests/config_xor_2321.json   # MLP 2-3-2-1
+uv run tp3 --config res/config/config_fraud.json            # ej. 1, simple logístico normalizado
 ```
 
 Sin ventana de matplotlib: `MPLBACKEND=Agg uv run tp3 ...`.
@@ -105,7 +106,8 @@ Draft 2020-12). Claves:
 | `loss_function`                  | `hse` (½ Σ, la de la teoría) o `mse` (media)                                                                                                                         |
 | `learning_rate`, `epochs`      | número, entero                                                                                                                                                             |
 | `batch_size`                     | entero ≥ 1, opcional (default `1`): `1` = online, tamaño del train = batch, intermedio = mini-batch                                                                         |
-| `datasets`                       | `train`, `test`, `validation` (CSV) + `columns.input` / `columns.output`                                                                                          |
+| `datasets`                       | `train`, `test`, `validation` (CSV) + `columns.input` / `columns.output` / `columns.expected`                                                                     |
+| `datasets.normalize`             | bool, opcional (default `false`): z-score por columna de entrada con media/desvío del **train**, reaplicado a test y validación                                      |
 
 `load_config` reemplaza los nombres por tuplas `(función, derivada)` y `type` por `PerceptronType`.
 `main` despacha por `PerceptronType`.
@@ -178,9 +180,11 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
 - **Validación**: `tests/and.csv` en 0/1 → pasarlo a ±1 como el enunciado. Falta una config
   de XOR con perceptrón simple escalón para la comparación pedida.
 - **Ej. 1**:
-  - `config.json` / `config_multi.json` apuntan a datasets inexistentes (y `config_multi`
-    es MLP, pero el ej. 1 pide solo perceptrón simple).
-  - **Sin normalización**: fraude va a divergir (`timestamp` ≈ 1.7e9).
+  - `config_fraud.json`: logística, η = 0.01, `batch_size` 32, 200 épocas, `normalize: true`,
+    train y test = dataset completo (parte A). Sin normalizar, la logística satura y predice 1.0
+    para todo. HSE final ≈ 40.8 (MSE ≈ 0.011 vs. BigModel); lineal queda en MSE ≈ 0.026.
+  - `config_multi.json` apunta a datasets inexistentes (y es MLP, pero el ej. 1 pide solo
+    perceptrón simple).
   - Falta partición train/test (holdout / k-fold), métricas (MSE/MAE vs. BigModel; con
     `flagged_fraud`: precision, recall, F1, ROC/PR) y barrido de umbral.
 - **Ej. 2/3**:
