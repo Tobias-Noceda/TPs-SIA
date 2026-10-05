@@ -28,7 +28,7 @@
                         "name": {
                             "type": "string",
                             "description": "The name of the activation function to use for the perceptron",
-                            "enum": ["step", "linear", "tanh", "logistic"]
+                            "enum": ["step", "linear", "tanh", "logistic", "relu"]
                         },
                         "hyperparameters": {
                             "type": "object",
@@ -71,7 +71,7 @@
                                         "name": {
                                             "type": "string",
                                             "description": "The name of the activation function to use for the neuron",
-                                            "enum": ["linear", "tanh", "logistic"]
+                                            "enum": ["linear", "tanh", "logistic", "relu"]
                                         },
                                         "hyperparameters": {
                                             "type": "object",
