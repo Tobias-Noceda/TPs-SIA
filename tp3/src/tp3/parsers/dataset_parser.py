@@ -10,7 +10,7 @@ import pandas as pd
 import ast
 
 def parse_dataset(
-    path: str, input_columns: List[str] | str, expected_output: List[str] | str, labels_count: int = 1
+    path: str, input_columns: List[str] | str, expected_output: List[str] | str, labels_count: int
 ) -> tuple[npt.NDArray[Float], npt.NDArray[Float]]:
     """
     Parse a numeric CSV into an input matrix X (rows x len(input_columns))
@@ -75,5 +75,6 @@ if __name__ == "__main__":
         "fraud_dataset.csv",
         input_columns=["timestamp", "amount_usd", "quantity_purchased", "session_duration_seconds", "days_since_last_purchase", "account_age_days", "device_screen_resolution", "time_since_last_login_s", "items_viewed_before_purchase"],
         expected_output=["big_model_fraud_probability"],
+        labels_count=1
     )
 
