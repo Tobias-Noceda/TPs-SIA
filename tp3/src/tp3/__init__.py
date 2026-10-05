@@ -115,15 +115,15 @@ def main() -> None:
     plt.title("Perceptron training error")
     plt.show()
 
-    validation_inputs, _ = parse_dataset(
-        datasets["validation"],
-        input_columns=datasets["columns"]["input"],
-        expected_output=datasets["columns"]["expected"],
-        labels_count=labels_count,
-    )
+    # validation_inputs, _ = parse_dataset(
+    #     datasets["validation"],
+    #     input_columns=datasets["columns"]["input"],
+    #     expected_output=datasets["columns"]["expected"],
+    #     labels_count=labels_count,
+    # )
 
     print(f"Perceptron accuracy: {test_results}")
 
-    predictions = perceptron.predict(tuple(validation_inputs))
+    # predictions = perceptron.predict(tuple(validation_inputs))
 
-    print(f"Predicted: {[float(p) if isinstance(p, np.float64) else p for p in predictions]}")
+    # print(f"Predicted: {[float(p) if isinstance(p, np.float64) else p for p in predictions]}")
