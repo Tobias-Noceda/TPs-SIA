@@ -148,11 +148,12 @@
                     "required": ["input", "output"],
                     "properties": {
                         "input": {
-                            "type": "array",
-                            "description": "Columns to use for the input of the perceptron",
+                            "type": ["array", "string"],
+                            "description": "Columns to use for the input of the perceptron. It might be multiple numeric columns, or a single stringified array column",
                             "items": {
                                 "type": "string"
-                            }
+                            },
+                            "minLength": 1
                         },
                         "output": {
                             "type": "array",

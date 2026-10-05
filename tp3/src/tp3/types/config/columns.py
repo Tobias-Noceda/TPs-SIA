@@ -1,5 +1,5 @@
 from typing import List, TypedDict
 
 class Columns(TypedDict):
-    input: List[str]
+    input: List[str] | str
     output: List[str]

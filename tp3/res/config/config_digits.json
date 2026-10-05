@@ -1,0 +1,84 @@
+{
+    "$schema": "./config.schema.json",
+    "perceptron": {
+        "type": "multi_layer",
+        "arquitecture": [
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } }
+            ]
+        ]
+    },
+    "learning_rate": 0.1,
+    "loss_function": "hse",
+    "epochs": 1000,
+    "datasets": {
+        "train": "res/datasets/digits.csv",
+        "test": "res/datasets/digits_test.csv",
+        "validation": "res/datasets/digits_test.csv",
+        "columns": {
+            "input": "image",
+            "output": ["label"]
+        }
+    }
+}

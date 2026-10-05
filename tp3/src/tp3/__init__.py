@@ -50,7 +50,7 @@ def main() -> None:
         activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
-        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, len(datasets["columns"]["input"]))
+        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, len(train_inputs[0]))
 
         result = perceptron.train(
             tuple(train_inputs),
@@ -77,7 +77,7 @@ def main() -> None:
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, len(datasets["columns"]["input"]))
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, len(train_inputs[0]))
 
         result = perceptron.train(
             tuple(train_inputs),

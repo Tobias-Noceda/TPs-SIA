@@ -7,8 +7,10 @@ import numpy.typing as npt
 
 import pandas as pd
 
+import ast
+
 def parse_dataset(
-    path: str, input_columns: List[str], expected_output: List[str]
+    path: str, input_columns: List[str] | str, expected_output: List[str]
 ) -> tuple[npt.NDArray[Float], npt.NDArray[Float]]:
     """
     Parse a numeric CSV into an input matrix X (rows x len(input_columns))
@@ -25,17 +27,27 @@ def parse_dataset(
 
     df = pd.read_csv(path)
 
-    missing = [c for c in [*input_columns, *expected_output] if c not in df.columns]
+    input_is_array = isinstance(input_columns, str)
+    columns = [input_columns] if input_is_array else input_columns
+
+    missing = [c for c in [*columns, *expected_output] if c not in df.columns]
     if missing:
         raise ValueError(
             f"Columns not found in {path}: {missing}. Available: {df.columns.tolist()}"
         )
 
-    X = df[input_columns].to_numpy(dtype=np.float64)
+    if input_is_array:
+        df[input_columns] = df[input_columns].map(_parse_array)
+        X = df[input_columns].to_numpy(dtype=np.ndarray)
+    else:
+        X = df[columns].to_numpy(dtype=np.float64)
+
     y = df[expected_output].to_numpy(dtype=np.float64)
 
     return X, y
 
+def _parse_array(d: object) -> npt.NDArray[Float]:
+    return np.array(ast.literal_eval(str(d)), dtype=np.float64)
 
 if __name__ == "__main__":
     # parser = argparse.ArgumentParser(description="Parse a CSV dataset into X, y.")
