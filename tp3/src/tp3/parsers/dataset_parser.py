@@ -10,7 +10,7 @@ import pandas as pd
 import ast
 
 def parse_dataset(
-    path: str, input_columns: List[str] | str, expected_output: List[str]
+    path: str, input_columns: List[str] | str, expected_output: List[str] | str, labels_count: int = 1
 ) -> tuple[npt.NDArray[Float], npt.NDArray[Float]]:
     """
     Parse a numeric CSV into an input matrix X (rows x len(input_columns))
@@ -28,9 +28,12 @@ def parse_dataset(
     df = pd.read_csv(path)
 
     input_is_array = isinstance(input_columns, str)
-    columns = [input_columns] if input_is_array else input_columns
+    output_is_array = isinstance(expected_output, str)
 
-    missing = [c for c in [*columns, *expected_output] if c not in df.columns]
+    columns_in = [input_columns] if input_is_array else input_columns
+    columns_out = [expected_output] if output_is_array else expected_output
+
+    missing = [c for c in [*columns_in, *columns_out] if c not in df.columns]
     if missing:
         raise ValueError(
             f"Columns not found in {path}: {missing}. Available: {df.columns.tolist()}"
@@ -40,9 +43,15 @@ def parse_dataset(
         df[input_columns] = df[input_columns].map(_parse_array)
         X = df[input_columns].to_numpy(dtype=np.ndarray)
     else:
-        X = df[columns].to_numpy(dtype=np.float64)
+        X = df[columns_in].to_numpy(dtype=np.float64)
 
-    y = df[expected_output].to_numpy(dtype=np.float64)
+    if output_is_array:
+        if df[expected_output].nunique() < labels_count:
+            print("There seems to be a mismatch between your dataset's labels and your output count, is your data missing cases?")
+
+        y = np.eye(labels_count)[df[expected_output]]
+    else:
+        y = df[columns_out].to_numpy(dtype=np.float64)
 
     return X, y
 

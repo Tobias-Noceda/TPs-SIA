@@ -78,7 +78,7 @@
         "validation": "res/datasets/digits_test.csv",
         "columns": {
             "input": "image",
-            "output": ["label"]
+            "output": "label"
         }
     }
 }

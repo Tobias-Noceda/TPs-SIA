@@ -28,20 +28,31 @@ def main() -> None:
     epochs = data["epochs"]
     datasets = data["datasets"]
 
+    perceptron_type = data["perceptron"]["type"]
+
+    # Sorry :/
+    arquitecture = list()
+    if perceptron_type is PerceptronType.MULTI_LAYER:
+        arquitecture = data["perceptron"]["arquitecture"]
+
+    if arquitecture is None:
+        raise ValueError("A multi_layer perceptron requires an 'arquitecture'.")
+
     train_inputs, train_expected = parse_dataset(
         datasets["train"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["output"],
+        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
 
     test_inputs, test_expected = parse_dataset(
         datasets["test"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["output"],
+        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
 
     perceptron: Perceptron
-    perceptron_type = data["perceptron"]["type"]
     if perceptron_type is PerceptronType.SIMPLE:
         activation = data["perceptron"]["activation_function"]
         if activation is None:
@@ -64,10 +75,6 @@ def main() -> None:
             tuple(e[0] for e in test_expected)
         )
     elif perceptron_type is PerceptronType.MULTI_LAYER:
-        arquitecture = data["perceptron"]["arquitecture"]
-        if arquitecture is None:
-            raise ValueError("A multi_layer perceptron requires an 'arquitecture'.")
-
         loss_function, derivative_loss_function = loss_functions
         layers = [
             tuple(
