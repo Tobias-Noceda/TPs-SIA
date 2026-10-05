@@ -1,0 +1,34 @@
+{
+    "$schema": "../config.schema.json",
+    "perceptron": {
+        "type": "multi_layer",
+        "arquitecture": [
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                {"activation_function": { "name": "sigmoid" } },
+                {"activation_function": { "name": "sigmoid" } }
+            ]
+        ]
+    },
+    "learning_rate": 0.05,
+    "loss_function": "hse",
+    "epochs": 10000,
+    "classification_function": "digits",
+    "datasets": {
+        "train": "res/datasets/tests/xor_fancy.csv",
+        "test": "res/datasets/tests/xor_fancy.csv",
+        "validation": "res/datasets/tests/xor_fancy.csv",
+        "columns": {
+            "input": ["x1", "x2"],
+            "output": "XOR",
+            "expected": ["XOR"]
+        }
+    }
+}
