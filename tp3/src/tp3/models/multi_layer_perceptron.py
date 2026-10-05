@@ -6,6 +6,7 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.layer import Layer
 from tp3.models.neuron import Neuron
 
+from tp3.types.classification_option import ClassificationOption
 from tp3.types.epoch_result import EpochResult
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.perceptron_input import PerceptronInput
@@ -14,6 +15,7 @@ from tp3.types.float import Float
 import numpy.typing as npt
 
 import numpy as np
+from tp3.types.test_result import TestResult
 from tqdm import trange
 
 @dataclass
@@ -90,8 +92,34 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
         return tuple(results)
 
     @override
-    def test(self, inputs, expected):
-        return self.loss_function(np.array(self.predict(inputs)), np.array(expected))
+    def test(self, inputs, expected, classification_function):
+        self.__validate_parameters(inputs)
+
+        if len(inputs) != len(expected):
+            raise ValueError("The number of inputs and expected outputs must be the same.")
+
+        true_positives = 0
+        true_negatives = 0
+        false_positives = 0
+        false_negatives = 0
+
+        classifications = classification_function(self.predict(inputs), tuple(expected))
+        for classification in classifications:
+            if classification == ClassificationOption.TRUE_POSITIVE:
+                true_positives += 1
+            elif classification == ClassificationOption.TRUE_NEGATIVE:
+                true_negatives += 1
+            elif classification == ClassificationOption.FALSE_POSITIVE:
+                false_positives += 1
+            elif classification == ClassificationOption.FALSE_NEGATIVE:
+                false_negatives += 1
+
+        return TestResult({
+            "true_positive": true_positives,
+            "true_negative": true_negatives,
+            "false_positive": false_positives,
+            "false_negative": false_negatives,
+        })
 
     @override
     def predict(self, inputs):

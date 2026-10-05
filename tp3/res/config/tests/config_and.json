@@ -7,6 +7,7 @@
     "learning_rate": 0.1,
     "loss_function": "hse",
     "epochs": 1000,
+    "classification_function": "equals",
     "datasets": {
         "train": "res/datasets/tests/and.csv",
         "test": "res/datasets/tests/and.csv",

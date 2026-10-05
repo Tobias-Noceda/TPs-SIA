@@ -5,6 +5,7 @@ from typing import Any, cast
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
 
+from tp3.types.config.classification import ClassificationFunctions
 from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
@@ -84,5 +85,6 @@ def load_config(path: str) -> PerceptronConfig:
             for layer in data["perceptron"].get("arquitecture", [])
         ] if "arquitecture" in data["perceptron"] else None
     }
+    data["classification_function"] = ClassificationFunctions(data["classification_function"]).function()
 
     return cast(PerceptronConfig, data)

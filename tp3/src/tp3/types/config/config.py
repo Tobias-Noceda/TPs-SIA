@@ -3,6 +3,7 @@ from typing import Tuple, TypedDict
 from tp3.types.config.datasets import Datasets
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.config.perceptron import PerceptronDefinition
+from tp3.types.classification_function import ClassificationFunction
 
 class PerceptronConfig(TypedDict):
     """
@@ -19,3 +20,4 @@ class PerceptronConfig(TypedDict):
     learning_rate: float
     epochs: int
     datasets: Datasets
+    classification_function: ClassificationFunction

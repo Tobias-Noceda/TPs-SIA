@@ -7,6 +7,7 @@
         "perceptron",
         "learning_rate",
         "epochs",
+        "classification_function",
         "datasets"
     ],
     "properties": {
@@ -124,6 +125,11 @@
             "type": "integer",
             "description": "The number of epochs to train the perceptron",
             "minimum": 1
+        },
+        "classification_function": {
+            "type": "string",
+            "description": "The classification function to use for testing the perceptron",
+            "enum": ["fraude", "digits", "equals", "similar", "sign"]
         },
         "datasets": {
             "type": "object",
