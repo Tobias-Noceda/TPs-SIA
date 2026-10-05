@@ -72,13 +72,15 @@
     "learning_rate": 0.1,
     "loss_function": "hse",
     "epochs": 1000,
+    "classification_function": "digits",
     "datasets": {
         "train": "res/datasets/digits.csv",
         "test": "res/datasets/digits_test.csv",
         "validation": "res/datasets/digits_test.csv",
         "columns": {
             "input": "image",
-            "output": "label"
+            "output": "label",
+            "expected": "label"
         }
     }
 }

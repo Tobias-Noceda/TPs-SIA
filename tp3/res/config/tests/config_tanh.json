@@ -14,7 +14,8 @@
         "validation": "res/datasets/tests/tanh.csv",
         "columns": {
             "input": ["x"],
-            "output": ["y"]
+            "output": ["y"],
+            "expected": ["y"]
         }
     }
 }

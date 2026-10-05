@@ -129,7 +129,7 @@
         "classification_function": {
             "type": "string",
             "description": "The classification function to use for testing the perceptron",
-            "enum": ["fraude", "digits", "equals", "similar", "sign"]
+            "enum": ["fraud", "digits", "equals", "similar", "sign"]
         },
         "datasets": {
             "type": "object",
@@ -151,7 +151,7 @@
                 "columns": {
                     "type": "object",
                     "description": "Columns to use for the input and output of the perceptron",
-                    "required": ["input", "output"],
+                    "required": ["input", "output", "expected"],
                     "properties": {
                         "input": {
                             "type": ["array", "string"],
@@ -164,6 +164,14 @@
                         "output": {
                             "type": ["array", "string"],
                             "description": "Columns to use for the output of the perceptron. It might be multiple numeric columns, or single values mapped into a matrix of 0 and 1 (eg.: [0, 0, 1, 0, ...])",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minLength": 1
+                        },
+                        "expected": {
+                            "type": ["array", "string"],
+                            "description": "Columns to use for the expected output of the perceptron. It might be multiple numeric columns, or single values mapped into a matrix of 0 and 1 (eg.: [0, 0, 1, 0, ...])",
                             "items": {
                                 "type": "string"
                             },

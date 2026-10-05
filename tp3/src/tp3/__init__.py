@@ -49,7 +49,7 @@ def main() -> None:
     test_inputs, test_expected = parse_dataset(
         datasets["test"],
         input_columns=datasets["columns"]["input"],
-        expected_output=datasets["columns"]["output"],
+        expected_output=datasets["columns"]["expected"],
         labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
     )
 
@@ -116,7 +116,7 @@ def main() -> None:
     validation_inputs, _ = parse_dataset(
         datasets["validation"],
         input_columns=datasets["columns"]["input"],
-        expected_output=datasets["columns"]["output"],
+        expected_output=datasets["columns"]["expected"],
     )
 
     print(f"Perceptron accuracy: {test_results}")

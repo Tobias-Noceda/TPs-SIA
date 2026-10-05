@@ -25,7 +25,7 @@ def _classify(predicted: Float, expected: Float) -> ClassificationOption:
     else:
         raise ValueError(f"Invalid predicted ({predicted}) or expected ({expected}) values for classification.")
 
-def fraude_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...]) -> Tuple[ClassificationOption, ...]:
+def fraud_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...]) -> Tuple[ClassificationOption, ...]:
     """
     Classification function that determines if the predicted values indicate fraud.
 
