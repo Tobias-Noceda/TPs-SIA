@@ -24,4 +24,4 @@ def linear_function_derivative(x: Float) -> Float:
     Returns:
         1.
     """
-    return np.float64(1.0)
+    return np.ones_like(x, dtype=np.float64)

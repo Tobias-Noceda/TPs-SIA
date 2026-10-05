@@ -12,8 +12,7 @@ def step_function(x: Float) -> Float:
     Returns:
         1 if x >= 0, 0 otherwise.
     """
-    value = 1 if x >= 0 else 0
-    return np.float64(value)
+    return np.where(x >= 0, 1.0, 0.0)
 
 def step_function_derivative(x: Float) -> Float:
     """
@@ -25,4 +24,4 @@ def step_function_derivative(x: Float) -> Float:
     Returns:
         1.
     """
-    return np.float64(1.0)
+    return np.ones_like(x, dtype=np.float64)

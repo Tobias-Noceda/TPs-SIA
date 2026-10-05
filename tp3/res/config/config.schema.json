@@ -126,6 +126,12 @@
             "description": "The number of epochs to train the perceptron",
             "minimum": 1
         },
+        "batch_size": {
+            "type": "integer",
+            "description": "Samples per weight update: 1 is online learning, the training set size is batch learning, anything in between is mini-batch",
+            "minimum": 1,
+            "default": 1
+        },
         "classification_function": {
             "type": "string",
             "description": "The classification function to use for testing the perceptron",

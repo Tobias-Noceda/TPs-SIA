@@ -26,6 +26,7 @@ def main() -> None:
     loss_functions = data["loss_function"]
     learning_rate = np.float64(data["learning_rate"])
     epochs = data["epochs"]
+    batch_size = data["batch_size"]
     classification_function = data["classification_function"]
     datasets = data["datasets"]
 
@@ -62,20 +63,12 @@ def main() -> None:
         activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
-        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, len(train_inputs[0]))
+        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, train_inputs.shape[1], batch_size)
 
-        result = perceptron.train(
-            tuple(train_inputs),
-            tuple(e[0] for e in train_expected),
-            epochs
-        )
+        result = perceptron.train(train_inputs, train_expected[:, 0], epochs)
         print("Training complete. Final weights:", perceptron.weights)
 
-        test_results = perceptron.test(
-            tuple(test_inputs),
-            tuple(e[0] for e in test_expected),
-            classification_function
-        )
+        test_results = perceptron.test(test_inputs, test_expected[:, 0], classification_function)
     elif perceptron_type is PerceptronType.MULTI_LAYER:
         loss_function, derivative_loss_function = loss_functions
         layers = [
@@ -86,19 +79,11 @@ def main() -> None:
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, len(train_inputs[0]))
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size)
 
-        result = perceptron.train(
-            tuple(train_inputs),
-            tuple(train_expected),
-            epochs
-        )
+        result = perceptron.train(train_inputs, train_expected, epochs)
 
-        test_results = perceptron.test(
-            tuple(np.array(input, dtype=np.float64) for input in test_inputs),
-            tuple(np.array(e, dtype=np.float64) for e in test_expected),
-            classification_function
-        )
+        test_results = perceptron.test(test_inputs, test_expected, classification_function)
     else:
         raise ValueError(f"Unknown perceptron type: {perceptron_type}")
 
@@ -121,6 +106,6 @@ def main() -> None:
 
     print(f"Perceptron accuracy: {test_results}")
 
-    predictions = perceptron.predict(tuple(validation_inputs))
+    predictions = perceptron.predict(validation_inputs)
 
-    print(f"Predicted: {[float(p) if isinstance(p, np.float64) else p for p in predictions]}")
+    print(f"Predicted: {predictions.tolist()}")

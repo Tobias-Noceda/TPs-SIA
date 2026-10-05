@@ -40,8 +40,8 @@ def parse_dataset(
         )
 
     if input_is_array:
-        df[input_columns] = df[input_columns].map(_parse_array)
-        X = df[input_columns].to_numpy(dtype=np.ndarray)
+        # Stacked into a (samples, features) float matrix instead of an object array of arrays
+        X = np.stack(df[input_columns].map(_parse_array).to_list())
     else:
         X = df[columns_in].to_numpy(dtype=np.float64)
 

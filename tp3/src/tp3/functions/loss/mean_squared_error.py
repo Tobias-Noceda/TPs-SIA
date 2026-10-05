@@ -10,4 +10,6 @@ def mean_squared_error(arr1: npt.NDArray[Float], arr2: npt.NDArray[Float]) -> Fl
     return np.mean((arr1 - arr2) ** 2)
 
 def mean_squared_error_derivative(arr1: npt.NDArray[Float], arr2: npt.NDArray[Float]) -> npt.NDArray[Float]:
-    return 2 * (arr1 - arr2) / np.size(arr1)
+    # Per-sample derivative: divided by the outputs count only, so a batch (samples, outputs)
+    # yields one gradient per sample
+    return 2 * (arr1 - arr2) / np.shape(arr1)[-1]

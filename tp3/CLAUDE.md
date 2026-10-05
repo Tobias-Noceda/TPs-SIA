@@ -104,6 +104,7 @@ Draft 2020-12). Claves:
 | `perceptron.arquitecture`        | lista de capas; cada capa es lista de neuronas`{ activation_function: {...} }`. **La capa de entrada no se escribe**: su tamaño es `len(datasets.columns.input)` |
 | `loss_function`                  | `hse` (½ Σ, la de la teoría) o `mse` (media)                                                                                                                         |
 | `learning_rate`, `epochs`      | número, entero                                                                                                                                                             |
+| `batch_size`                     | entero ≥ 1, opcional (default `1`): `1` = online, tamaño del train = batch, intermedio = mini-batch                                                                         |
 | `datasets`                       | `train`, `test`, `validation` (CSV) + `columns.input` / `columns.output`                                                                                          |
 
 `load_config` reemplaza los nombres por tuplas `(función, derivada)` y `type` por `PerceptronType`.
@@ -118,9 +119,9 @@ src/tp3/
 ├── interfaces/perceptron.py     # Perceptron[OT]: train / test / predict
 ├── models/
 │   ├── neuron.py                # Neuron: activation + derivative
-│   ├── simple_perceptron.py     # SimplePerceptron(Perceptron[Float], Neuron), online
+│   ├── simple_perceptron.py     # SimplePerceptron(Perceptron[Float], Neuron), mini-batch
 │   ├── layer.py                 # Layer: weights (in, out), bias (out,), fowards / delta / update
-│   └── multi_layer_perceptron.py# MultiLayerPerceptron: lista de Layer, backprop online
+│   └── multi_layer_perceptron.py# MultiLayerPerceptron: lista de Layer, backprop mini-batch
 ├── functions/
 │   ├── activation/              # step, linear, non_linear/{tanh, logistic} (+ derivadas)
 │   └── loss/                    # half_squared_error, mean_squared_error (+ derivadas vectoriales)
@@ -140,25 +141,28 @@ src/tp3/
 - **Derivadas de la pérdida devuelven un vector** (una componente por neurona de salida).
 - **Step con derivada 1**: truco para que la regla general se reduzca a Rosenblatt en el
   perceptrón simple. **No usar step en el MLP**: su derivada real es 0 y backprop no aprende.
-- **Error de época = suma de pérdidas por muestra** en el MLP, igual a `E = ½ Σ_μ Σ_i` de la teoría.
 - **Guarda de divergencia**: ambos `train` lanzan `FloatingPointError` si la pérdida deja de ser
   finita (síntoma típico: `η` demasiado grande para la escala de los datos).
 - **XOR en ±1** para que tanh trabaje en todo su rango.
 
-### `np.outer` en `Layer.update`
+### Vectorización y mini-batch
 
-`self.weights -= learning_rate * np.outer(data.T, delta)` es **correcto para entrenamiento online**:
-
-- La teoría (Clase 11, p.43/50) da `Δw_jk = η δ_j V_k`: un término por **cada par**
-  (entrada `k`, neurona `j`).
-- `data` = `V` con forma `(in,)` y `delta` = `δ` con forma `(out,)`. `np.outer(V, δ)[k, j] = V_k · δ_j`
-  → matriz `(in, out)`, la misma forma y orientación que `weights`.
-- El `.T` no hace nada: transponer un array 1-D devuelve el mismo array. Se puede borrar.
-- **No sirve para batch / mini-batch**: `np.outer` aplana sus argumentos, así que con
-  `data` `(p, in)` y `delta` `(p, out)` da `(p·in, p·out)` y rompe. Ahí la forma correcta es
-  `data.T @ delta` → `(in, out)` = `Σ_μ outer(V^μ, δ^μ)`, que es exactamente el `Δw` acumulado
-  de la versión batch (p.54). En online también funciona (`data[:, None] * delta`), así que
-  migrar a `data.T @ delta` con `data` 2-D unifica ambos modos.
+- **Todo opera sobre matrices `(muestras, features)`**: `train` / `predict` reciben `X` 2-D
+  (`PerceptronInputs`) y `predict` devuelve un `ndarray` (`(N,)` simple, `(N, salidas)` MLP).
+- **`Layer.update` usa `data.T @ delta`** = `Σ_μ outer(V^μ, δ^μ)` (teoría p.54), **promediado
+  sobre el batch** para que `η` no dependa de `batch_size`. Con `batch_size = 1` reproduce
+  exactamente el online anterior (verificado: mismos pesos con semilla y orden fijo).
+- **Se baraja el orden de las muestras en cada época** (`np.random.permutation`).
+- **Activación por neurona, aplicada por grupo**: `Layer` agrupa las neuronas que comparten
+  `(f, f')` y aplica cada función una vez sobre todas sus columnas. `ActivationFunctions.functions`
+  está cacheada por `(nombre, beta, L)` para que neuronas configuradas igual compartan objeto.
+- **Activaciones y derivadas deben aceptar arrays** (step usa `np.where`, derivadas constantes
+  `np.ones_like`).
+- **Derivada de MSE por muestra**: divide por la cantidad de salidas (`shape[-1]`), no por el
+  tamaño del batch; el promedio sobre el batch lo hace `update`.
+- **Error de época = `loss_function` sobre las predicciones hechas durante la época**. Con
+  `hse` es la suma por muestra de siempre; con `mse` es la media sobre todo el set (antes era
+  la suma de las MSE por muestra).
 
 ## Estado del código
 
@@ -183,9 +187,9 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
   - El parser CSV numérico no lee `digits.csv` (columna `image` es string) → integrar
     `digit_dataset_loader` + one-hot de `label`.
   - Falta salida multi-clase (10 neuronas + argmax) y accuracy / matriz de confusión.
-  - Solo entrenamiento **online** con gradiente descendente: faltan batch / mini-batch y
-    **otros optimizadores** (momentum, Adam) — requisito mínimo del ej. 2.
-  - `Layer.fowards` itera por neurona en Python: lento para 784 entradas → vectorizar.
+  - Faltan **otros optimizadores** (momentum, Adam) — requisito mínimo del ej. 2.
+  - Parsear `digits.csv` tarda ~10 s (`ast.literal_eval` por fila); entrenar una época con
+    784-32-16-10 y `batch_size = 32` tarda ~0.06 s.
 - **Transversal**:
   - `main` imprime la pérdida como "accuracy" y no evalúa validación.
   - Sin semilla, `epsilon` hardcodeado.

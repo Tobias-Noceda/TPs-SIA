@@ -75,6 +75,7 @@ def load_config(path: str) -> PerceptronConfig:
     data["loss_function"] = LossFunctions(data["loss_function"]).functions()
     data["learning_rate"] = float(data["learning_rate"])
     data["epochs"] = int(data["epochs"])
+    data["batch_size"] = int(data.get("batch_size", 1))
 
     activation_function_hyper = data["perceptron"].get("activation_function", {}).get("hyperparameters", None)
     data["perceptron"] = {

@@ -1,5 +1,6 @@
 import enum
 
+from functools import cache
 from typing import Tuple
 
 from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
@@ -23,16 +24,25 @@ class ActivationFunctions(enum.Enum):
     SIGMOID = "sigmoid"
 
     def functions(self, hyperparameters: Hyperparameters | None) -> Tuple[ActivationFunction, DerivativeActivationFunction]:
-        beta = np.float64(hyperparameters.get("beta", 1.0)) if hyperparameters else np.float64(1.0)
-        L = np.float64(hyperparameters.get("L", 1.0)) if hyperparameters else np.float64(1.0)
+        beta = float(hyperparameters.get("beta", 1.0)) if hyperparameters else 1.0
+        L = float(hyperparameters.get("L", 1.0)) if hyperparameters else 1.0
 
-        functions: dict[ActivationFunctions, Tuple[ActivationFunction, DerivativeActivationFunction]] = {
-            ActivationFunctions.STEP: (step_function, step_function_derivative),
-            ActivationFunctions.LINEAR: (linear_function, linear_function_derivative),
-            ActivationFunctions.TANH: (lambda x: tanh_function(x, beta), lambda x: tanh_function_derivative(x, beta)),
-            ActivationFunctions.LOGISTIC: (lambda x: logistic_function(x, beta, L), lambda x: logistic_function_derivative(x, beta, L)),
-            ActivationFunctions.RELU: (relu_function, relu_function_derivative),
-            ActivationFunctions.SIGMOID: (sigmoid_function, sigmoid_function_derivative),
-        }
-        
-        return functions[self]
+        return _functions(self, beta, L)
+
+# Cached so neurons configured alike share the same function objects: Layer groups neurons by
+# function identity to apply each activation once over the whole batch
+@cache
+def _functions(name: ActivationFunctions, beta: float, L: float) -> Tuple[ActivationFunction, DerivativeActivationFunction]:
+    b = np.float64(beta)
+    l = np.float64(L)
+
+    functions: dict[ActivationFunctions, Tuple[ActivationFunction, DerivativeActivationFunction]] = {
+        ActivationFunctions.STEP: (step_function, step_function_derivative),
+        ActivationFunctions.LINEAR: (linear_function, linear_function_derivative),
+        ActivationFunctions.TANH: (lambda x: tanh_function(x, b), lambda x: tanh_function_derivative(x, b)),
+        ActivationFunctions.LOGISTIC: (lambda x: logistic_function(x, b, l), lambda x: logistic_function_derivative(x, b, l)),
+        ActivationFunctions.RELU: (relu_function, relu_function_derivative),
+        ActivationFunctions.SIGMOID: (sigmoid_function, sigmoid_function_derivative),
+    }
+
+    return functions[name]
