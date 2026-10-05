@@ -30,15 +30,14 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
     input_size: int
     layers: List[Layer] = field(init=False, repr=False, hash=False)
 
-    epsilon = np.float64(1e-6)
+    random: np.random.RandomState
+    epsilon: Float
 
     def __post_init__(self):
-        super().__init__()
-
         self.layers = []
         prev_size = self.input_size
         for l in self.neurons:
-            self.layers.append(Layer(prev_size, l))
+            self.layers.append(Layer(prev_size, l, self.random))
             prev_size = len(l)
 
     @override

@@ -12,6 +12,8 @@ from tp3.types.config.activation import ActivationFunctions
 from tp3.types.config.loss import LossFunctions
 from tp3.types.config.perceptron import PerceptronType
 
+import numpy as np
+
 # Schema is read at runtime so any edit to this file drives validation automatically.
 # @link https://json-schema.org/
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "res" / "config" / "config.schema.json"
@@ -86,5 +88,7 @@ def load_config(path: str) -> PerceptronConfig:
         ] if "arquitecture" in data["perceptron"] else None
     }
     data["classification_function"] = ClassificationFunctions(data["classification_function"]).function()
+    data["epsilon"] = np.float64(data["epsilon"]) if "epsilon" in data else None
+    data["seed"] = int(data["seed"]) if "seed" in data else None
 
     return cast(PerceptronConfig, data)

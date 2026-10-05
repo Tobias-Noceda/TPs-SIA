@@ -25,11 +25,13 @@ class SimplePerceptron(Perceptron[Float], Neuron):
     bias: Float = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
-    epsilon = np.float64(1e-6)
+    random: np.random.RandomState
+    epsilon: Float
 
     def __post_init__(self):
-        self.weights = np.random.uniform(-0.5, 0.5, size=self.input_size)
-        self.bias = np.random.uniform(-0.5, 0.5, size=1)[0]
+        print(f"Initializing SimplePerceptron with input_size={self.input_size}, learning_rate={self.learning_rate}, epsilon={self.epsilon}")
+        self.weights = self.random.uniform(-0.5, 0.5, size=self.input_size)
+        self.bias = self.random.uniform(-0.5, 0.5, size=1)[0]
 
     @override
     def train(self, inputs, expected, epochs) -> Tuple[tuple[int, Float], ...]:        

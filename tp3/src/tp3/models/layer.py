@@ -16,6 +16,8 @@ class Layer:
     bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
+    random: np.random.RandomState
+
     def __post_init__(self) -> None:
         self.weights = np.random.uniform(-0.5, 0.5, size=(self.input_size, len(self.neurons)))
         self.bias = np.random.uniform(-0.5, 0.5, size=len(self.neurons))

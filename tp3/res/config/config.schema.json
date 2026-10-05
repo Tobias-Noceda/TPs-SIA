@@ -121,6 +121,16 @@
             "description": "The learning rate for the perceptron",
             "minimum": 0
         },
+        "epsilon": {
+            "type": "number",
+            "description": "The epsilon for the perceptron",
+            "minimum": 0
+        },
+        "seed": {
+            "type": "integer",
+            "description": "The seed for the random number generator",
+            "minimum": 0
+        },
         "epochs": {
             "type": "integer",
             "description": "The number of epochs to train the perceptron",

@@ -1,5 +1,6 @@
 import argparse
 
+from matplotlib.pylab import MT19937, RandomState, SeedSequence
 from tp3.config import load_config
 
 from tp3.interfaces.perceptron import Perceptron
@@ -28,6 +29,12 @@ def main() -> None:
     epochs = data["epochs"]
     classification_function = data["classification_function"]
     datasets = data["datasets"]
+
+    seed = SeedSequence(data.get("seed", None))
+    random = RandomState(MT19937(seed))
+    print(f"Used seed: {seed.entropy}")
+    
+    epsilon = data["epsilon"] if "epsilon" in data and data["epsilon"] is not None else np.float64(1e-6)
 
     perceptron_type = data["perceptron"]["type"]
 
@@ -64,7 +71,15 @@ def main() -> None:
         activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
-        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, len(train_inputs[0]))
+        perceptron = SimplePerceptron(
+            activation_function,
+            derivative_function,
+            learning_rate,
+            loss_function,
+            len(train_inputs[0]),
+            random,
+            epsilon
+        )
 
         result = perceptron.train(
             tuple(train_inputs),
@@ -88,7 +103,15 @@ def main() -> None:
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, len(train_inputs[0]))
+        perceptron = MultiLayerPerceptron(
+            layers,
+            learning_rate,
+            loss_function,
+            derivative_loss_function,
+            len(train_inputs[0]),
+            random,
+            epsilon
+        )
 
         result = perceptron.train(
             tuple(train_inputs),
