@@ -39,6 +39,8 @@ def create_model(data: PerceptronConfig):
 
     labels_count = 1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
 
+    print("Parsing datasets, this might take a while...")
+
     train_inputs, train_expected = parse_dataset(
         datasets["train"],
         input_columns=datasets["columns"]["input"],
