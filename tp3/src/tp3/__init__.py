@@ -6,13 +6,13 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.neuron import Neuron
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.models.multi_layer_perceptron import MultiLayerPerceptron
+from tp3.types.config.perceptron import PerceptronType
 
 from tp3.parsers.dataset_parser import parse_dataset
 from tp3.functions.normalization.z_score import fit_z_score, z_score
 
 import numpy as np
 import matplotlib.pyplot as plt
-from tp3.types.config.perceptron import PerceptronType
 
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
 
