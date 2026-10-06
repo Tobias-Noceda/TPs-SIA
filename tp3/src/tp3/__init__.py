@@ -40,18 +40,20 @@ def main() -> None:
     if arquitecture is None:
         raise ValueError("A multi_layer perceptron requires an 'arquitecture'.")
 
+    labels_count = 1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
+
     train_inputs, train_expected = parse_dataset(
         datasets["train"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["output"],
-        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
+        labels_count=labels_count
     )
 
     test_inputs, test_expected = parse_dataset(
         datasets["test"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["expected"],
-        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
+        labels_count=labels_count
     )
 
     # Statistics come from the training set only, then are reused for test and validation
@@ -111,7 +113,7 @@ def main() -> None:
         datasets["validation"],
         input_columns=datasets["columns"]["input"],
         expected_output=datasets["columns"]["expected"],
-        labels_count=1 if perceptron_type is PerceptronType.SIMPLE else len(arquitecture[-1])
+        labels_count=labels_count
     )
 
     if normalize:
