@@ -5,7 +5,7 @@ from tp3.types.float import Float
 import numpy.typing as npt
 
 # Standardization (z-score) per feature
-def fit_z_score(inputs: npt.NDArray[Float]) -> Tuple[npt.NDArray[Float], npt.NDArray[Float]]:
+def fit_z_score(inputs: npt.NDArray[Float]):
     """
     Compute the per-column mean and standard deviation of a (samples, features) matrix.
 
@@ -16,7 +16,7 @@ def fit_z_score(inputs: npt.NDArray[Float]) -> Tuple[npt.NDArray[Float], npt.NDA
     std[std == 0] = 1.0
     return mean, std
 
-def z_score(inputs: npt.NDArray[Float], mean: npt.NDArray[Float], std: npt.NDArray[Float]) -> npt.NDArray[Float]:
+def z_score(inputs: npt.NDArray[Float], mean: npt.NDArray[Float], std: npt.NDArray[Float]):
     """
     Standardize a (samples, features) matrix with statistics from fit_z_score.
 

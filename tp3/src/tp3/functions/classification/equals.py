@@ -5,7 +5,7 @@ from tp3.types.classification_option import ClassificationOption
 
 import numpy.typing as npt
 
-def _classify(predicted: Float, expected: Float) -> ClassificationOption:
+def _classify(predicted: Float, expected: Float):
     """
     Classifies the predicted value against the expected value.
     Returns:
@@ -16,7 +16,7 @@ def _classify(predicted: Float, expected: Float) -> ClassificationOption:
     else:
         return ClassificationOption.FALSE_POSITIVE
 
-def equals_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...]) -> Tuple[ClassificationOption, ...]:
+def equals_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...]):
     """
     Classification function that determines if the predicted values indicate fraud.
 

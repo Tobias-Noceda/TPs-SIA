@@ -3,6 +3,7 @@ from typing import Tuple
 from tp3.types.float import Float
 from tp3.types.classification_option import ClassificationOption
 
+import numpy as np
 import numpy.typing as npt
 
 def _classify(predicted: npt.NDArray[Float], expected: npt.NDArray[Float]) -> ClassificationOption:
@@ -16,7 +17,9 @@ def _classify(predicted: npt.NDArray[Float], expected: npt.NDArray[Float]) -> Cl
     Returns:
         ClassificationOption: The classification result.
     """
-    return ClassificationOption.TRUE_POSITIVE
+    if np.argmax(predicted) == np.argmax(expected):
+        return ClassificationOption.TRUE_POSITIVE
+    return ClassificationOption.FALSE_POSITIVE
 
 def digits_classification(predicted: Tuple[npt.NDArray[Float], ...], expected: Tuple[npt.NDArray[Float], ...]) -> Tuple[ClassificationOption, ...]:
     """

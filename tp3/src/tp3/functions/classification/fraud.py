@@ -6,7 +6,7 @@ from tp3.types.classification_option import ClassificationOption
 # BigModel flags a transaction as fraud exactly when its probability is >= 0.85
 DEFAULT_THRESHOLD = 0.85
 
-def _classify(predicted: Float, expected: Float, threshold: float) -> ClassificationOption:
+def _classify(predicted: Float, expected: Float, threshold: float):
     """
     Classifies the predicted value against the expected value.
 
@@ -29,7 +29,7 @@ def _classify(predicted: Float, expected: Float, threshold: float) -> Classifica
     else:
         raise ValueError(f"Invalid predicted ({predicted}) or expected ({expected}) values for classification.")
 
-def fraud_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...], threshold: float = DEFAULT_THRESHOLD) -> Tuple[ClassificationOption, ...]:
+def fraud_classification(predicted: Tuple[Float, ...], expected: Tuple[Float, ...], threshold: float = DEFAULT_THRESHOLD):
     """
     Classification function that determines if the predicted values indicate fraud.
 
