@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
+from tp3.interfaces.optimizer import Optimizer
 from tp3.models.neuron import Neuron
+from tp3.models.optimizers.gradient_descent import GradientDescent
 from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
 from tp3.types.float import Float
 
@@ -13,6 +15,7 @@ import numpy as np
 class Layer:
     input_size: int
     neurons: Tuple[Neuron, ...]
+    optimizer: Optimizer = field(default_factory=GradientDescent)
 
     bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
@@ -71,5 +74,5 @@ class Layer:
         # data.T @ delta = Σ_μ outer(V^μ, δ^μ). Averaged over the batch so the effective
         # learning rate does not depend on the batch size (batch of 1 = online update)
         batch_size = data.shape[0]
-        self.weights -= learning_rate * (data.T @ delta) / batch_size
-        self.bias -= learning_rate * delta.mean(axis=0)
+        gradients = ((data.T @ delta) / batch_size, delta.mean(axis=0))
+        self.optimizer.step(learning_rate, (self.weights, self.bias), gradients)

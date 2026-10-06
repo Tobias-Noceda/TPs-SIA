@@ -1,0 +1,221 @@
+{
+    "description": "Ej. 2: variantes del perceptrón multicapa para dígitos. Cada variante pisa algunos campos de 'base'. Se elige la configuración con mayor accuracy media de validación y se reentrena con todo digits.csv para evaluarla en test.",
+    "datasets": {
+        "train": "res/datasets/digits.csv",
+        "test": "res/datasets/digits_test.csv",
+        "input": "image",
+        "label": "label",
+        "classes": 10,
+        "validation_fraction": 0.2
+    },
+    "seeds": 3,
+    "final_seeds": 5,
+    "base": {
+        "hidden": [
+            64,
+            32
+        ],
+        "hidden_activation": "tanh",
+        "output_activation": "sigmoid",
+        "loss_function": "hse",
+        "optimizer": {
+            "name": "adam"
+        },
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "epochs": 40
+    },
+    "studies": {
+        "optimizer": {
+            "title": "Tasa de aprendizaje × mecanismo de optimización",
+            "variants": [
+                {
+                    "label": "η = 0.1",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 0.1
+                },
+                {
+                    "label": "η = 0.3",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 0.3
+                },
+                {
+                    "label": "η = 1",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 1
+                },
+                {
+                    "label": "η = 3",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 3
+                },
+                {
+                    "label": "η = 10",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 10
+                },
+                {
+                    "label": "η = 0.01",
+                    "optimizer": {
+                        "name": "momentum",
+                        "hyperparameters": {
+                            "momentum": 0.9
+                        }
+                    },
+                    "learning_rate": 0.01
+                },
+                {
+                    "label": "η = 0.03",
+                    "optimizer": {
+                        "name": "momentum",
+                        "hyperparameters": {
+                            "momentum": 0.9
+                        }
+                    },
+                    "learning_rate": 0.03
+                },
+                {
+                    "label": "η = 0.1",
+                    "optimizer": {
+                        "name": "momentum",
+                        "hyperparameters": {
+                            "momentum": 0.9
+                        }
+                    },
+                    "learning_rate": 0.1
+                },
+                {
+                    "label": "η = 0.3",
+                    "optimizer": {
+                        "name": "momentum",
+                        "hyperparameters": {
+                            "momentum": 0.9
+                        }
+                    },
+                    "learning_rate": 0.3
+                },
+                {
+                    "label": "η = 1",
+                    "optimizer": {
+                        "name": "momentum",
+                        "hyperparameters": {
+                            "momentum": 0.9
+                        }
+                    },
+                    "learning_rate": 1
+                },
+                {
+                    "label": "η = 0.0001",
+                    "optimizer": {
+                        "name": "adam"
+                    },
+                    "learning_rate": 0.0001
+                },
+                {
+                    "label": "η = 0.0003",
+                    "optimizer": {
+                        "name": "adam"
+                    },
+                    "learning_rate": 0.0003
+                },
+                {
+                    "label": "η = 0.001",
+                    "optimizer": {
+                        "name": "adam"
+                    },
+                    "learning_rate": 0.001
+                },
+                {
+                    "label": "η = 0.003",
+                    "optimizer": {
+                        "name": "adam"
+                    },
+                    "learning_rate": 0.003
+                },
+                {
+                    "label": "η = 0.01",
+                    "optimizer": {
+                        "name": "adam"
+                    },
+                    "learning_rate": 0.01
+                }
+            ]
+        },
+        "architecture": {
+            "title": "Arquitectura (capas ocultas)",
+            "variants": [
+                {
+                    "label": "784-10",
+                    "hidden": []
+                },
+                {
+                    "label": "784-16-10",
+                    "hidden": [
+                        16
+                    ]
+                },
+                {
+                    "label": "784-64-10",
+                    "hidden": [
+                        64
+                    ]
+                },
+                {
+                    "label": "784-256-10",
+                    "hidden": [
+                        256
+                    ]
+                },
+                {
+                    "label": "784-64-32-10",
+                    "hidden": [
+                        64,
+                        32
+                    ]
+                },
+                {
+                    "label": "784-256-128-10",
+                    "hidden": [
+                        256,
+                        128
+                    ]
+                },
+                {
+                    "label": "784-128-64-32-10",
+                    "hidden": [
+                        128,
+                        64,
+                        32
+                    ]
+                }
+            ]
+        },
+        "hidden_activation": {
+            "title": "Activación de las capas ocultas",
+            "seeds": 5,
+            "variants": [
+                {
+                    "label": "ReLU",
+                    "hidden_activation": "relu"
+                },
+                {
+                    "label": "tanh"
+                },
+                {
+                    "label": "logística",
+                    "hidden_activation": "logistic"
+                }
+            ]
+        }
+    }
+}

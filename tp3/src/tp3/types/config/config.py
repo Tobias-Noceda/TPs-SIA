@@ -1,5 +1,6 @@
-from typing import Tuple, TypedDict
+from typing import Callable, Tuple, TypedDict
 
+from tp3.interfaces.optimizer import Optimizer
 from tp3.types.config.datasets import Datasets
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.config.perceptron import PerceptronDefinition
@@ -14,6 +15,7 @@ class PerceptronConfig(TypedDict):
         learning_rate: The learning rate for the perceptron.
         epochs: Number of training epochs.
         batch_size: Samples per weight update (1 = online, dataset size = batch).
+        optimizer: Builds a fresh optimizer (weight update rule) for each layer.
         datasets: Dataset paths for train, test, and validation sets along with the input and output columns.
     """
     perceptron: PerceptronDefinition
@@ -21,5 +23,6 @@ class PerceptronConfig(TypedDict):
     learning_rate: float
     epochs: int
     batch_size: int
+    optimizer: Callable[[], Optimizer]
     datasets: Datasets
     classification_function: ClassificationFunction

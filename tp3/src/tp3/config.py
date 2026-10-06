@@ -10,6 +10,7 @@ from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
 from tp3.types.config.loss import LossFunctions
+from tp3.types.config.optimizer import Optimizers
 from tp3.types.config.perceptron import PerceptronType
 
 # Schema is read at runtime so any edit to this file drives validation automatically.
@@ -76,6 +77,8 @@ def load_config(path: str) -> PerceptronConfig:
     data["learning_rate"] = float(data["learning_rate"])
     data["epochs"] = int(data["epochs"])
     data["batch_size"] = int(data.get("batch_size", 1))
+    optimizer = data.get("optimizer", {"name": Optimizers.GRADIENT_DESCENT.value})
+    data["optimizer"] = Optimizers(optimizer["name"]).factory(optimizer.get("hyperparameters", None))
 
     activation_function_hyper = data["perceptron"].get("activation_function", {}).get("hyperparameters", None)
     data["perceptron"] = {

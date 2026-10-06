@@ -120,6 +120,22 @@ conjunto de entrenamiento = fold con mayor F1 de test (desempate: menor MSE de t
 `fraud_classification` acepta `threshold` (default 0.85 = criterio con el que BigModel marca
 `flagged_fraud`); `classification/confusion.py` cuenta las clasificaciones en un `TestResult`.
 
+Estudio del ej. 2 (MLP en dígitos):
+
+```bash
+./run2.sh [estudios...]   # ~4 min con 16 cores (estudios + final + análisis)
+```
+
+Spec en `res/config/ej2/studies.json`: `base` (784-64-32-10, oculta tanh, salida sigmoide, HSE, Adam η = 1e-3,
+batch 32, 40 épocas, pesos U(−0.5, 0.5)) + `studies` cuyas variantes pisan campos de la base: `optimizer` (η × {GD,
+momentum, Adam}, 5 η por optimizador), `architecture`, `hidden_activation` (ReLU / tanh / logística, 5 semillas).
+`experiments/ej2_digits.py` (`ej2-digits`) cachea los CSV parseados en `data.npz`; cada semilla parte
+`digits.csv` 80/20 **estratificado** (misma partición para todas las variantes con esa semilla) y guarda por
+época pérdida de train y accuracy de train/validación. **El test no se toca en los estudios.**
+`ej2-digits --final` toma la config con mayor accuracy media de validación, la reentrena con todo `digits.csv`
+(5 semillas) y recién ahí evalúa en `digits_test.csv`. `analysis/ej2_digits.py` (`ej2-digits-analysis`):
+`summary.csv` + `plots/`: `lr_optimizer`, `optimizer_curves`, `architecture`, `hidden_activation`, `confusion_test`.
+
 ## Configuración
 
 JSON validado contra `res/config/config.schema.json` (`config.py:load_config`, jsonschema
@@ -134,6 +150,7 @@ Draft 2020-12). Claves:
 | `learning_rate`, `epochs`      | número, entero                                                                                                                                                             |
 | `batch_size`                     | entero ≥ 1, opcional (default `1`): `1` = online, tamaño del train = batch, intermedio = mini-batch                                                                         |
 | `datasets`                       | `train`, `test`, `validation` (CSV) + `columns.input` / `columns.output` / `columns.expected`                                                                     |
+| `optimizer`                      | opcional (MLP), default gradiente descendente: `{ name: gradient_descent\|momentum\|adam, hyperparameters?: { momentum?, beta1?, beta2?, epsilon? } }` |
 | `datasets.normalize`             | bool, opcional (default `false`): z-score por columna de entrada con media/desvío del **train**, reaplicado a test y validación                                      |
 
 `load_config` reemplaza los nombres por tuplas `(función, derivada)` y `type` por `PerceptronType`.
@@ -150,9 +167,10 @@ src/tp3/
 │   ├── neuron.py                # Neuron: activation + derivative
 │   ├── simple_perceptron.py     # SimplePerceptron(Perceptron[Float], Neuron), mini-batch
 │   ├── layer.py                 # Layer: weights (in, out), bias (out,), fowards / delta / update
-│   └── multi_layer_perceptron.py# MultiLayerPerceptron: lista de Layer, backprop mini-batch
+│   ├── multi_layer_perceptron.py# MultiLayerPerceptron: lista de Layer, backprop mini-batch
+│   └── optimizers/              # gradient_descent, momentum, adam (uno por Layer)
 ├── functions/
-│   ├── activation/              # step, linear, non_linear/{tanh, logistic} (+ derivadas)
+│   ├── activation/              # step, linear, non_linear/{tanh, logistic, sigmoid, relu} (+ derivadas)
 │   └── loss/                    # half_squared_error, mean_squared_error (+ derivadas vectoriales)
 ├── parsers/                     # dataset_parser (CSV numérico → X, y), digit_dataset_loader
 └── types/                       # Float, PerceptronInput, LossFunction, ActivationFunction,
@@ -219,12 +237,21 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
     overfitting). Umbral 0.85: accuracy 0.964, precision 0.815, recall 0.895, F1 0.853 (± ~0.02).
     Máx. F1 medio en umbral 0.89 (F1 0.871). Falta decidir mejor modelo + umbral recomendado (c).
 - **Ej. 2/3**:
-  - El parser CSV numérico no lee `digits.csv` (columna `image` es string) → integrar
-    `digit_dataset_loader` + one-hot de `label`.
-  - Falta salida multi-clase (10 neuronas + argmax) y accuracy / matriz de confusión.
-  - Faltan **otros optimizadores** (momentum, Adam) — requisito mínimo del ej. 2.
-  - Parsear `digits.csv` tarda ~10 s (`ast.literal_eval` por fila); entrenar una época con
-    784-32-16-10 y `batch_size = 32` tarda ~0.06 s.
+  - **`digits.csv` no tiene ningún 8 y tiene pocos 5 (271) a propósito** (lo aclaró el equipo): el ej. 2
+    debe dar bajo en test y mejorar en el ej. 3 con `more_digits.csv`. Techo en test sin predecir 8s = 0.903.
+  - **Salida sigmoide + error cuadrático puede perder dígitos**: una salida se satura en ≈0 al principio
+    (σ' ≈ 1e-5) y no se recupera. Con pesos U(−0.5, 0.5) pasa con oculta ReLU (activaciones no acotadas → h
+    grande): 4/5 semillas pierden un dígito (val 0.886 ± 0.05); con tanh o logística 0/5 (val ≈ 0.95). Por eso
+    la base usa tanh.
+  - Resultados (40 épocas, 3 semillas, val = media): mejor η por optimizador: GD 3 (0.956), momentum 0.3
+    (0.951), Adam 0.003 (0.954). Con η más grande fallan: GD η = 10 (0.09), momentum η = 1 (0.62, inestable).
+    Los tres llegan a ≈0.955: el optimizador cambia la escala de η útil (Adam ~1000× menor que GD) y la
+    velocidad inicial (Adam arranca más rápido), no el techo. Arquitectura: 784-10 0.929, 784-16-10 0.925,
+    784-64-10 0.952, 784-256-10 0.961 (elegida), 784-256-128-10 0.956, 784-64-32-10 y 784-128-64-32-10 0.949.
+    Train ≈ 0.99 desde 64 neuronas (brecha ≈ 0.04 = sobreajuste); más profundidad no ayuda.
+  - Final (784-256-10, tanh, Adam 1e-3, todo `digits.csv`, 5 semillas): test 0.864 ± 0.001; sin contar los 8
+    0.957. Recall del 8 = 0 (34% → 3, 17% → 9, 15% → 5), del 5 = 0.83.
+  - Parsear `digits.csv` tarda ~8 s (`ast.literal_eval` por fila); por eso el experimento cachea.
 - **Transversal**:
   - `main` imprime la pérdida como "accuracy" y no evalúa validación.
   - Sin semilla, `epsilon` hardcodeado.

@@ -87,7 +87,7 @@ def main() -> None:
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size)
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, data["optimizer"])
 
         result = perceptron.train(train_inputs, train_expected, epochs)
 

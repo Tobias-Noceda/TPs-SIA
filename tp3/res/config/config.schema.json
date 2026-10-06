@@ -126,6 +126,47 @@
             "description": "The number of epochs to train the perceptron",
             "minimum": 1
         },
+        "optimizer": {
+            "type": "object",
+            "description": "Weight update rule (multi_layer only). Defaults to plain gradient descent",
+            "required": ["name"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The optimizer to use",
+                    "enum": ["gradient_descent", "momentum", "adam"]
+                },
+                "hyperparameters": {
+                    "type": "object",
+                    "description": "The optimizer hyperparameters (if needed)",
+                    "properties": {
+                        "momentum": {
+                            "type": "number",
+                            "description": "momentum: fraction of the previous update carried over, default 0.9",
+                            "minimum": 0,
+                            "exclusiveMaximum": 1
+                        },
+                        "beta1": {
+                            "type": "number",
+                            "description": "adam: decay of the gradient moving average, default 0.9",
+                            "minimum": 0,
+                            "exclusiveMaximum": 1
+                        },
+                        "beta2": {
+                            "type": "number",
+                            "description": "adam: decay of the squared gradient moving average, default 0.999",
+                            "minimum": 0,
+                            "exclusiveMaximum": 1
+                        },
+                        "epsilon": {
+                            "type": "number",
+                            "description": "adam: added to the denominator to avoid dividing by zero, default 1e-8",
+                            "exclusiveMinimum": 0
+                        }
+                    }
+                }
+            }
+        },
         "batch_size": {
             "type": "integer",
             "description": "Samples per weight update: 1 is online learning, the training set size is batch learning, anything in between is mini-batch",
