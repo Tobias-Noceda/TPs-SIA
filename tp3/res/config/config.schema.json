@@ -186,6 +186,12 @@
             "description": "The seed for the random number generator used for weight initialization and shuffling (random if omitted)",
             "minimum": 0
         },
+        "initialization": {
+            "type": "string",
+            "description": "How the initial weights and biases are drawn: random = U(-0.5, 0.5), xavier = U(±√(6 / (inputs + 1 + neurons))) with the bias counted as one more input",
+            "enum": ["random", "xavier"],
+            "default": "random"
+        },
         "epsilon": {
             "type": "number",
             "description": "Training stops once the epoch error is below epsilon",

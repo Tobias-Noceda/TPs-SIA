@@ -5,12 +5,14 @@ from tp3.interfaces.perceptron import Perceptron
 
 from tp3.models.neuron import Neuron
 from tp3.functions.accuracy import accuracy
+from tp3.functions.initailization.random import random_initialization
 from tp3.functions.classification.confusion import confusion_matrix
 
 from tp3.types.classification_option import ClassificationOption
 from tp3.types.epoch_result import EpochResult
 from tp3.types.float import Float
 from tp3.types.learning_rate_function import LearningRateFactory, LearningRateFunction
+from tp3.types.Initialization_function import InitializationFunction
 from tp3.types.loss_function import LossFunction
 from tp3.types.perceptron_input import PerceptronInputs
 
@@ -40,6 +42,9 @@ class SimplePerceptron(Perceptron[Float]):
     # Source of every random draw (weights and shuffling), seeded from the config for reproducibility
     random: RandomState = field(default_factory=RandomState, repr=False, hash=False)
 
+    # Draws the initial weights and bias
+    initialization: InitializationFunction = random_initialization
+
     bias: Float = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
@@ -48,8 +53,10 @@ class SimplePerceptron(Perceptron[Float]):
     bias_step: LearningRateFunction = field(init=False, repr=False, hash=False)
 
     def __post_init__(self):
-        self.weights = self.random.uniform(-0.5, 0.5, size=self.input_size)
-        self.bias = self.random.uniform(-0.5, 0.5, size=1)[0]
+        # The bias is drawn as the weight of one more input (x0 = 1), so it follows the same distribution
+        parameters = self.initialization(self.random, self.input_size + 1, 1)[:, 0]
+        self.weights = parameters[:-1].copy()
+        self.bias = np.float64(parameters[-1])
         self.weights_step = self.learning_rate()
         self.bias_step = self.learning_rate()
 

@@ -5,6 +5,7 @@ from tp3.models.neuron import Neuron
 from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
 from tp3.types.float import Float
 from tp3.types.learning_rate_function import LearningRateFactory, LearningRateFunction
+from tp3.types.Initialization_function import InitializationFunction
 
 import numpy.typing as npt
 
@@ -17,6 +18,7 @@ class Layer:
     neurons: Tuple[Neuron, ...]
     learning_rate: LearningRateFactory
     random: RandomState
+    initialization: InitializationFunction
 
     bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
@@ -30,8 +32,10 @@ class Layer:
     groups: List[Tuple[Neuron, npt.NDArray[np.intp]]] = field(init=False, repr=False, hash=False)
 
     def __post_init__(self) -> None:
-        self.weights = self.random.uniform(-0.5, 0.5, size=(self.input_size, len(self.neurons)))
-        self.bias = self.random.uniform(-0.5, 0.5, size=len(self.neurons))
+        # The bias is drawn as the weight of one more input (x0 = 1), so it follows the same distribution
+        parameters = self.initialization(self.random, self.input_size + 1, len(self.neurons))
+        self.weights = parameters[:-1].copy()
+        self.bias = parameters[-1].copy()
         self.weights_step = self.learning_rate()
         self.bias_step = self.learning_rate()
 

@@ -32,6 +32,7 @@ def create_model(data: PerceptronConfig):
     datasets = data["datasets"]
     epsilon = data["epsilon"]
     test_in_train = data["test_in_train"]
+    initialization = data["initialization"]
 
     # Single generator for the whole model: same seed => same weights and same shuffling
     seed = SeedSequence(data["seed"])
@@ -92,7 +93,8 @@ def create_model(data: PerceptronConfig):
             train_inputs.shape[1],
             batch_size,
             epsilon,
-            random
+            random,
+            initialization
         )
 
         if test_in_train:
@@ -112,7 +114,7 @@ def create_model(data: PerceptronConfig):
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, epsilon, random)
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, epsilon, random, initialization)
 
         if test_in_train:
             test_function = lambda: accuracy(perceptron.test(test_inputs, test_expected, classification_function))
