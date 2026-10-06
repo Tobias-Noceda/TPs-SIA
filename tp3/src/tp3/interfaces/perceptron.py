@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Callable, Tuple
 
 from tp3.types.classification_function import ClassificationFunction
 from tp3.types.float import Float
@@ -16,7 +16,7 @@ import numpy.typing as npt
 class Perceptron[OT](ABC):
 
     @abstractmethod
-    def train(self, inputs: PerceptronInputs, expected: npt.NDArray[Float], epochs: int) -> Tuple[EpochResult, ...]:
+    def train(self, inputs: PerceptronInputs, expected: npt.NDArray[Float], epochs: int, classification_function: ClassificationFunction[OT] | None, test_function: Callable[[], Float] | None) -> Tuple[EpochResult, ...]:
         pass
 
     @abstractmethod

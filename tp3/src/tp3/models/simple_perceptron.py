@@ -4,7 +4,11 @@ from typing import Tuple, override
 from tp3.interfaces.perceptron import Perceptron
 
 from tp3.models.neuron import Neuron
+from tp3.functions.accuracy import accuracy
+from tp3.functions.classification.confusion import confusion_matrix
+
 from tp3.types.classification_option import ClassificationOption
+from tp3.types.epoch_result import EpochResult
 from tp3.types.float import Float
 from tp3.types.learning_rate_function import LearningRateFactory, LearningRateFunction
 from tp3.types.loss_function import LossFunction
@@ -50,7 +54,7 @@ class SimplePerceptron(Perceptron[Float]):
         self.bias_step = self.learning_rate()
 
     @override
-    def train(self, inputs, expected, epochs) -> Tuple[tuple[int, Float], ...]:
+    def train(self, inputs, expected, epochs, classification_function, test_function=None) -> Tuple[EpochResult, ...]:
         inputs = self.__validate_parameters(inputs)
         expected = np.asarray(expected, dtype=np.float64)
 
@@ -83,7 +87,10 @@ class SimplePerceptron(Perceptron[Float]):
                 self.weights = self.weights - self.weights_step((inputs[batch].T @ delta) / len(batch), previous_error)
 
             error = self.loss_function(outputs, expected)
-            results.append((epoch, error))
+            # Classifies the outputs already obtained during the epoch (same ones as the error), test() would predict again
+            acc = accuracy(confusion_matrix(classification_function(tuple(outputs), tuple(expected)))) if classification_function is not None else np.float64(np.nan)
+            test_acc = test_function() if test_function is not None else np.float64(np.nan)
+            results.append((epoch, error, acc, test_acc))
             previous_error = error
 
             if not np.isfinite(error):

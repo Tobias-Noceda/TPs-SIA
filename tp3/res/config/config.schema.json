@@ -176,6 +176,11 @@
                 }
             ]
         },
+        "test_in_train": {
+            "type": "boolean",
+            "description": "Whether to test the perceptron on the training set after each epoch",
+            "default": false
+        },
         "seed": {
             "type": "integer",
             "description": "The seed for the random number generator used for weight initialization and shuffling (random if omitted)",

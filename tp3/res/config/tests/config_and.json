@@ -10,6 +10,7 @@
         "hyperparameters": { "beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8 }
     },
     "loss_function": "hse",
+    "test_in_train": true,
     "epochs": 1000,
     "classification_function": "equals",
     "datasets": {

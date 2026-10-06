@@ -1,7 +1,9 @@
 import argparse
+import json
 
 from tp3.config import load_config
 
+from tp3.functions.accuracy import accuracy
 from tp3.interfaces.perceptron import Perceptron
 from tp3.models.neuron import Neuron
 from tp3.models.simple_perceptron import SimplePerceptron
@@ -19,6 +21,7 @@ import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
 
 parser.add_argument("-c", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
+parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output file for results (optional)")
 
 def create_model(data: PerceptronConfig):
     loss_functions = data["loss_function"]
@@ -28,9 +31,11 @@ def create_model(data: PerceptronConfig):
     classification_function = data["classification_function"]
     datasets = data["datasets"]
     epsilon = data["epsilon"]
+    test_in_train = data["test_in_train"]
 
     # Single generator for the whole model: same seed => same weights and same shuffling
-    random = RandomState(MT19937(SeedSequence(data["seed"])))
+    seed = SeedSequence(data["seed"])
+    random = RandomState(MT19937(seed))
 
     perceptron_type = data["perceptron"]["type"]
 
@@ -69,6 +74,8 @@ def create_model(data: PerceptronConfig):
         train_inputs = z_score(train_inputs, mean, std)
         test_inputs = z_score(test_inputs, mean, std)
 
+    test_function = None
+
     perceptron: Perceptron
     if perceptron_type is PerceptronType.SIMPLE:
         activation = data["perceptron"]["activation_function"]
@@ -88,7 +95,10 @@ def create_model(data: PerceptronConfig):
             random
         )
 
-        result = perceptron.train(train_inputs, train_expected[:, 0], epochs)
+        if test_in_train:
+            test_function = lambda: accuracy(perceptron.test(test_inputs, test_expected[:, 0], classification_function))
+        
+        result = perceptron.train(train_inputs, train_expected[:, 0], epochs, classification_function if test_in_train else None, test_function)
         print("Training complete. Final weights:", perceptron.weights)
 
         test_results = perceptron.test(test_inputs, test_expected[:, 0], classification_function)
@@ -104,22 +114,25 @@ def create_model(data: PerceptronConfig):
 
         perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, epsilon, random)
 
-        result = perceptron.train(train_inputs, train_expected, epochs)
+        if test_in_train:
+            test_function = lambda: accuracy(perceptron.test(test_inputs, test_expected, classification_function))
+
+        result = perceptron.train(train_inputs, train_expected, epochs, classification_function if test_in_train else None, test_function)
 
         test_results = perceptron.test(test_inputs, test_expected, classification_function)
     else:
         raise ValueError(f"Unknown perceptron type: {perceptron_type}")
 
-    return perceptron, labels_count, result, test_results, datasets, normalize, mean, std
+    return perceptron, labels_count, result, test_results, datasets, normalize, mean, std, seed
 
 def main():
     args = parser.parse_args()
-    perceptron, labels_count, result, test_results, datasets, normalize, mean, std = create_model(load_config(args.config))
+    perceptron, labels_count, result, test_results, datasets, normalize, mean, std, seed = create_model(load_config(args.config))
 
     # Plot the loss over epochs
     print("Plotting training error over epochs...")
 
-    epoch_numbers, errors = zip(*result)
+    epoch_numbers, errors, acc, test_acc = zip(*result)
 
     plt.plot(epoch_numbers, errors)
     plt.xlabel("Epoch")
@@ -136,6 +149,17 @@ def main():
 
     if normalize:
         validation_inputs = z_score(validation_inputs, mean, std)
+
+    if args.output:
+        with open(args.output, "w") as f:
+            output = {
+                "training_results": result,
+                "test_results": test_results,
+                "acuracy": accuracy(test_results),
+                "seed": seed.entropy,
+            }
+            f.write(json.dumps(output))
+            
 
     print(f"Perceptron accuracy: {test_results}")
 

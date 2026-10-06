@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple, override
 
+from tp3.functions.accuracy import accuracy
+from tp3.functions.classification.confusion import confusion_matrix
 from tp3.interfaces.perceptron import Perceptron
 
 from tp3.models.layer import Layer
@@ -54,7 +56,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             prev_size = len(l)
 
     @override
-    def train(self, inputs, expected, epochs):
+    def train(self, inputs, expected, epochs, classification_function, test_function=None) -> Tuple[EpochResult, ...]:
         inputs = self.__validate_parameters(inputs)
         expected = np.asarray(expected, dtype=np.float64)
 
@@ -97,7 +99,10 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
                     layer.update(data, delta, previous_loss)
 
             loss = self.loss_function(predictions, expected)
-            results.append((epoch, loss))
+            # Classifies the predictions already obtained during the epoch (same ones as the loss), test() would predict again
+            acc = accuracy(confusion_matrix(classification_function(tuple(predictions), tuple(expected)))) if classification_function is not None else np.float64(np.nan)
+            test_acc = test_function() if test_function is not None else np.float64(np.nan)
+            results.append((epoch, loss, acc, test_acc))
             previous_loss = loss
 
             if not np.isfinite(loss):

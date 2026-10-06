@@ -29,3 +29,4 @@ class PerceptronConfig(TypedDict):
     seed: int | None
     datasets: Datasets
     classification_function: ClassificationFunction
+    test_in_train: bool

@@ -94,5 +94,6 @@ def load_config(path: str) -> PerceptronConfig:
         ] if "arquitecture" in data["perceptron"] else None
     }
     data["classification_function"] = ClassificationFunctions(data["classification_function"]).function()
+    data["test_in_train"] = bool(data.get("test_in_train", False))
 
     return cast(PerceptronConfig, data)

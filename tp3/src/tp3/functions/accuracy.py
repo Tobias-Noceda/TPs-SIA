@@ -1,6 +1,9 @@
 from tp3.types.test_result import TestResult
+from tp3.types.float import Float
 
-def accuracy(result: TestResult) -> float:
+import numpy as np
+
+def accuracy(result: TestResult) -> Float:
     """
     Computes the accuracy of the classification results.
 
@@ -8,7 +11,7 @@ def accuracy(result: TestResult) -> float:
         result (TestResult): The test result containing classification outcomes.
 
     Returns:
-        float: The accuracy as a float value.
+        Float: The accuracy as a NumPy float value.
     """
     total = (
         result["true_positive"]
@@ -18,7 +21,7 @@ def accuracy(result: TestResult) -> float:
     )
     correct = result['true_positive'] + result['true_negative']
     
-    return correct / total
+    return np.float64(correct / total)
 
 def precision(result: TestResult) -> float:
     """
