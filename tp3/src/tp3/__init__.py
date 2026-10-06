@@ -6,6 +6,7 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.neuron import Neuron
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.models.multi_layer_perceptron import MultiLayerPerceptron
+from tp3.types.config.config import PerceptronConfig
 from tp3.types.config.perceptron import PerceptronType
 
 from tp3.parsers.dataset_parser import parse_dataset
@@ -18,11 +19,7 @@ parser = argparse.ArgumentParser(description="Perceptron implementation.")
 
 parser.add_argument("-c", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
 
-def main() -> None:
-    args = parser.parse_args()
-
-    data = load_config(args.config)
-
+def create_model(data: PerceptronConfig):
     loss_functions = data["loss_function"]
     learning_rate = np.float64(data["learning_rate"])
     epochs = data["epochs"]
@@ -97,6 +94,12 @@ def main() -> None:
         test_results = perceptron.test(test_inputs, test_expected, classification_function)
     else:
         raise ValueError(f"Unknown perceptron type: {perceptron_type}")
+
+    return perceptron, labels_count, result, test_results, datasets, normalize, mean, std
+
+def main():
+    args = parser.parse_args()
+    perceptron, labels_count, result, test_results, datasets, normalize, mean, std = create_model(load_config(args.config))
 
     # Plot the loss over epochs
     print("Plotting training error over epochs...")
