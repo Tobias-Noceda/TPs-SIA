@@ -20,6 +20,8 @@ dependencies = [
 tp3 = "tp3:main"
 ej1-learning = "tp3.experiments.ej1_learning:main"
 ej1-learning-analysis = "tp3.analysis.ej1_learning:main"
+ej1-generalization = "tp3.experiments.ej1_generalization:main"
+ej1-generalization-analysis = "tp3.analysis.ej1_generalization:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

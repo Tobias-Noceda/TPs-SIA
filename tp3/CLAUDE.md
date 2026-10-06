@@ -105,6 +105,21 @@ Experimentos (`experiments/ej1_learning.py`, entrypoint `ej1-learning`) guardan 
 `best_comparison`, `pc1_curves`, `distributions`, `pred_vs_target`.
 Configs base en `res/config/ej1/{linear,logistic}.json` (HSE, normalizado).
 
+Estudio del ej. 1 parte B (generalización de la logística, k-fold estratificado):
+
+```bash
+./run1_generalization.sh [épocas=1000] [semillas=3] [folds=5] [η=0.01] [batch_size=32]   # ~10 s
+```
+
+`experiments/ej1_generalization.py` (`ej1-generalization`): folds estratificados por `flagged_fraud`
+(solo para partir, nunca para entrenar); **z-score ajustado con el train de cada fold** y reaplicado
+a su test; curvas de train/test en MSE (HSE es suma y los tamaños difieren); métricas con
+`perceptron.test` + `fraud_classification` + `functions/accuracy.py`. `analysis/ej1_generalization.py`
+arma `summary.csv` y `plots/`: `generalization_curves`, `fold_metrics`, `fold_f1`, `threshold_metrics`. Mejor
+conjunto de entrenamiento = fold con mayor F1 de test (desempate: menor MSE de test).
+`fraud_classification` acepta `threshold` (default 0.85 = criterio con el que BigModel marca
+`flagged_fraud`); `classification/confusion.py` cuenta las clasificaciones en un `TestResult`.
+
 ## Configuración
 
 JSON validado contra `res/config/config.schema.json` (`config.py:load_config`, jsonschema
@@ -200,8 +215,9 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
     (saturación de capacidad) muy por encima de 0 (underfitting, mayor en la lineal).
   - `config_multi.json` apunta a datasets inexistentes (y es MLP, pero el ej. 1 pide solo
     perceptrón simple).
-  - Falta partición train/test (holdout / k-fold), métricas (MSE/MAE vs. BigModel; con
-    `flagged_fraud`: precision, recall, F1, ROC/PR) y barrido de umbral.
+  - Parte B (`run1_generalization.sh`, 3 × 5-fold): train MSE ≈ test MSE ≈ 0.0109 (sin
+    overfitting). Umbral 0.85: accuracy 0.964, precision 0.815, recall 0.895, F1 0.853 (± ~0.02).
+    Máx. F1 medio en umbral 0.89 (F1 0.871). Falta decidir mejor modelo + umbral recomendado (c).
 - **Ej. 2/3**:
   - El parser CSV numérico no lee `digits.csv` (columna `image` es string) → integrar
     `digit_dataset_loader` + one-hot de `label`.
