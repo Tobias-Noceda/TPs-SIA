@@ -10,7 +10,10 @@ from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
 from tp3.types.config.loss import LossFunctions
+from tp3.types.config.learning_rate import LearningRateFunctions
 from tp3.types.config.perceptron import PerceptronType
+
+import numpy as np
 
 # Schema is read at runtime so any edit to this file drives validation automatically.
 # @link https://json-schema.org/
@@ -73,9 +76,13 @@ def load_config(path: str) -> PerceptronConfig:
         )
 
     data["loss_function"] = LossFunctions(data["loss_function"]).functions()
-    data["learning_rate"] = float(data["learning_rate"])
+    data["learning_rate"] = LearningRateFunctions(data["learning_rate"]["type"]).factory(
+        data["learning_rate"]["value"], data["learning_rate"].get("hyperparameters", None)
+    )
     data["epochs"] = int(data["epochs"])
     data["batch_size"] = int(data.get("batch_size", 1))
+    data["epsilon"] = np.float64(data.get("epsilon", 1e-6))
+    data["seed"] = int(data["seed"]) if "seed" in data else None
 
     activation_function_hyper = data["perceptron"].get("activation_function", {}).get("hyperparameters", None)
     data["perceptron"] = {

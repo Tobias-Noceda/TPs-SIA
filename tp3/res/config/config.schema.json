@@ -117,9 +117,75 @@
             "default": "hse"
         },
         "learning_rate": {
-            "type": "number",
+            "type": "object",
             "description": "The learning rate for the perceptron",
+            "required": ["value", "type"],
+            "properties": {
+                "value": { "type": "number", "description": "The initial learning rate (α for adam)", "exclusiveMinimum": 0.0 },
+                "type": {
+                    "type": "string",
+                    "enum": ["constant", "momentum", "adaptative", "adam"],
+                    "default": "constant"
+                },
+                "hyperparameters": {
+                    "type": "object",
+                    "description": "Hyperparameters of the learning rate. Allowed keys depend on type: momentum {alpha}, adaptative {a, b, k}, adam {beta1, beta2, epsilon}",
+                    "properties": {
+                        "alpha": { "type": "number", "minimum": 0.0, "exclusiveMaximum": 1.0, "default": 0.9 },
+                        "a": { "type": "number", "minimum": 0.0 },
+                        "b": { "type": "number", "exclusiveMinimum": 0.0, "exclusiveMaximum": 1.0 },
+                        "k": { "type": "integer", "minimum": 1, "default": 3 },
+                        "beta1": { "type": "number", "minimum": 0.0, "exclusiveMaximum": 1.0, "default": 0.9 },
+                        "beta2": { "type": "number", "minimum": 0.0, "exclusiveMaximum": 1.0, "default": 0.999 },
+                        "epsilon": { "type": "number", "exclusiveMinimum": 0.0, "default": 1e-8 }
+                    }
+                }
+            },
+            "allOf": [
+                {
+                    "if": { "properties": { "type": { "const": "constant" } } },
+                    "then": { "not": { "required": ["hyperparameters"] } }
+                },
+                {
+                    "if": { "properties": { "type": { "const": "momentum" } } },
+                    "then": {
+                        "properties": {
+                            "hyperparameters": { "propertyNames": { "enum": ["alpha"] } }
+                        }
+                    }
+                },
+                {
+                    "if": { "properties": { "type": { "const": "adaptative" } } },
+                    "then": {
+                        "required": ["hyperparameters"],
+                        "properties": {
+                            "hyperparameters": {
+                                "required": ["a", "b"],
+                                "propertyNames": { "enum": ["a", "b", "k"] }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": { "properties": { "type": { "const": "adam" } } },
+                    "then": {
+                        "properties": {
+                            "hyperparameters": { "propertyNames": { "enum": ["beta1", "beta2", "epsilon"] } }
+                        }
+                    }
+                }
+            ]
+        },
+        "seed": {
+            "type": "integer",
+            "description": "The seed for the random number generator used for weight initialization and shuffling (random if omitted)",
             "minimum": 0
+        },
+        "epsilon": {
+            "type": "number",
+            "description": "Training stops once the epoch error is below epsilon",
+            "minimum": 0.0,
+            "default": 1e-6
         },
         "epochs": {
             "type": "integer",

@@ -13,6 +13,7 @@ from tp3.parsers.dataset_parser import parse_dataset
 from tp3.functions.normalization.z_score import fit_z_score, z_score
 
 import numpy as np
+from numpy.random import MT19937, RandomState, SeedSequence
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
@@ -21,11 +22,15 @@ parser.add_argument("-c", "--config", dest="config", type=str, required=True, he
 
 def create_model(data: PerceptronConfig):
     loss_functions = data["loss_function"]
-    learning_rate = np.float64(data["learning_rate"])
+    learning_rate = data["learning_rate"]
     epochs = data["epochs"]
     batch_size = data["batch_size"]
     classification_function = data["classification_function"]
     datasets = data["datasets"]
+    epsilon = data["epsilon"]
+
+    # Single generator for the whole model: same seed => same weights and same shuffling
+    random = RandomState(MT19937(SeedSequence(data["seed"])))
 
     perceptron_type = data["perceptron"]["type"]
 
@@ -73,7 +78,15 @@ def create_model(data: PerceptronConfig):
         activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
-        perceptron = SimplePerceptron(Neuron(activation_function, derivative_function), learning_rate, loss_function, train_inputs.shape[1], batch_size)
+        perceptron = SimplePerceptron(
+            Neuron(activation_function, derivative_function),
+            learning_rate,
+            loss_function,
+            train_inputs.shape[1],
+            batch_size,
+            epsilon,
+            random
+        )
 
         result = perceptron.train(train_inputs, train_expected[:, 0], epochs)
         print("Training complete. Final weights:", perceptron.weights)
@@ -89,7 +102,7 @@ def create_model(data: PerceptronConfig):
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size)
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, epsilon, random)
 
         result = perceptron.train(train_inputs, train_expected, epochs)
 

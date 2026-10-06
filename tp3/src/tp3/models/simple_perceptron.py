@@ -6,21 +6,23 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.neuron import Neuron
 from tp3.types.classification_option import ClassificationOption
 from tp3.types.float import Float
+from tp3.types.learning_rate_function import LearningRateFactory, LearningRateFunction
 from tp3.types.loss_function import LossFunction
 from tp3.types.perceptron_input import PerceptronInputs
 
 import numpy as np
 import numpy.typing as npt
+from numpy.random import RandomState
 from tp3.types.test_result import TestResult
 from tqdm import trange
 
-# Delta rule with mini-batch gradient descent
+# Delta rule with mini-batch gradient descent (update rule given by the learning rate function)
 # @link https://en.wikipedia.org/wiki/Delta_rule
 @dataclass
 class SimplePerceptron(Perceptron[Float]):
     neuron: Neuron
 
-    learning_rate: Float
+    learning_rate: LearningRateFactory
     loss_function: LossFunction
 
     input_size: int
@@ -28,14 +30,24 @@ class SimplePerceptron(Perceptron[Float]):
     # Samples per weight update: 1 = online, len(inputs) = batch
     batch_size: int = 1
 
+    # Training stops once the epoch error is below epsilon
+    epsilon: Float = np.float64(1e-6)
+
+    # Source of every random draw (weights and shuffling), seeded from the config for reproducibility
+    random: RandomState = field(default_factory=RandomState, repr=False, hash=False)
+
     bias: Float = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
 
-    epsilon = np.float64(1e-6)
+    # One stateful learning rate function per parameter
+    weights_step: LearningRateFunction = field(init=False, repr=False, hash=False)
+    bias_step: LearningRateFunction = field(init=False, repr=False, hash=False)
 
     def __post_init__(self):
-        self.weights = np.random.uniform(-0.5, 0.5, size=self.input_size)
-        self.bias = np.random.uniform(-0.5, 0.5, size=1)[0]
+        self.weights = self.random.uniform(-0.5, 0.5, size=self.input_size)
+        self.bias = self.random.uniform(-0.5, 0.5, size=1)[0]
+        self.weights_step = self.learning_rate()
+        self.bias_step = self.learning_rate()
 
     @override
     def train(self, inputs, expected, epochs) -> Tuple[tuple[int, Float], ...]:
@@ -46,11 +58,13 @@ class SimplePerceptron(Perceptron[Float]):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
         results = []
+        # Error of the previous epoch, for the learning rate functions that adapt to it
+        previous_error = np.float64(np.inf)
         for epoch in trange(epochs):
             # Outputs obtained while training, stored in dataset order to compute the epoch error
             outputs = np.empty_like(expected)
 
-            order = np.random.permutation(len(inputs))
+            order = self.random.permutation(len(inputs))
             for start in range(0, len(inputs), self.batch_size):
                 batch = order[start:start + self.batch_size]
 
@@ -58,16 +72,19 @@ class SimplePerceptron(Perceptron[Float]):
 
                 output = self.neuron.activate(h_u)
 
-                delta = self.learning_rate * (expected[batch] - output) * self.neuron.derivate(h_u)
+                # ∂E/∂h = -(ζ - O) f'(h): the learning rate functions expect the real gradient and are subtracted
+                delta = (output - expected[batch]) * self.neuron.derivate(h_u)
 
                 outputs[batch] = output
 
                 # Averaged over the batch so the effective learning rate does not depend on its size
-                self.bias = self.bias + delta.mean()
-                self.weights = self.weights + (inputs[batch].T @ delta) / len(batch)
+                # The learning rate functions work on arrays: the scalar bias goes through as a 0-d one
+                self.bias = np.float64(self.bias - self.bias_step(np.asarray(delta.mean()), previous_error))
+                self.weights = self.weights - self.weights_step((inputs[batch].T @ delta) / len(batch), previous_error)
 
             error = self.loss_function(outputs, expected)
             results.append((epoch, error))
+            previous_error = error
 
             if not np.isfinite(error):
                 raise FloatingPointError(
@@ -117,9 +134,6 @@ class SimplePerceptron(Perceptron[Float]):
         inputs = np.asarray(inputs, dtype=np.float64)
         if inputs.ndim != 2 or inputs.shape[1] != len(self.weights):
             raise ValueError(f"Inputs must be a (samples, {len(self.weights)}) matrix, got {inputs.shape}.")
-
-        if self.learning_rate <= 0:
-            raise ValueError("The learning rate must be a positive value.")
 
         if self.batch_size < 1:
             raise ValueError("The batch size must be a positive integer.")

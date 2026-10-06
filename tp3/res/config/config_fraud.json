@@ -4,7 +4,11 @@
         "type": "single_layer",
         "activation_function": { "name": "logistic" }
     },
-    "learning_rate": 0.01,
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001,
+        "hyperparameters": { "beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8 }
+    },
     "loss_function": "hse",
     "epochs": 200,
     "batch_size": 32,

@@ -4,7 +4,11 @@
         "type": "single_layer",
         "activation_function": { "name": "step" }
     },
-    "learning_rate": 0.1,
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.01,
+        "hyperparameters": { "beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8 }
+    },
     "loss_function": "hse",
     "epochs": 1000,
     "classification_function": "equals",

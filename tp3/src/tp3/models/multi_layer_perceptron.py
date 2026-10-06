@@ -11,20 +11,22 @@ from tp3.types.epoch_result import EpochResult
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.perceptron_input import PerceptronInputs
 from tp3.types.float import Float
+from tp3.types.learning_rate_function import LearningRateFactory
 
 import numpy.typing as npt
 
 import numpy as np
+from numpy.random import RandomState
 from tp3.types.test_result import TestResult
 from tqdm import trange
 
-# Backpropagation with mini-batch gradient descent
+# Backpropagation with mini-batch gradient descent (update rule given by the learning rate function)
 # @link https://en.wikipedia.org/wiki/Stochastic_gradient_descent#Iterative_method
 @dataclass
 class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
     neurons: List[Tuple[Neuron, ...]]
 
-    learning_rate: Float
+    learning_rate: LearningRateFactory
 
     loss_function: LossFunction
     derivative_loss_function: DerivativeLossFunction
@@ -34,9 +36,13 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
     # Samples per weight update: 1 = online, len(inputs) = batch
     batch_size: int = 1
 
-    layers: List[Layer] = field(init=False, repr=False, hash=False)
+    # Training stops once the epoch loss is below epsilon
+    epsilon: Float = np.float64(1e-6)
 
-    epsilon = np.float64(1e-6)
+    # Source of every random draw (weights and shuffling), seeded from the config for reproducibility
+    random: RandomState = field(default_factory=RandomState, repr=False, hash=False)
+
+    layers: List[Layer] = field(init=False, repr=False, hash=False)
 
     def __post_init__(self):
         super().__init__()
@@ -44,7 +50,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
         self.layers = []
         prev_size = self.input_size
         for l in self.neurons:
-            self.layers.append(Layer(prev_size, l))
+            self.layers.append(Layer(prev_size, l, self.learning_rate, self.random))
             prev_size = len(l)
 
     @override
@@ -56,11 +62,13 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
         results: List[EpochResult] = []
+        # Error of the previous epoch, for the learning rate functions that adapt to it
+        previous_loss = np.float64(np.inf)
         for epoch in trange(epochs):
             # Predictions made while training, stored in dataset order to compute the epoch loss
             predictions = np.empty_like(expected)
 
-            order = np.random.permutation(len(inputs))
+            order = self.random.permutation(len(inputs))
             for start in range(0, len(inputs), self.batch_size):
                 batch = order[start:start + self.batch_size]
                 expect = expected[batch]
@@ -86,10 +94,11 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
                 deltas.reverse()
 
                 for layer, data, delta in zip(self.layers, outputs, deltas):
-                    layer.update(self.learning_rate, data, delta)
+                    layer.update(data, delta, previous_loss)
 
             loss = self.loss_function(predictions, expected)
             results.append((epoch, loss))
+            previous_loss = loss
 
             if not np.isfinite(loss):
                 raise FloatingPointError(
@@ -140,9 +149,6 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
         inputs = np.asarray(inputs, dtype=np.float64)
         if inputs.ndim != 2 or inputs.shape[1] != self.input_size:
             raise ValueError(f"Inputs must be a (samples, {self.input_size}) matrix, got {inputs.shape}.")
-
-        if self.learning_rate <= 0:
-            raise ValueError("The learning rate must be a positive value.")
 
         if self.batch_size < 1:
             raise ValueError("The batch size must be a positive integer.")

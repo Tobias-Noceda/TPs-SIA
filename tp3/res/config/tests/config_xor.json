@@ -12,7 +12,11 @@
             ]
         ]
     },
-    "learning_rate": 0.05,
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.01,
+        "hyperparameters": { "beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8 }
+    },
     "loss_function": "hse",
     "epochs": 10000,
     "classification_function": "sign",
