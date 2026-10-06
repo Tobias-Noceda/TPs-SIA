@@ -69,9 +69,10 @@
             ]
         ]
     },
-    "learning_rate": 0.1,
+    "learning_rate": 0.01,
     "loss_function": "hse",
     "epochs": 1000,
+    "batch_size": 1000,
     "classification_function": "digits",
     "datasets": {
         "train": "res/datasets/digits.csv",
