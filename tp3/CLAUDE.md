@@ -93,6 +93,18 @@ uv run tp3 --config res/config/config_fraud.json            # ej. 1, simple log�
 
 Sin ventana de matplotlib: `MPLBACKEND=Agg uv run tp3 ...`.
 
+Estudio del ej. 1 parte A (lineal vs. logística, barrido de η × semillas sobre todo el dataset):
+
+```bash
+./run1.sh [épocas=1000] [semillas=5] [batch_size=32]   # ~20 s con 16 cores
+```
+
+Experimentos (`experiments/ej1_learning.py`, entrypoint `ej1-learning`) guardan corridas crudas en
+`res/output/ej1_learning/runs/*.npz` + `reference.npz` (target, `flagged_fraud`, PCA). El análisis
+(`analysis/ej1_learning.py`, `ej1-learning-analysis`) arma `summary.csv` y `plots/`: `loss_curves`,
+`best_comparison`, `pc1_curves`, `distributions`, `pred_vs_target`.
+Configs base en `res/config/ej1/{linear,logistic}.json` (HSE, normalizado).
+
 ## Configuración
 
 JSON validado contra `res/config/config.schema.json` (`config.py:load_config`, jsonschema
@@ -183,6 +195,9 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
   - `config_fraud.json`: logística, η = 0.01, `batch_size` 32, 200 épocas, `normalize: true`,
     train y test = dataset completo (parte A). Sin normalizar, la logística satura y predice 1.0
     para todo. HSE final ≈ 40.8 (MSE ≈ 0.011 vs. BigModel); lineal queda en MSE ≈ 0.026.
+  - Parte A (`run1.sh`, 1000 épocas, batch 32): lineal MSE ≈ 0.0261 / HSE ≈ 97.7 (R² 0.715, ~6% de salidas
+    fuera de [0, 1]); logística MSE ≈ 0.0109 / HSE ≈ 40.8 (R² 0.881). Ambas se aplanan independientemente de η
+    (saturación de capacidad) muy por encima de 0 (underfitting, mayor en la lineal).
   - `config_multi.json` apunta a datasets inexistentes (y es MLP, pero el ej. 1 pide solo
     perceptrón simple).
   - Falta partición train/test (holdout / k-fold), métricas (MSE/MAE vs. BigModel; con
