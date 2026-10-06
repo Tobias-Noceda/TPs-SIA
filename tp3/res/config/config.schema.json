@@ -134,7 +134,7 @@
                 "name": {
                     "type": "string",
                     "description": "The optimizer to use",
-                    "enum": ["gradient_descent", "momentum", "adam"]
+                    "enum": ["gradient_descent", "momentum", "adam", "adaptive"]
                 },
                 "hyperparameters": {
                     "type": "object",
@@ -162,6 +162,22 @@
                             "type": "number",
                             "description": "adam: added to the denominator to avoid dividing by zero, default 1e-8",
                             "exclusiveMinimum": 0
+                        },
+                        "a": {
+                            "type": "number",
+                            "description": "adaptive (required): additive increase of η after k consecutive epochs with decreasing loss",
+                            "minimum": 0
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "adaptive: fraction of η removed when the loss grows, default 0.5",
+                            "minimum": 0,
+                            "exclusiveMaximum": 1
+                        },
+                        "k": {
+                            "type": "integer",
+                            "description": "adaptive: consecutive epochs with decreasing loss before increasing η, default 3",
+                            "minimum": 1
                         }
                     }
                 }

@@ -123,18 +123,19 @@ conjunto de entrenamiento = fold con mayor F1 de test (desempate: menor MSE de t
 Estudio del ej. 2 (MLP en dígitos):
 
 ```bash
-./run2.sh [estudios...]   # ~4 min con 16 cores (estudios + final + análisis)
+./run2.sh [estudios...]   # ~4 min con 16 cores (estudios + análisis)
 ```
 
 Spec en `res/config/ej2/studies.json`: `base` (784-64-32-10, oculta tanh, salida sigmoide, HSE, Adam η = 1e-3,
 batch 32, 40 épocas, pesos U(−0.5, 0.5)) + `studies` cuyas variantes pisan campos de la base: `optimizer` (η × {GD,
-momentum, Adam}, 5 η por optimizador), `architecture`, `hidden_activation` (ReLU / tanh / logística, 5 semillas).
-`experiments/ej2_digits.py` (`ej2-digits`) cachea los CSV parseados en `data.npz`; cada semilla parte
-`digits.csv` 80/20 **estratificado** (misma partición para todas las variantes con esa semilla) y guarda por
-época pérdida de train y accuracy de train/validación. **El test no se toca en los estudios.**
-`ej2-digits --final` toma la config con mayor accuracy media de validación, la reentrena con todo `digits.csv`
-(5 semillas) y recién ahí evalúa en `digits_test.csv`. `analysis/ej2_digits.py` (`ej2-digits-analysis`):
-`summary.csv` + `plots/`: `lr_optimizer`, `optimizer_curves`, `architecture`, `hidden_activation`, `confusion_test`.
+momentum, Adam, η adaptativo}, 5 η por optimizador), `architecture`, `hidden_activation` (ReLU / tanh / logística, 5 semillas).
+`experiments/ej2_digits.py` (`ej2-digits`) cachea los CSV parseados en `data.npz`. **Cada corrida entrena con todo
+`digits.csv`** (decisión del equipo: sin partición, aunque falten los 8 y haya pocos 5) y, ya entrenada, se evalúa
+en `digits_test.csv`; guarda por época pérdida y accuracy de train y accuracy de test. `analysis/ej2_digits.py`
+(`ej2-digits-analysis`): `summary.csv` + `plots/`: `lr_loss_curves` (pérdida por época de GD sin
+optimizador, una curva por η), `lr_optimizer`, `optimizer_curves`, `architecture`,
+`hidden_activation`, `confusion_test` (de la configuración con mayor accuracy media de test). "Dígito perdido" =
+dígito presente en el entrenamiento con recall de test < 0.1 (el 8 no cuenta).
 
 ## Configuración
 
@@ -150,7 +151,7 @@ Draft 2020-12). Claves:
 | `learning_rate`, `epochs`      | número, entero                                                                                                                                                             |
 | `batch_size`                     | entero ≥ 1, opcional (default `1`): `1` = online, tamaño del train = batch, intermedio = mini-batch                                                                         |
 | `datasets`                       | `train`, `test`, `validation` (CSV) + `columns.input` / `columns.output` / `columns.expected`                                                                     |
-| `optimizer`                      | opcional (MLP), default gradiente descendente: `{ name: gradient_descent\|momentum\|adam, hyperparameters?: { momentum?, beta1?, beta2?, epsilon? } }` |
+| `optimizer`                      | opcional (MLP), default gradiente descendente: `{ name: gradient_descent\|momentum\|adam\|adaptive, hyperparameters?: { momentum?, beta1?, beta2?, epsilon?, a?, b?, k? } }`. `adaptive` = η adaptativo de la teoría (ec. 8.13), requiere `a`; ajusta η al final de cada época vía `Optimizer.end_epoch(loss)` |
 | `datasets.normalize`             | bool, opcional (default `false`): z-score por columna de entrada con media/desvío del **train**, reaplicado a test y validación                                      |
 
 `load_config` reemplaza los nombres por tuplas `(función, derivada)` y `type` por `PerceptronType`.
@@ -168,7 +169,7 @@ src/tp3/
 │   ├── simple_perceptron.py     # SimplePerceptron(Perceptron[Float], Neuron), mini-batch
 │   ├── layer.py                 # Layer: weights (in, out), bias (out,), fowards / delta / update
 │   ├── multi_layer_perceptron.py# MultiLayerPerceptron: lista de Layer, backprop mini-batch
-│   └── optimizers/              # gradient_descent, momentum, adam (uno por Layer)
+│   └── optimizers/              # gradient_descent, momentum, adam, adaptive_learning_rate (uno por Layer)
 ├── functions/
 │   ├── activation/              # step, linear, non_linear/{tanh, logistic, sigmoid, relu} (+ derivadas)
 │   └── loss/                    # half_squared_error, mean_squared_error (+ derivadas vectoriales)
@@ -241,16 +242,18 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
     debe dar bajo en test y mejorar en el ej. 3 con `more_digits.csv`. Techo en test sin predecir 8s = 0.903.
   - **Salida sigmoide + error cuadrático puede perder dígitos**: una salida se satura en ≈0 al principio
     (σ' ≈ 1e-5) y no se recupera. Con pesos U(−0.5, 0.5) pasa con oculta ReLU (activaciones no acotadas → h
-    grande): 4/5 semillas pierden un dígito (val 0.886 ± 0.05); con tanh o logística 0/5 (val ≈ 0.95). Por eso
+    grande): 5/5 semillas pierden un dígito (0, 3 o 5; test 0.755 ± 0.03); con tanh o logística 0/5. Por eso
     la base usa tanh.
-  - Resultados (40 épocas, 3 semillas, val = media): mejor η por optimizador: GD 3 (0.956), momentum 0.3
-    (0.951), Adam 0.003 (0.954). Con η más grande fallan: GD η = 10 (0.09), momentum η = 1 (0.62, inestable).
-    Los tres llegan a ≈0.955: el optimizador cambia la escala de η útil (Adam ~1000× menor que GD) y la
-    velocidad inicial (Adam arranca más rápido), no el techo. Arquitectura: 784-10 0.929, 784-16-10 0.925,
-    784-64-10 0.952, 784-256-10 0.961 (elegida), 784-256-128-10 0.956, 784-64-32-10 y 784-128-64-32-10 0.949.
-    Train ≈ 0.99 desde 64 neuronas (brecha ≈ 0.04 = sobreajuste); más profundidad no ayuda.
-  - Final (784-256-10, tanh, Adam 1e-3, todo `digits.csv`, 5 semillas): test 0.864 ± 0.001; sin contar los 8
-    0.957. Recall del 8 = 0 (34% → 3, 17% → 9, 15% → 5), del 5 = 0.83.
+  - Resultados (todo `digits.csv` → test, 40 épocas, 3 semillas, media): mejor η por optimizador: GD 3 (0.856),
+    momentum 0.3 (0.856), Adam 0.003 (0.855). Con η más grande fallan: GD η = 10 (0.10), momentum η = 1 (0.54).
+    Los tres llegan a ≈0.856: el optimizador cambia la escala de η útil (Adam ~1000× menor que GD) y la
+    estabilidad (GD η = 3 tiene picos de pérdida), no el techo. η adaptativo (a = η₀/10, b = 0.5, k = 3): mejor η₀ = 3 (0.854),
+    η₀ = 10 falla (0.14); no elimina los picos (reacciona al final de la época, cuando el pico ya ocurrió, y el +a
+    vuelve a subir η hasta la zona inestable: η final 2.25 ± 1.31). Arquitectura: 784-10 0.834, 784-16-10 0.822,
+    784-64-10 0.852, 784-256-10 0.863 (mejor), 784-256-128-10 y 784-128-64-32-10 0.859, 784-64-32-10 0.849.
+    Train ≈ 0.99 desde 64 neuronas. Activación: logística 0.857, tanh 0.849.
+  - Mejor (784-256-10, tanh, Adam 1e-3): test 0.863 ± 0.000; sin contar los 8 0.957 (techo 0.903). Recall del 8
+    = 0 (≈1/3 → 3), del 5 = 0.84; el resto ≥ 0.94.
   - Parsear `digits.csv` tarda ~8 s (`ast.literal_eval` por fila); por eso el experimento cachea.
 - **Transversal**:
   - `main` imprime la pérdida como "accuracy" y no evalúa validación.

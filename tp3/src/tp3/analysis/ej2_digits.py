@@ -1,16 +1,15 @@
 """
 Ej. 2 — análisis de las corridas guardadas por `tp3.experiments.ej2_digits`.
 
-Genera en `<out>/plots/`:
-- lr_optimizer.png     accuracy de validación final según η, una curva por optimizador.
-- optimizer_curves.png pérdida de train y accuracy de validación por época, cada optimizador con su mejor η.
-- architecture.png     accuracy de train vs. validación por arquitectura (capacidad y sobreajuste).
-- hidden_activation.png accuracy de validación por semilla según la activación oculta, marcando el
-                       dígito que la red dejó de predecir.
-- confusion_test.png   matriz de confusión en digits_test.csv del modelo final (normalizada por fila).
-y `<out>/summary.csv` con la accuracy de validación por configuración.
-
-El modelo se elige SOLO por validación (particiones de digits.csv); el test se reporta al final.
+Cada corrida entrenó con todo digits.csv y se evaluó en digits_test.csv. Genera en `<out>/plots/`:
+- lr_loss_curves.png    pérdida de train por época sin optimizador (gradiente descendente), una curva por η.
+- lr_optimizer.png      accuracy de test final según η, una curva por optimizador.
+- optimizer_curves.png  pérdida de train y accuracy de test por época, cada optimizador con su mejor η.
+- architecture.png      accuracy de train vs. test por arquitectura (capacidad y sobreajuste).
+- hidden_activation.png accuracy de test por semilla según la activación oculta, marcando las semillas
+                        que dejaron de predecir algún dígito que sí estaba en el entrenamiento.
+- confusion_test.png    matriz de confusión en test de la mejor configuración (normalizada por fila).
+y `<out>/summary.csv` con las accuracies por configuración.
 """
 
 import argparse
@@ -28,15 +27,19 @@ parser = argparse.ArgumentParser(description="Ej2: análisis del estudio de díg
 parser.add_argument("-o", "--out", type=Path, default=Path("res/output/ej2_digits"), help="Directorio de resultados")
 
 CLASSES = 10
-# A digit with a validation recall below this is considered lost (the network never predicts it)
+# A digit with a test recall below this is considered lost (the network never predicts it)
 LOST_RECALL = 0.1
-# A variant whose mean validation accuracy is below this failed (did not learn or was unstable) in some seed
-FAILED_ACCURACY = 0.9
+# A variant whose mean test accuracy is below this failed (did not learn or was unstable) in some seed
+FAILED_ACCURACY = 0.7
 
 # Categorical palette (fixed order) and sequential ramp for the confusion matrix
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#9b4dca"]
 MUTED = "#8a8984"
-OPTIMIZERS = {"gradient_descent": "gradiente descendente", "momentum": "momentum (α = 0.9)", "adam": "Adam"}
+OPTIMIZERS = {
+    "gradient_descent": "gradiente descendente", "momentum": "momentum (α = 0.9)", "adam": "Adam",
+    "adaptive": "η adaptativo (a = η₀/10, b = 0.5, k = 3)",
+}
+SHORT = {"gradient_descent": "GD", "momentum": "momentum", "adam": "Adam", "adaptive": "η adaptativo"}
 
 
 @dataclass(frozen=True)
@@ -49,8 +52,8 @@ class Run:
     labels: npt.NDArray[np.int64]
 
     @property
-    def final_validation(self) -> float:
-        return 0.0 if self.diverged else float(self.history["validation_accuracy"][-1])
+    def final_test(self) -> float:
+        return 0.0 if self.diverged else float(self.history["test_accuracy"][-1])
 
 
 def load_runs(out: Path) -> dict[str, list[Run]]:
@@ -58,8 +61,8 @@ def load_runs(out: Path) -> dict[str, list[Run]]:
     for path in sorted((out / "runs").glob("*.npz")):
         data = np.load(path)
         meta = json.loads(str(data["meta"]))
-        history = {k: data[k] for k in ("train_loss", "train_accuracy", "validation_accuracy")}
-        runs[meta["config_id"]].append(Run(meta["config"], meta["seed"], meta["diverged"], history, data["validation_predictions"], data["validation_labels"]))
+        history = {k: data[k] for k in ("train_loss", "learning_rate", "train_accuracy", "test_accuracy")}
+        runs[meta["config_id"]].append(Run(meta["config"], meta["seed"], meta["diverged"], history, data["test_predictions"], data["test_labels"]))
     if not runs:
         raise SystemExit(f"No hay corridas en {out / 'runs'}; correr primero tp3.experiments.ej2_digits")
     return runs
@@ -68,6 +71,11 @@ def load_runs(out: Path) -> dict[str, list[Run]]:
 def recall_per_class(labels: npt.NDArray[np.int64], predictions: npt.NDArray[np.int64]) -> npt.NDArray[np.float64]:
     """Fraction of each digit's samples predicted as that digit (NaN for digits absent from labels)."""
     return np.array([np.mean(predictions[labels == d] == d) if np.any(labels == d) else np.nan for d in range(CLASSES)])
+
+
+def lost_digits(run: Run, trained: npt.NDArray[np.bool_]) -> npt.NDArray[np.int64]:
+    """Digits seen in training that the network never predicts in test (an output saturated at 0)."""
+    return np.flatnonzero((recall_per_class(run.labels, run.predictions) < LOST_RECALL) & trained)
 
 
 def mean_std(values: list[float]) -> str:
@@ -79,73 +87,110 @@ def summary_table(runs: dict[str, list[Run]], studies: dict) -> pd.DataFrame:
     for name, study in studies.items():
         for variant in study["variants"]:
             group = runs[variant["config_id"]]
-            accuracies = [r.final_validation for r in group]
+            accuracies = [r.final_test for r in group]
             train = [r.history["train_accuracy"][-1] for r in group if not r.diverged]
             rows.append({
                 "study": name, "variant": variant["label"], "config_id": variant["config_id"],
                 "optimizer": group[0].config["optimizer"]["name"], "learning_rate": group[0].config["learning_rate"],
                 "seeds": len(group), "diverged": sum(r.diverged for r in group),
                 "train_accuracy": np.mean(train) if train else np.nan,
-                "validation_accuracy": np.mean(accuracies), "validation_std": np.std(accuracies),
+                "test_accuracy": np.mean(accuracies), "test_std": np.std(accuracies),
             })
     return pd.DataFrame(rows)
 
 
-def plot_lr_optimizer(table: pd.DataFrame, plots: Path) -> dict[str, str]:
-    """Final validation accuracy vs. η per optimizer. Returns the config of the best η per optimizer."""
+def hidden_description(config: dict) -> str:
+    """Network and activations of a configuration, e.g. '784-64-32-10, ocultas tanh'."""
+    sizes = "-".join(map(str, [784, *config["hidden"], CLASSES]))
+    return f"{sizes}, ocultas {config['hidden_activation']}" if config["hidden"] else sizes
+
+
+def plot_lr_loss_curves(table: pd.DataFrame, runs: dict[str, list[Run]], plots: Path) -> None:
+    """Training loss per epoch without optimizer (plain gradient descent), one curve per η."""
+    rows = table[(table["study"] == "optimizer") & (table["optimizer"] == "gradient_descent")].sort_values("learning_rate")
+    colors = plt.get_cmap("viridis")(np.linspace(0, 0.9, len(rows)))
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for color, (_, row) in zip(colors, rows.iterrows()):
+        group = runs[row["config_id"]]
+        values = np.array([r.history["train_loss"] for r in group])
+        epochs = np.arange(1, values.shape[1] + 1)
+        failed = " (falla)" if row["test_accuracy"] < FAILED_ACCURACY else ""
+        ax.plot(epochs, np.nanmean(values, axis=0), color=color, linewidth=2, label=f"η = {row['learning_rate']:g}{failed}")
+        ax.fill_between(epochs, np.nanmin(values, axis=0), np.nanmax(values, axis=0), color=color, alpha=0.15, linewidth=0)
+    ax.set_yscale("log")
+    ax.set_xlabel("época")
+    ax.set_ylabel("error cuadrático ½Σ (train)")
+    ax.set_title(f"Sin optimizador (gradiente descendente), {hidden_description(group[0].config)}\n(media; banda = mín.–máx. entre semillas)")
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", fontsize=9)
+    fig.tight_layout()
+    fig.savefig(plots / "lr_loss_curves.png", dpi=150)
+    plt.close(fig)
+
+
+def plot_lr_optimizer(table: pd.DataFrame, ceiling: float, plots: Path) -> dict[str, str]:
+    """Final test accuracy vs. η per optimizer. Returns the config of the best η per optimizer."""
     study = table[table["study"] == "optimizer"]
     best: dict[str, str] = {}
-    fig, ax = plt.subplots(figsize=(7, 4.5))
+    fig, ax = plt.subplots(figsize=(8, 4.8))
     # Zoom on the useful range: variants where some seed did not learn (diverged or stuck at chance
     # level) are drawn on the bottom edge with their real mean
-    learned = study["validation_accuracy"] >= FAILED_ACCURACY
-    bottom = study.loc[learned, "validation_accuracy"].min() - 0.02
+    learned = study["test_accuracy"] >= FAILED_ACCURACY
+    bottom = study.loc[learned, "test_accuracy"].min() - 0.02
+    # Failed variants that share an η get a single annotation
+    failures: dict[float, list[str]] = defaultdict(list)
     for color, (optimizer, label) in zip(SERIES, OPTIMIZERS.items()):
         rows = study[study["optimizer"] == optimizer].sort_values("learning_rate")
         if rows.empty:
             continue
-        shown = rows["validation_accuracy"].clip(lower=bottom)
+        shown = rows["test_accuracy"].clip(lower=bottom)
         ax.plot(rows["learning_rate"], shown, color=color, marker="o", markersize=6, linewidth=2, label=label)
-        ok = rows["validation_accuracy"] >= FAILED_ACCURACY
-        ax.errorbar(rows["learning_rate"][ok], shown[ok], yerr=rows["validation_std"][ok], color=color, linestyle="none", capsize=3)
+        ok = rows["test_accuracy"] >= FAILED_ACCURACY
+        ax.errorbar(rows["learning_rate"][ok], shown[ok], yerr=rows["test_std"][ok], color=color, linestyle="none", capsize=3)
         for _, row in rows[~ok].iterrows():
-            ax.annotate(f"falla\n(media {row['validation_accuracy']:.2f})", (row["learning_rate"], bottom), textcoords="offset points",
-                        xytext=(0, 8), ha="center", fontsize=8)
-        best[optimizer] = rows.loc[rows["validation_accuracy"].idxmax(), "config_id"]
+            failures[row["learning_rate"]].append(f"{SHORT[optimizer]} {row['test_accuracy']:.2f}")
+        best[optimizer] = rows.loc[rows["test_accuracy"].idxmax(), "config_id"]
+    for lr, lines in failures.items():
+        ax.annotate("falla (media):\n" + "\n".join(lines), (lr, bottom), textcoords="offset points", xytext=(-8, 0),
+                    ha="right", va="bottom", fontsize=8)
     ax.set_xscale("log")
-    ax.set_xlabel("tasa de aprendizaje η")
-    ax.set_ylabel("accuracy de validación (época final)")
-    ax.set_ylim(bottom - 0.005, 1.0)
+    ax.set_xlabel("tasa de aprendizaje η (inicial, para η adaptativo)")
+    ax.set_ylabel("accuracy de test (época final)")
+    ax.axhline(ceiling, color=MUTED, linestyle="--", linewidth=1)
+    ax.annotate(f"techo sin predecir 8s ({ceiling:.3f})", (1, ceiling), xycoords=("axes fraction", "data"), textcoords="offset points",
+                xytext=(-4, 4), ha="right", fontsize=8, color=MUTED)
+    ax.set_ylim(bottom - 0.005, ceiling + 0.015)
     ax.set_title("η × optimizador (media ± desvío entre semillas)")
     ax.grid(alpha=0.3)
-    ax.legend(loc="lower left")
+    ax.legend(loc="upper left", fontsize=9)
     fig.tight_layout()
     fig.savefig(plots / "lr_optimizer.png", dpi=150)
     plt.close(fig)
     return best
 
 
-def plot_optimizer_curves(runs: dict[str, list[Run]], best: dict[str, str], plots: Path) -> None:
+def plot_optimizer_curves(runs: dict[str, list[Run]], best: dict[str, str], ceiling: float, plots: Path) -> None:
     fig, (loss_ax, accuracy_ax) = plt.subplots(1, 2, figsize=(11, 4.2))
     for color, (optimizer, label) in zip(SERIES, OPTIMIZERS.items()):
         if optimizer not in best:
             continue
         group = runs[best[optimizer]]
         lr = group[0].config["learning_rate"]
-        for ax, key in ((loss_ax, "train_loss"), (accuracy_ax, "validation_accuracy")):
+        for ax, key in ((loss_ax, "train_loss"), (accuracy_ax, "test_accuracy")):
             values = np.array([r.history[key] for r in group])
             epochs = np.arange(1, values.shape[1] + 1)
             mean = np.nanmean(values, axis=0)
-            ax.plot(epochs, mean, color=color, linewidth=2, label=f"{label}, η = {lr:g}")
+            ax.plot(epochs, mean, color=color, linewidth=2, label=f"{label}, η{'₀' if optimizer == 'adaptive' else ''} = {lr:g}")
             ax.fill_between(epochs, np.nanmin(values, axis=0), np.nanmax(values, axis=0), color=color, alpha=0.15, linewidth=0)
     loss_ax.set_yscale("log")
     loss_ax.set_ylabel("error cuadrático ½Σ (train)")
-    accuracy_ax.set_ylabel("accuracy de validación")
-    accuracy_ax.set_ylim(0.85, 1.0)
+    accuracy_ax.set_ylabel("accuracy de test")
+    accuracy_ax.axhline(ceiling, color=MUTED, linestyle="--", linewidth=1, label=f"techo sin predecir 8s ({ceiling:.3f})")
+    accuracy_ax.set_ylim(0.75, ceiling + 0.015)
     for ax in (loss_ax, accuracy_ax):
         ax.set_xlabel("época")
         ax.grid(alpha=0.3)
-    accuracy_ax.legend(loc="lower right", fontsize=9)
+    accuracy_ax.legend(loc="lower right", fontsize=8)
     fig.suptitle("Convergencia de cada optimizador con su mejor η (media; banda = mín.–máx. entre semillas)")
     fig.tight_layout()
     fig.savefig(plots / "optimizer_curves.png", dpi=150)
@@ -154,26 +199,24 @@ def plot_optimizer_curves(runs: dict[str, list[Run]], best: dict[str, str], plot
 
 def plot_architecture(table: pd.DataFrame, runs: dict[str, list[Run]], plots: Path) -> None:
     study = table[table["study"] == "architecture"].reset_index(drop=True)
-    labels = []
-    for _, row in study.iterrows():
-        sizes = [784, *runs[row["config_id"]][0].config["hidden"], CLASSES]
-        parameters = sum(a * b + b for a, b in zip(sizes, sizes[1:]))
-        labels.append(f"{row['variant']}\n{parameters / 1000:.0f}k pesos")
+    labels = study["variant"]
     x = np.arange(len(study))
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    ax.vlines(x, study["validation_accuracy"], study["train_accuracy"], color=MUTED, linewidth=1.5, zorder=1)
+    ax.vlines(x, study["test_accuracy"], study["train_accuracy"], color=MUTED, linewidth=1.5, zorder=1)
     ax.scatter(x, study["train_accuracy"], color=SERIES[1], s=50, zorder=2, label="train")
-    ax.errorbar(x, study["validation_accuracy"], yerr=study["validation_std"], fmt="o", color=SERIES[0], markersize=7,
-                capsize=3, zorder=3, label="validación")
+    ax.errorbar(x, study["test_accuracy"], yerr=study["test_std"], fmt="o", color=SERIES[0], markersize=7,
+                capsize=3, zorder=3, label="test")
     for i, row in study.iterrows():
         ax.annotate(f"{row['train_accuracy']:.3f}", (i, row["train_accuracy"]), textcoords="offset points",
                     xytext=(0, 8), ha="center", fontsize=8)
-        ax.annotate(f"{row['validation_accuracy']:.3f}", (i, row["validation_accuracy"]), textcoords="offset points",
+        ax.annotate(f"{row['test_accuracy']:.3f}", (i, row["test_accuracy"]), textcoords="offset points",
                     xytext=(0, -16), ha="center", fontsize=8)
     ax.set_xticks(x, labels, fontsize=8)
-    ax.set_ylim(study["validation_accuracy"].min() - 0.008, 1.008)
+    ax.set_ylim(study["test_accuracy"].min() - 0.015, 1.008)
     ax.set_ylabel("accuracy (época final)")
-    ax.set_title("Arquitectura: train vs. validación (la brecha es el sobreajuste)")
+    config = runs[study.loc[0, "config_id"]][0].config
+    ax.set_title(f"Arquitectura: train vs. test (la brecha es el sobreajuste)\n"
+                 f"capas ocultas {config['hidden_activation']}, salida {config['output_activation']}")
     ax.grid(alpha=0.3, axis="y")
     ax.legend(loc="lower right")
     fig.tight_layout()
@@ -181,14 +224,14 @@ def plot_architecture(table: pd.DataFrame, runs: dict[str, list[Run]], plots: Pa
     plt.close(fig)
 
 
-def plot_hidden_activation(runs: dict[str, list[Run]], studies: dict, plots: Path) -> None:
+def plot_hidden_activation(runs: dict[str, list[Run]], studies: dict, trained: npt.NDArray[np.bool_], plots: Path) -> None:
     variants = studies["hidden_activation"]["variants"]
     fig, ax = plt.subplots(figsize=(7, 4.5))
     rng = np.random.default_rng(0)
     for i, (color, variant) in enumerate(zip(SERIES, variants)):
         group = runs[variant["config_id"]]
-        accuracies = np.array([r.final_validation for r in group])
-        lost = [np.flatnonzero(recall_per_class(r.labels, r.predictions) < LOST_RECALL) for r in group]
+        accuracies = np.array([r.final_test for r in group])
+        lost = [lost_digits(r, trained) for r in group]
         has_lost = np.array([len(l) > 0 for l in lost])
         x = i + rng.uniform(-0.08, 0.08, len(group))
         ax.scatter(x[~has_lost], accuracies[~has_lost], color=color, s=45, zorder=2)
@@ -201,41 +244,37 @@ def plot_hidden_activation(runs: dict[str, list[Run]], studies: dict, plots: Pat
     ax.set_xticks(range(len(variants)), [v["label"] for v in variants])
     ax.set_xlim(-0.6, len(variants) - 0.4)
     # Room at the bottom for the per-variant summary
-    every = [r.final_validation for v in variants for r in runs[v["config_id"]]]
+    every = [r.final_test for v in variants for r in runs[v["config_id"]]]
     ax.set_ylim(min(every) - 0.035, max(every) + 0.008)
-    ax.set_ylabel("accuracy de validación (época final)")
-    ax.set_title("Activación oculta, una semilla por punto\n(hueco = nunca predice algún dígito)")
+    ax.set_ylabel("accuracy de test (época final)")
+    sizes = "-".join(map(str, [784, *runs[variants[0]["config_id"]][0].config["hidden"], CLASSES]))
+    ax.set_title(f"Activación oculta en {sizes}, una semilla por punto\n(hueco = nunca predice algún dígito entrenado)")
     ax.grid(alpha=0.3, axis="y")
     fig.tight_layout()
     fig.savefig(plots / "hidden_activation.png", dpi=150)
     plt.close(fig)
 
 
-def final_report(out: Path, plots: Path) -> None:
-    paths = sorted((out / "final").glob("s*.npz"))
-    if not paths:
-        print("\nSin corridas finales (correr ej2-digits --final).")
-        return
-    with open(out / "final" / "chosen.json") as f:
-        chosen = json.load(f)
-    finals = [np.load(p) for p in paths]
-    labels = finals[0]["test_labels"]
-    accuracies = [float(f["test_accuracy"][-1]) for f in finals]
-    without_eights = [float(np.mean(f["test_predictions"][labels != 8] == labels[labels != 8])) for f in finals]
-    recalls = np.array([recall_per_class(labels, f["test_predictions"]) for f in finals])
+def best_report(runs: dict[str, list[Run]], table: pd.DataFrame, plots: Path) -> None:
+    """Per-digit recall and confusion matrix of the configuration with the highest mean test accuracy."""
+    best = table.loc[table["test_accuracy"].idxmax()]
+    group = runs[best["config_id"]]
+    labels = group[0].labels
+    accuracies = [r.final_test for r in group]
+    without_eights = [float(np.mean(r.predictions[labels != 8] == labels[labels != 8])) for r in group]
+    recalls = np.array([recall_per_class(labels, r.predictions) for r in group])
 
-    print("\n== Modelo final (reentrenado con todo digits.csv) ==")
-    print(json.dumps(chosen["config"], ensure_ascii=False))
-    print(f"accuracy de validación (selección): {chosen['validation_accuracy']:.4f}")
-    print(f"accuracy en test:                   {mean_std(accuracies)}  ({len(finals)} semillas)")
-    print(f"accuracy en test sin los 8:         {mean_std(without_eights)}")
-    print(f"techo en test sin predecir 8s:      {np.mean(labels != 8):.4f}")
+    print("\n== Mejor configuración ==")
+    print(json.dumps(group[0].config, ensure_ascii=False))
+    print(f"accuracy en test:            {mean_std(accuracies)}  ({len(group)} semillas)")
+    print(f"accuracy en test sin los 8:  {mean_std(without_eights)}")
+    print(f"techo en test sin predecir 8s: {np.mean(labels != 8):.4f}")
     print("recall por dígito en test: " + "  ".join(f"{d}: {r:.3f}" for d, r in enumerate(recalls.mean(axis=0))))
 
     # Summed over seeds, normalized per true digit
     matrix = np.zeros((CLASSES, CLASSES))
-    for f in finals:
-        np.add.at(matrix, (labels, f["test_predictions"]), 1)
+    for r in group:
+        np.add.at(matrix, (labels, r.predictions), 1)
     matrix /= matrix.sum(axis=1, keepdims=True)
 
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
@@ -249,7 +288,8 @@ def final_report(out: Path, plots: Path) -> None:
     ax.set_yticks(range(CLASSES))
     ax.set_xlabel("dígito predicho")
     ax.set_ylabel("dígito real")
-    ax.set_title(f"Test: accuracy {np.mean(accuracies):.3f} (fracción por fila, {len(finals)} semillas)")
+    sizes = "-".join(map(str, [784, *group[0].config["hidden"], CLASSES]))
+    ax.set_title(f"Test, {sizes}: accuracy {np.mean(accuracies):.3f}\n(fracción por fila, {len(group)} semillas)")
     fig.colorbar(image, ax=ax, fraction=0.046)
     fig.tight_layout()
     fig.savefig(plots / "confusion_test.png", dpi=150)
@@ -270,26 +310,32 @@ def main() -> None:
     test_counts = np.bincount(data["y_test"].argmax(1), minlength=CLASSES)
     print("muestras por dígito  digits.csv: " + " ".join(map(str, train_counts)))
     print("                digits_test.csv: " + " ".join(map(str, test_counts)))
+    trained = train_counts > 0
 
     table = summary_table(runs, studies)
     table.to_csv(args.out / "summary.csv", index=False)
     pd.set_option("display.width", 200)
     for name, study in table.groupby("study", sort=False):
         print(f"\n== {studies[name]['title']} ==")
-        print(study[["variant", "optimizer", "seeds", "diverged", "train_accuracy", "validation_accuracy", "validation_std"]].to_string(index=False, float_format="%.4f"))
+        print(study[["variant", "optimizer", "seeds", "diverged", "train_accuracy", "test_accuracy", "test_std"]].to_string(index=False, float_format="%.4f"))
 
     if "optimizer" in studies:
-        best = plot_lr_optimizer(table, plots)
-        plot_optimizer_curves(runs, best, plots)
+        ceiling = float(np.mean(data["y_test"].argmax(1) != 8))
+        plot_lr_loss_curves(table, runs, plots)
+        best = plot_lr_optimizer(table, ceiling, plots)
+        if "adaptive" in best:
+            final = [r.history["learning_rate"][-1] for r in runs[best["adaptive"]]]
+            print(f"\nη adaptativo, mejor η₀ = {runs[best['adaptive']][0].config['learning_rate']:g}: η final {mean_std(final)}")
+        plot_optimizer_curves(runs, best, ceiling, plots)
     if "architecture" in studies:
         plot_architecture(table, runs, plots)
     if "hidden_activation" in studies:
-        plot_hidden_activation(runs, studies, plots)
+        plot_hidden_activation(runs, studies, trained, plots)
         for variant in studies["hidden_activation"]["variants"]:
-            lost = sum(np.any(recall_per_class(r.labels, r.predictions) < LOST_RECALL) for r in runs[variant["config_id"]])
+            lost = sum(len(lost_digits(r, trained)) > 0 for r in runs[variant["config_id"]])
             print(f"{variant['label']}: {lost}/{len(runs[variant['config_id']])} semillas pierden un dígito")
 
-    final_report(args.out, plots)
+    best_report(runs, table, plots)
     print(f"\nGráficos en {plots}")
 
 

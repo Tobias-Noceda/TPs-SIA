@@ -95,6 +95,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
             loss = self.loss_function(predictions, expected)
             results.append((epoch, loss))
+            for layer in self.layers:
+                layer.optimizer.end_epoch(loss)
 
             if not np.isfinite(loss):
                 raise FloatingPointError(

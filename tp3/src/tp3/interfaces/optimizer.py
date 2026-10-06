@@ -15,3 +15,10 @@ class Optimizer(ABC):
         Update every parameter IN PLACE with its gradient ∂E/∂param (same shape, same order).
         """
         pass
+
+    def end_epoch(self, loss: Float) -> None:
+        """
+        Called once at the end of every epoch with the training loss. Rules that only look at the
+        gradient ignore it.
+        """
+        pass

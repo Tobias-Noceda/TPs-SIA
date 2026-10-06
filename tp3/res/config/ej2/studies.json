@@ -1,15 +1,13 @@
 {
-    "description": "Ej. 2: variantes del perceptrón multicapa para dígitos. Cada variante pisa algunos campos de 'base'. Se elige la configuración con mayor accuracy media de validación y se reentrena con todo digits.csv para evaluarla en test.",
+    "description": "Ej. 2: variantes del perceptrón multicapa para dígitos. Cada variante pisa algunos campos de 'base'. Cada corrida entrena con todo digits.csv y se evalúa en digits_test.csv.",
     "datasets": {
         "train": "res/datasets/digits.csv",
         "test": "res/datasets/digits_test.csv",
         "input": "image",
         "label": "label",
-        "classes": 10,
-        "validation_fraction": 0.2
+        "classes": 10
     },
     "seeds": 3,
-    "final_seeds": 5,
     "base": {
         "hidden": [
             64,
@@ -148,6 +146,66 @@
                         "name": "adam"
                     },
                     "learning_rate": 0.01
+                },
+                {
+                    "label": "η₀ = 0.1",
+                    "optimizer": {
+                        "name": "adaptive",
+                        "hyperparameters": {
+                            "a": 0.01,
+                            "b": 0.5,
+                            "k": 3
+                        }
+                    },
+                    "learning_rate": 0.1
+                },
+                {
+                    "label": "η₀ = 0.3",
+                    "optimizer": {
+                        "name": "adaptive",
+                        "hyperparameters": {
+                            "a": 0.03,
+                            "b": 0.5,
+                            "k": 3
+                        }
+                    },
+                    "learning_rate": 0.3
+                },
+                {
+                    "label": "η₀ = 1",
+                    "optimizer": {
+                        "name": "adaptive",
+                        "hyperparameters": {
+                            "a": 0.1,
+                            "b": 0.5,
+                            "k": 3
+                        }
+                    },
+                    "learning_rate": 1
+                },
+                {
+                    "label": "η₀ = 3",
+                    "optimizer": {
+                        "name": "adaptive",
+                        "hyperparameters": {
+                            "a": 0.3,
+                            "b": 0.5,
+                            "k": 3
+                        }
+                    },
+                    "learning_rate": 3
+                },
+                {
+                    "label": "η₀ = 10",
+                    "optimizer": {
+                        "name": "adaptive",
+                        "hyperparameters": {
+                            "a": 1.0,
+                            "b": 0.5,
+                            "k": 3
+                        }
+                    },
+                    "learning_rate": 10
                 }
             ]
         },

@@ -5,12 +5,9 @@ Lee la especificación de estudios (`res/config/ej2/studies.json`): una config b
 variantes que pisan algunos campos de la base. Corre cada variante × semilla y guarda los resultados
 crudos en `<out>/runs/*.npz`; el análisis vive en `tp3.analysis.ej2_digits`.
 
-Evaluación:
-- Estudios: solo digits.csv. Cada semilla lo parte 80/20 estratificado por dígito (train /
-  validación) e inicializa la red; las variantes con la misma semilla comparten partición. Se elige
-  la configuración con mayor accuracy media de validación al final del entrenamiento.
-- `--final`: la configuración elegida se reentrena con TODO digits.csv y recién ahí se evalúa en
-  digits_test.csv ("producción"). El test no interviene en ninguna decisión.
+Evaluación: cada corrida entrena con TODO digits.csv (aunque no tenga 8s y tenga pocos 5s) y, una vez
+entrenada, se evalúa en digits_test.csv ("producción"). Por época se guardan la pérdida y la accuracy de
+train y la accuracy de test.
 """
 
 import argparse
@@ -37,22 +34,8 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description="Ej2: estudio de variantes del perceptrón multicapa en dígitos.")
 parser.add_argument("-s", "--studies", type=Path, default=Path("res/config/ej2/studies.json"), help="Especificación de estudios")
 parser.add_argument("--only", nargs="+", default=None, help="Correr solo estos estudios")
-parser.add_argument("--final", action="store_true", help="Reentrenar la mejor configuración con todo digits.csv y evaluar en test")
 parser.add_argument("-o", "--out", type=Path, default=Path("res/output/ej2_digits"), help="Directorio de salida")
 parser.add_argument("-j", "--jobs", type=int, default=os.cpu_count(), help="Procesos en paralelo")
-
-
-def stratified_holdout(labels: npt.NDArray[np.int64], fraction: float, seed: int) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]:
-    """Train / validation indices keeping each digit's proportion in both parts."""
-    # @link https://en.wikipedia.org/wiki/Training,_validation,_and_test_data_sets#Holdout_method
-    rng = np.random.default_rng(seed)
-    validation = []
-    for label in np.unique(labels):
-        indices = rng.permutation(np.flatnonzero(labels == label))
-        validation.append(indices[:round(len(indices) * fraction)])
-    validation_idx = np.sort(np.concatenate(validation))
-    train_idx = np.setdiff1d(np.arange(len(labels)), validation_idx)
-    return train_idx, validation_idx
 
 
 def load_data(spec: dict, out: Path) -> Path:
@@ -115,7 +98,7 @@ def _train(config: dict, seed: int, X_train, y_train, evaluation: dict[str, tupl
     loss_function, _ = LossFunctions(config["loss_function"]).functions()
 
     epochs = config["epochs"]
-    history = {"train_loss": np.full(epochs, np.nan)} | {f"{name}_accuracy": np.full(epochs, np.nan) for name in evaluation}
+    history = {"train_loss": np.full(epochs, np.nan), "learning_rate": np.full(epochs, np.nan)} | {f"{name}_accuracy": np.full(epochs, np.nan) for name in evaluation}
     diverged = False
     for epoch in range(epochs):
         try:
@@ -125,6 +108,8 @@ def _train(config: dict, seed: int, X_train, y_train, evaluation: dict[str, tupl
             break
         # Loss of the weights at the end of the epoch (train() reports the one seen while updating)
         history["train_loss"][epoch] = loss_function(perceptron.predict(X_train), y_train)
+        # η used during the epoch (only the adaptive optimizer changes it)
+        history["learning_rate"][epoch] = getattr(perceptron.layers[0].optimizer, "learning_rate", config["learning_rate"])
         for name, (X, y) in evaluation.items():
             history[f"{name}_accuracy"][epoch] = accuracy(perceptron.predict(X), y)
 
@@ -132,35 +117,12 @@ def _train(config: dict, seed: int, X_train, y_train, evaluation: dict[str, tupl
     return history | predictions | {"diverged": diverged}
 
 
-def _run_study(config_id: str, config: dict, seed: int, data_path: Path, out: Path, validation_fraction: float) -> None:
+def _run(config_id: str, config: dict, seed: int, data_path: Path, out: Path) -> None:
     data = np.load(data_path)
     X, y = data["X"], data["y"]
-    train_idx, validation_idx = stratified_holdout(y.argmax(1), validation_fraction, seed)
-    result = _train(config, seed, X[train_idx], y[train_idx], {"train": (X[train_idx], y[train_idx]), "validation": (X[validation_idx], y[validation_idx])})
+    result = _train(config, seed, X, y, {"train": (X, y), "test": (data["X_test"], data["y_test"])})
     meta = {"config_id": config_id, "config": config, "seed": seed, "diverged": result.pop("diverged")}
-    np.savez_compressed(out / "runs" / f"{config_id}_s{seed}.npz", **result, validation_labels=y[validation_idx].argmax(1), meta=json.dumps(meta))
-
-
-def _run_final(config: dict, seed: int, data_path: Path, out: Path) -> None:
-    data = np.load(data_path)
-    result = _train(config, seed, data["X"], data["y"], {"test": (data["X_test"], data["y_test"])})
-    meta = {"config": config, "seed": seed, "diverged": result.pop("diverged")}
-    np.savez_compressed(out / "final" / f"s{seed}.npz", **result, test_labels=data["y_test"].argmax(1), meta=json.dumps(meta))
-
-
-def best_config(out: Path) -> tuple[str, dict, float]:
-    """The configuration with the highest mean final validation accuracy among the study runs."""
-    scores: dict[str, list[float]] = {}
-    configs: dict[str, dict] = {}
-    for path in (out / "runs").glob("*.npz"):
-        data = np.load(path)
-        meta = json.loads(str(data["meta"]))
-        scores.setdefault(meta["config_id"], []).append(0.0 if meta["diverged"] else float(data["validation_accuracy"][-1]))
-        configs[meta["config_id"]] = meta["config"]
-    if not scores:
-        raise SystemExit(f"No hay corridas en {out / 'runs'}; correr primero los estudios")
-    best = max(scores, key=lambda c: np.mean(scores[c]))
-    return best, configs[best], float(np.mean(scores[best]))
+    np.savez_compressed(out / "runs" / f"{config_id}_s{seed}.npz", **result, test_labels=data["y_test"].argmax(1), meta=json.dumps(meta))
 
 
 def _parallel(tasks: list[tuple], jobs: int, description: str) -> None:
@@ -186,16 +148,6 @@ def main() -> None:
     print("Cargando datasets...")
     data_path = load_data(spec, args.out)
 
-    if args.final:
-        chosen_id, config, validation = best_config(args.out)
-        print(f"Mejor configuración por validación: {chosen_id} (accuracy {validation:.4f})")
-        (args.out / "final").mkdir(exist_ok=True)
-        seeds = spec["final_seeds"]
-        _parallel([(_run_final, config, seed, data_path, args.out) for seed in range(seeds)], args.jobs, "final")
-        with open(args.out / "final" / "chosen.json", "w") as f:
-            json.dump({"config_id": chosen_id, "config": config, "validation_accuracy": validation}, f, indent=2, ensure_ascii=False)
-        return
-
     (args.out / "runs").mkdir(exist_ok=True)
     configs, studies = resolve_studies(spec, args.only)
     with open(args.out / "studies.json", "w") as f:
@@ -210,8 +162,7 @@ def main() -> None:
     # Biggest networks first so they don't end up alone at the tail
     jobs.sort(key=lambda job: -sum(configs[job[0]]["hidden"]))
 
-    fraction = spec["datasets"]["validation_fraction"]
-    _parallel([(_run_study, cid, configs[cid], seed, data_path, args.out, fraction) for cid, seed in jobs], args.jobs, "corridas")
+    _parallel([(_run, cid, configs[cid], seed, data_path, args.out) for cid, seed in jobs], args.jobs, "corridas")
     print(f"{len(jobs)} corridas ({len(configs)} configuraciones) guardadas en {args.out / 'runs'}")
 
 
