@@ -20,6 +20,7 @@ from tp3.functions.accuracy import accuracy, f1_score, precision, recall
 from tp3.functions.classification.fraud import fraud_classification
 from tp3.functions.loss.mean_squared_error import mean_squared_error
 from tp3.functions.normalization.z_score import fit_z_score, z_score
+from tp3.models.neuron import Neuron
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.parsers.dataset_parser import parse_dataset
 from tp3.types.float import Float
@@ -85,7 +86,7 @@ def _run(config_path: str, seed: int, fold: int, k: int, lr: float | None, epoch
     y_train, y_test = y[train_mask], y[test_idx]
 
     np.random.seed(seed * k + fold)  # weights and the per-epoch shuffle both draw from the global generator
-    perceptron = SimplePerceptron(activation, derivative, np.float64(lr), loss_function, X.shape[1], batch_size)
+    perceptron = SimplePerceptron(Neuron(activation, derivative), np.float64(lr), loss_function, X.shape[1], batch_size)
 
     # One epoch per call so both sets can be evaluated with the weights at the end of every epoch.
     # MSE (a mean) instead of the config's HSE (a sum): train has k-1 times more samples than test.

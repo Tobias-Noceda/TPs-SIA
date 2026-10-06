@@ -64,7 +64,7 @@ def load_runs(out: Path) -> list[Run]:
 
 def metrics_at(threshold: float, predictions: npt.NDArray[np.float64], flagged: npt.NDArray[np.float64]) -> dict[str, float]:
     result = confusion_matrix(fraud_classification(tuple(predictions), tuple(flagged), threshold))
-    return {name: metric(result) for name, metric in METRICS.items()}
+    return {name: metric(result) for name, metric in METRICS.items()} # pyright: ignore[reportArgumentType]
 
 
 def summarize(runs: list[Run]) -> pd.DataFrame:

@@ -207,9 +207,9 @@ def plot_distributions(best, target, plots: Path) -> None:
     fig, ax = plt.subplots(figsize=(7, 4.5))
     predictions = [median_run(r).predictions for r in best.values()]
     bins = np.linspace(min(-0.3, *(p.min() for p in predictions)), max(1.3, *(p.max() for p in predictions)), 60)
-    ax.hist(target, bins=bins, alpha=0.4, color="gray", label="BigModel (target)")
+    ax.hist(target, bins=list(bins), alpha=0.4, color="gray", label="BigModel (target)")
     for model, p in zip(best, predictions):
-        ax.hist(p, bins=bins, histtype="step", lw=2, label=model)
+        ax.hist(p, bins=list(bins), histtype="step", lw=2, label=model)
     ax.axvline(0, color="red", lw=0.8)
     ax.axvline(1, color="red", lw=0.8)
     ax.set_xlabel("probabilidad de fraude")

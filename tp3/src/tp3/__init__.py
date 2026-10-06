@@ -56,6 +56,8 @@ def main() -> None:
 
     # Statistics come from the training set only, then are reused for test and validation
     normalize = datasets.get("normalize", False)
+    mean = np.empty(0)
+    std = np.empty(0)
     if normalize:
         mean, std = fit_z_score(train_inputs)
         train_inputs = z_score(train_inputs, mean, std)

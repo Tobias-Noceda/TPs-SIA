@@ -16,6 +16,7 @@ from pathlib import Path
 
 from tp3.config import load_config
 from tp3.functions.normalization.z_score import fit_z_score, z_score
+from tp3.models.neuron import Neuron
 from tp3.models.simple_perceptron import SimplePerceptron
 from tp3.parsers.dataset_parser import parse_dataset
 from tp3.types.config.config import PerceptronConfig
@@ -64,7 +65,7 @@ def _run(config_path: str, lr: float, seed: int, epochs: int | None, batch_size:
     loss_function, _ = config["loss_function"]
 
     np.random.seed(seed)  # weights and the per-epoch shuffle both draw from the global generator
-    perceptron = SimplePerceptron(activation, derivative, np.float64(lr), loss_function, X.shape[1], batch_size)
+    perceptron = SimplePerceptron(Neuron(activation, derivative), np.float64(lr), loss_function, X.shape[1], batch_size)
 
     start = time.perf_counter()
     try:
