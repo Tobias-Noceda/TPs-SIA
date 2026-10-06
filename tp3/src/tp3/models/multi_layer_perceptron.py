@@ -12,9 +12,9 @@ from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.perceptron_input import PerceptronInput
 from tp3.types.float import Float
 
+import numpy as np
 import numpy.typing as npt
 
-import numpy as np
 from tp3.types.test_result import TestResult
 from tqdm import trange
 

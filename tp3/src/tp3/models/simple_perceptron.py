@@ -120,4 +120,3 @@ class SimplePerceptron(Perceptron[Float], Neuron):
 
         if self.learning_rate <= 0:
             raise ValueError("The learning rate must be a positive value.")
-

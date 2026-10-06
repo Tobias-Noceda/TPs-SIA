@@ -1,4 +1,5 @@
 import argparse
+import json
 
 from matplotlib.pylab import MT19937, RandomState, SeedSequence
 from tp3.config import load_config
@@ -13,11 +14,11 @@ from tp3.parsers.dataset_parser import parse_dataset
 import numpy as np
 import matplotlib.pyplot as plt
 from tp3.types.config.perceptron import PerceptronType
-from tp3.types.float import Float
 
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
 
 parser.add_argument("-c", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
+parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output file for results (optional)")
 
 def main() -> None:
     args = parser.parse_args()
@@ -32,7 +33,6 @@ def main() -> None:
 
     seed = SeedSequence(data.get("seed", None))
     random = RandomState(MT19937(seed))
-    print(f"Used seed: {seed.entropy}")
     
     epsilon = data["epsilon"] if "epsilon" in data and data["epsilon"] is not None else np.float64(1e-6)
 
@@ -137,6 +137,14 @@ def main() -> None:
     plt.ylabel("Error")
     plt.title("Perceptron training error")
     plt.show()
+
+    if args.output:
+        with open(args.output, "w") as f:
+            output_data = {
+                "training_results": [{"epoch": int(epoch), "error": float(error)} for epoch, error in result],
+                "seed": seed.entropy,
+            }
+            json.dump(output_data, f)
 
     # validation_inputs, _ = parse_dataset(
     #     datasets["validation"],
