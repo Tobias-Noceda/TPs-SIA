@@ -13,7 +13,6 @@ from tp3.functions.normalization.z_score import fit_z_score, z_score
 import numpy as np
 import matplotlib.pyplot as plt
 from tp3.types.config.perceptron import PerceptronType
-from tp3.types.float import Float
 
 parser = argparse.ArgumentParser(description="Perceptron implementation.")
 
@@ -71,7 +70,7 @@ def main() -> None:
         activation_function, derivative_function = activation
         loss_function = loss_functions[0]
 
-        perceptron = SimplePerceptron(activation_function, derivative_function, learning_rate, loss_function, train_inputs.shape[1], batch_size)
+        perceptron = SimplePerceptron(Neuron(activation_function, derivative_function), learning_rate, loss_function, train_inputs.shape[1], batch_size)
 
         result = perceptron.train(train_inputs, train_expected[:, 0], epochs)
         print("Training complete. Final weights:", perceptron.weights)

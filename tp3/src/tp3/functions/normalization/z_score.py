@@ -2,7 +2,6 @@ from typing import Tuple
 
 from tp3.types.float import Float
 
-import numpy as np
 import numpy.typing as npt
 
 # Standardization (z-score) per feature

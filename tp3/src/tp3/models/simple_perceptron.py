@@ -17,7 +17,8 @@ from tqdm import trange
 # Delta rule with mini-batch gradient descent
 # @link https://en.wikipedia.org/wiki/Delta_rule
 @dataclass
-class SimplePerceptron(Perceptron[Float], Neuron):
+class SimplePerceptron(Perceptron[Float]):
+    neuron: Neuron
 
     learning_rate: Float
     loss_function: LossFunction
@@ -55,9 +56,9 @@ class SimplePerceptron(Perceptron[Float], Neuron):
 
                 h_u = inputs[batch] @ self.weights + self.bias
 
-                output = self.activate(h_u)
+                output = self.neuron.activate(h_u)
 
-                delta = self.learning_rate * (expected[batch] - output) * self.derivate(h_u)
+                delta = self.learning_rate * (expected[batch] - output) * self.neuron.derivate(h_u)
 
                 outputs[batch] = output
 
@@ -110,7 +111,7 @@ class SimplePerceptron(Perceptron[Float], Neuron):
     def predict(self, inputs) -> npt.NDArray[Float]:
         inputs = self.__validate_parameters(inputs)
 
-        return self.activate(inputs @ self.weights + self.bias)
+        return self.neuron.activate(inputs @ self.weights + self.bias)
 
     def __validate_parameters(self, inputs: PerceptronInputs) -> PerceptronInputs:
         inputs = np.asarray(inputs, dtype=np.float64)

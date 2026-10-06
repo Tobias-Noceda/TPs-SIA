@@ -1,8 +1,9 @@
 from tp3.types.float import Float
 
 import numpy as np
+import numpy.typing as npt
 
-def linear_function(x: Float) -> Float:
+def linear_function(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the linear (identity) activation function of x.
 
@@ -14,7 +15,7 @@ def linear_function(x: Float) -> Float:
     """
     return x
 
-def linear_function_derivative(x: Float) -> Float:
+def linear_function_derivative(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the derivative of the linear (identity) activation function of x.
 

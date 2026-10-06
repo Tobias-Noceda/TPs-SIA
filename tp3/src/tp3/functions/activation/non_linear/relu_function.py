@@ -1,8 +1,9 @@
 from tp3.types.float import Float
 
 import numpy as np
+import numpy.typing as npt
 
-def relu_function(x: Float) -> Float:
+def relu_function(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the ReLU function of x: max(0, x).
 
@@ -14,7 +15,7 @@ def relu_function(x: Float) -> Float:
     """
     return np.maximum(0, x)
 
-def relu_function_derivative(x: Float) -> Float:
+def relu_function_derivative(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the derivative of the ReLU function of x: 1 if x > 0 else 0.
 

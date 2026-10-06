@@ -1,8 +1,9 @@
 from tp3.types.float import Float
 
 import numpy as np
+import numpy.typing as npt
 
-def sigmoid_function(x: Float) -> Float:
+def sigmoid_function(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the Sigmoid function of x: 1 / (1 + exp(-x)).
 
@@ -14,7 +15,7 @@ def sigmoid_function(x: Float) -> Float:
     """
     return 1 / (1 + np.exp(-x))
 
-def sigmoid_function_derivative(x: Float) -> Float:
+def sigmoid_function_derivative(x: npt.NDArray[Float]) -> npt.NDArray[Float]:
     """
     Compute the derivative of the Sigmoid function of x: sigmoid(x) * (1 - sigmoid(x)).
 

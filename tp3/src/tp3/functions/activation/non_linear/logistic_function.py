@@ -1,8 +1,9 @@
 from tp3.types.float import Float
 
 import numpy as np
+import numpy.typing as npt
 
-def logistic_function(x: Float, beta: Float = np.float64(1.0), L: Float = np.float64(1.0)) -> Float:
+def logistic_function(x: npt.NDArray[Float], beta: Float = np.float64(1.0), L: Float = np.float64(1.0)) -> npt.NDArray[Float]:
     """
     Compute the logistic function of x: 1 / (1 + exp(-2*beta*x)).
 
@@ -20,7 +21,7 @@ def logistic_function(x: Float, beta: Float = np.float64(1.0), L: Float = np.flo
     """
     return L / (1 + np.exp(-2 * beta * x))
 
-def logistic_function_derivative(x: Float, beta: Float = np.float64(1.0), L: Float = np.float64(1.0)) -> Float:
+def logistic_function_derivative(x: npt.NDArray[Float], beta: Float = np.float64(1.0), L: Float = np.float64(1.0)) -> npt.NDArray[Float]:
     """
     Compute the derivative of the logistic function of x, with: 2 * beta * logistic(x, beta, L) * (1 - logistic(x, beta, L) / L).
 

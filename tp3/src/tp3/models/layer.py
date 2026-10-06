@@ -25,16 +25,15 @@ class Layer:
         self.weights = np.random.uniform(-0.5, 0.5, size=(self.input_size, len(self.neurons)))
         self.bias = np.random.uniform(-0.5, 0.5, size=len(self.neurons))
 
-        columns: Dict[Tuple[ActivationFunction, DerivativeActivationFunction], List[int]] = {}
-        representatives: Dict[Tuple[ActivationFunction, DerivativeActivationFunction], Neuron] = {}
+        columns: Dict[Neuron, List[int]] = {}
+        representatives: Dict[Neuron, Neuron] = {}
         for i, neuron in enumerate(self.neurons):
-            key = (neuron.activation_function, neuron.derivative_activation_function)
-            columns.setdefault(key, []).append(i)
-            representatives.setdefault(key, neuron)
+            columns.setdefault(neuron, []).append(i)
+            representatives.setdefault(neuron, neuron)
 
         self.groups = [(representatives[key], np.array(cols)) for key, cols in columns.items()]
 
-    def fowards(self, data: npt.NDArray[Float]) -> Tuple[npt.NDArray[Float], npt.NDArray[Float]]:
+    def fowards(self, data: npt.NDArray[Float]):
         """
         Forward a batch through the layer.
 
@@ -68,8 +67,6 @@ class Layer:
         data: npt.NDArray[Float],
         delta: npt.NDArray[Float],
     ):
-        # data.T @ delta = Σ_μ outer(V^μ, δ^μ). Averaged over the batch so the effective
-        # learning rate does not depend on the batch size (batch of 1 = online update)
         batch_size = data.shape[0]
         self.weights -= learning_rate * (data.T @ delta) / batch_size
         self.bias -= learning_rate * delta.mean(axis=0)
