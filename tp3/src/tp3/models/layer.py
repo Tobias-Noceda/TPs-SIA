@@ -4,8 +4,10 @@ from typing import Dict, List, Tuple
 from tp3.interfaces.optimizer import Optimizer
 from tp3.models.neuron import Neuron
 from tp3.models.optimizers.gradient_descent import GradientDescent
+from tp3.functions.initialization.uniform import uniform_initialization
 from tp3.types.activation_function import ActivationFunction, DerivativeActivationFunction
 from tp3.types.float import Float
+from tp3.types.weight_initialization import WeightInitialization
 
 import numpy.typing as npt
 
@@ -16,6 +18,7 @@ class Layer:
     input_size: int
     neurons: Tuple[Neuron, ...]
     optimizer: Optimizer = field(default_factory=GradientDescent)
+    weight_initialization: WeightInitialization = uniform_initialization
 
     bias: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
     weights: npt.NDArray[Float] = field(init=False, repr=False, hash=False)
@@ -25,7 +28,7 @@ class Layer:
     groups: List[Tuple[Neuron, npt.NDArray[np.intp]]] = field(init=False, repr=False, hash=False)
 
     def __post_init__(self) -> None:
-        self.weights = np.random.uniform(-0.5, 0.5, size=(self.input_size, len(self.neurons)))
+        self.weights = self.weight_initialization(self.input_size, len(self.neurons))
         self.bias = np.random.uniform(-0.5, 0.5, size=len(self.neurons))
 
         columns: Dict[Tuple[ActivationFunction, DerivativeActivationFunction], List[int]] = {}

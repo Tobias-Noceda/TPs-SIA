@@ -7,12 +7,14 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.layer import Layer
 from tp3.models.neuron import Neuron
 from tp3.models.optimizers.gradient_descent import GradientDescent
+from tp3.functions.initialization.uniform import uniform_initialization
 
 from tp3.types.classification_option import ClassificationOption
 from tp3.types.epoch_result import EpochResult
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
 from tp3.types.perceptron_input import PerceptronInputs
 from tp3.types.float import Float
+from tp3.types.weight_initialization import WeightInitialization
 
 import numpy.typing as npt
 
@@ -39,6 +41,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
     # Builds one optimizer per layer (stateful optimizers keep per-layer state)
     optimizer: Callable[[], Optimizer] = GradientDescent
 
+    weight_initialization: WeightInitialization = uniform_initialization
+
     layers: List[Layer] = field(init=False, repr=False, hash=False)
 
     epsilon = np.float64(1e-6)
@@ -49,7 +53,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
         self.layers = []
         prev_size = self.input_size
         for l in self.neurons:
-            self.layers.append(Layer(prev_size, l, self.optimizer()))
+            self.layers.append(Layer(prev_size, l, self.optimizer(), self.weight_initialization))
             prev_size = len(l)
 
     @override

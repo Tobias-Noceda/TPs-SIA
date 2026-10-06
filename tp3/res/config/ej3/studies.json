@@ -1,0 +1,171 @@
+{
+    "description": "Ej. 3: 784-256-10 (oculta logística) para llegar a accuracy >= 98% en digits_test.csv usando también more_digits.csv. Cada variante pisa algunos campos de 'base'; 'train' es la lista de CSV de entrenamiento (se concatenan sin imágenes repetidas).",
+    "datasets": {
+        "train": [
+            "res/datasets/digits.csv",
+            "res/datasets/more_digits.csv"
+        ],
+        "test": "res/datasets/digits_test.csv",
+        "input": "image",
+        "label": "label",
+        "classes": 10
+    },
+    "seeds": 3,
+    "base": {
+        "hidden": [
+            256
+        ],
+        "hidden_activation": "logistic",
+        "output_activation": "sigmoid",
+        "loss_function": "hse",
+        "optimizer": {
+            "name": "adam"
+        },
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "epochs": 40,
+        "weight_initialization": "xavier",
+        "augment_shift": 1
+    },
+    "studies": {
+        "dataset": {
+            "title": "Conjunto de entrenamiento (Adam η = 0.001)",
+            "variants": [
+                {
+                    "label": "digits.csv, sin técnicas",
+                    "train": [
+                        "res/datasets/digits.csv"
+                    ],
+                    "weight_initialization": "uniform",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "more_digits.csv, sin técnicas",
+                    "train": [
+                        "res/datasets/more_digits.csv"
+                    ],
+                    "weight_initialization": "uniform",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "unión, sin técnicas",
+                    "weight_initialization": "uniform",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "digits.csv, Xavier + desplazamientos",
+                    "train": [
+                        "res/datasets/digits.csv"
+                    ]
+                },
+                {
+                    "label": "more_digits.csv, Xavier + desplazamientos",
+                    "train": [
+                        "res/datasets/more_digits.csv"
+                    ]
+                },
+                {
+                    "label": "unión, Xavier + desplazamientos"
+                }
+            ]
+        },
+        "optimizer": {
+            "title": "Tasa de aprendizaje × optimizador (Xavier + desplazamientos ±1, unión)",
+            "variants": [
+                {
+                    "label": "η = 0.1",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 0.1
+                },
+                {
+                    "label": "η = 0.3",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 0.3
+                },
+                {
+                    "label": "η = 1",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 1
+                },
+                {
+                    "label": "η = 3",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 3
+                },
+                {
+                    "label": "η = 0.0003",
+                    "learning_rate": 0.0003
+                },
+                {
+                    "label": "η = 0.001",
+                    "learning_rate": 0.001
+                },
+                {
+                    "label": "η = 0.003",
+                    "learning_rate": 0.003
+                }
+            ]
+        },
+        "techniques": {
+            "title": "Técnicas (unión)",
+            "variants": [
+                {
+                    "label": "GD η = 1, ninguna",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 1,
+                    "weight_initialization": "uniform",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "GD η = 1, Xavier",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 1,
+                    "augment_shift": 0
+                },
+                {
+                    "label": "GD η = 1, Xavier + desplaz. ±1",
+                    "optimizer": {
+                        "name": "gradient_descent"
+                    },
+                    "learning_rate": 1
+                },
+                {
+                    "label": "Adam, ninguna",
+                    "weight_initialization": "uniform",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "Adam, Xavier",
+                    "augment_shift": 0
+                },
+                {
+                    "label": "Adam, desplaz. ±1",
+                    "weight_initialization": "uniform"
+                },
+                {
+                    "label": "Adam, Xavier + desplaz. ±1"
+                },
+                {
+                    "label": "Adam, Xavier + desplaz. ±2",
+                    "augment_shift": 2
+                },
+                {
+                    "label": "Adam, Xavier + desplaz. ±1 + sobremuestreo",
+                    "oversample": true
+                }
+            ]
+        }
+    }
+}

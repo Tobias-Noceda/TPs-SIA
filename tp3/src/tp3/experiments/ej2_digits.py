@@ -5,6 +5,11 @@ Lee la especificación de estudios (`res/config/ej2/studies.json`): una config b
 variantes que pisan algunos campos de la base. Corre cada variante × semilla y guarda los resultados
 crudos en `<out>/runs/*.npz`; el análisis vive en `tp3.analysis.ej2_digits`.
 
+También lo usa el ej. 3 (`res/config/ej3/studies.json`): `datasets.train` (o el `train` de una variante) puede ser
+una lista de CSV, que se concatenan sin muestras repetidas, y cada variante puede pedir inicialización Xavier
+(`weight_initialization`), desplazamientos aleatorios por época (`augment_shift`) y sobremuestreo de las clases
+minoritarias (`oversample`).
+
 Evaluación: cada corrida entrena con TODO digits.csv (aunque no tenga 8s y tenga pocos 5s) y, una vez
 entrenada, se evalúa en digits_test.csv ("producción"). Por época se guardan la pérdida y la accuracy de
 train y la accuracy de test.
@@ -19,10 +24,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
+from tp3.functions.augmentation.oversample import oversample
+from tp3.functions.augmentation.shift import random_shift
 from tp3.models.multi_layer_perceptron import MultiLayerPerceptron
 from tp3.models.neuron import Neuron
 from tp3.parsers.dataset_parser import parse_dataset
 from tp3.types.config.activation import ActivationFunctions
+from tp3.types.config.initialization import WeightInitializations
 from tp3.types.config.loss import LossFunctions
 from tp3.types.config.optimizer import Optimizers
 from tp3.types.float import Float
@@ -38,16 +46,47 @@ parser.add_argument("-o", "--out", type=Path, default=Path("res/output/ej2_digit
 parser.add_argument("-j", "--jobs", type=int, default=os.cpu_count(), help="Procesos en paralelo")
 
 
-def load_data(spec: dict, out: Path) -> Path:
-    """Parses both CSVs once (slow: one literal_eval per image) and caches them for every worker."""
-    path = out / "data.npz"
-    if path.exists():
-        return path
+def train_files(spec: dict, config: dict) -> list[str]:
+    """Training CSVs of a configuration: its own `train` or the spec's, always as a list."""
+    files = config.get("train", spec["datasets"]["train"])
+    return [files] if isinstance(files, str) else files
+
+
+def data_path(spec: dict, config: dict, out: Path) -> Path:
+    """Cache of a training set: data.npz for the spec's default one, data_<hash>.npz for the rest."""
+    files = train_files(spec, config)
+    if files == train_files(spec, {}):
+        return out / "data.npz"
+    return out / f"data_{hashlib.sha1(json.dumps(files).encode()).hexdigest()[:10]}.npz"
+
+
+def load_data(spec: dict, configs: dict[str, dict], out: Path) -> dict[str, Path]:
+    """
+    Parses every CSV once (slow: one literal_eval per image) and caches, per distinct training set, its
+    samples (several CSVs are concatenated dropping repeated images) plus the test set for every worker.
+    Returns the cache of each configuration.
+    """
     datasets = spec["datasets"]
-    X, y = parse_dataset(datasets["train"], datasets["input"], datasets["label"], datasets["classes"])
-    X_test, y_test = parse_dataset(datasets["test"], datasets["input"], datasets["label"], datasets["classes"])
-    np.savez(path, X=X, y=y, X_test=X_test, y_test=y_test)
-    return path
+    parsed: dict[str, tuple] = {}
+
+    def parse(file: str) -> tuple:
+        if file not in parsed:
+            parsed[file] = parse_dataset(file, datasets["input"], datasets["label"], datasets["classes"])
+        return parsed[file]
+
+    paths = {}
+    for cid, config in configs.items():
+        path = paths[cid] = data_path(spec, config, out)
+        if path.exists():
+            continue
+        X = np.vstack([parse(file)[0] for file in train_files(spec, config)])
+        y = np.vstack([parse(file)[1] for file in train_files(spec, config)])
+        # The CSVs share samples: keep the first occurrence of each image, in file order
+        _, first = np.unique(X, axis=0, return_index=True)
+        first.sort()
+        X_test, y_test = parse(datasets["test"])
+        np.savez(path, X=X[first], y=y[first], X_test=X_test, y_test=y_test)
+    return paths
 
 
 def config_id(config: dict) -> str:
@@ -81,8 +120,10 @@ def build_perceptron(config: dict, input_size: int, classes: int) -> MultiLayerP
 
     loss_function, derivative = LossFunctions(config["loss_function"]).functions()
     optimizer = Optimizers(config["optimizer"]["name"]).factory(config["optimizer"].get("hyperparameters"))
+    initialization = WeightInitializations(config.get("weight_initialization", "uniform")).function()
     return MultiLayerPerceptron(
         layers, np.float64(config["learning_rate"]), loss_function, derivative, input_size, config["batch_size"], optimizer,
+        initialization,
     )
 
 
@@ -101,8 +142,11 @@ def _train(config: dict, seed: int, X_train, y_train, evaluation: dict[str, tupl
     history = {"train_loss": np.full(epochs, np.nan), "learning_rate": np.full(epochs, np.nan)} | {f"{name}_accuracy": np.full(epochs, np.nan) for name in evaluation}
     diverged = False
     for epoch in range(epochs):
+        # Each epoch sees a fresh resampling / shifted copy of the training set; the metrics below use the original
+        samples = oversample(y_train) if config.get("oversample", False) else np.arange(len(X_train))
+        X_epoch = random_shift(X_train[samples], config.get("augment_shift", 0))
         try:
-            perceptron.train(X_train, y_train, 1)
+            perceptron.train(X_epoch, y_train[samples], 1)
         except FloatingPointError:
             diverged = True
             break
@@ -145,11 +189,10 @@ def main() -> None:
     with open(args.studies) as f:
         spec = json.load(f)
 
-    print("Cargando datasets...")
-    data_path = load_data(spec, args.out)
-
     (args.out / "runs").mkdir(exist_ok=True)
     configs, studies = resolve_studies(spec, args.only)
+    print("Cargando datasets...")
+    data_paths = load_data(spec, configs, args.out)
     with open(args.out / "studies.json", "w") as f:
         json.dump({"spec": spec, "configs": configs, "studies": studies}, f, indent=2, ensure_ascii=False)
 
@@ -162,7 +205,7 @@ def main() -> None:
     # Biggest networks first so they don't end up alone at the tail
     jobs.sort(key=lambda job: -sum(configs[job[0]]["hidden"]))
 
-    _parallel([(_run, cid, configs[cid], seed, data_path, args.out) for cid, seed in jobs], args.jobs, "corridas")
+    _parallel([(_run, cid, configs[cid], seed, data_paths[cid], args.out) for cid, seed in jobs], args.jobs, "corridas")
     print(f"{len(jobs)} corridas ({len(configs)} configuraciones) guardadas en {args.out / 'runs'}")
 
 

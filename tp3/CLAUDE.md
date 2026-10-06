@@ -137,6 +137,21 @@ optimizador, una curva por η), `lr_optimizer`, `optimizer_curves`, `architectur
 `hidden_activation`, `confusion_test` (de la configuración con mayor accuracy media de test). "Dígito perdido" =
 dígito presente en el entrenamiento con recall de test < 0.1 (el 8 no cuenta).
 
+Estudio del ej. 3 (784-256-10 logística, objetivo ≥ 98%):
+
+```bash
+./run3.sh [estudios...]   # ~17 min con 16 cores (54 corridas de 40 épocas)
+```
+
+Reusa `ej2-digits` con `res/config/ej3/studies.json`. Extensiones del experimento: `train` (spec o variante) puede ser
+lista de CSV → se concatenan **sin imágenes repetidas** (`digits.csv` y `more_digits.csv` comparten 3689; la unión tiene
+24501), cache `data_<hash>.npz` por conjunto; por variante `weight_initialization` (`uniform` = U(−0.5, 0.5) default |
+`xavier`, `functions/initialization/`), `augment_shift` (desplazamiento aleatorio ±k px por imagen y época,
+`functions/augmentation/shift.py`) y `oversample` (sobremuestreo de clases minoritarias por época,
+`functions/augmentation/oversample.py`). Las métricas de train se miden sobre las imágenes originales.
+`analysis/ej3_digits.py` (`ej3-digits-analysis`): `summary.csv` + `plots/`: `dataset`, `dataset_recall`,
+`lr_optimizer`, `optimizer_curves`, `techniques`, `confusion_test`.
+
 ## Configuración
 
 JSON validado contra `res/config/config.schema.json` (`config.py:load_config`, jsonschema
@@ -254,6 +269,13 @@ Pendiente por ejercicio (detalle en `theory/possible_improvements.md`):
     Train ≈ 0.99 desde 64 neuronas. Activación: logística 0.857, tanh 0.849.
   - Mejor (784-256-10, tanh, Adam 1e-3): test 0.863 ± 0.000; sin contar los 8 0.957 (techo 0.903). Recall del 8
     = 0 (≈1/3 → 3), del 5 = 0.84; el resto ≥ 0.94.
+  - **Ej. 3** (`run3.sh`, 40 épocas, 3 semillas, test final): mejor = unión + Adam 1e-3 + Xavier + desplazamientos ±1:
+    **0.9844 ± 0.0009** (mejor semilla 0.9856, 3/3 ≥ 0.98); GD η = 1 con lo mismo 0.9810 ± 0.0010. GD η = 3 falla con
+    logística (0.32 ± 0.31: salidas saturadas; con U(−0.5, 0.5) 0.70); η = 0.3 0.976, η = 0.1 0.944. Adam 3e-4 0.979,
+    3e-3 0.977. Ablación (Adam, unión): ninguna 0.965, Xavier 0.969, desplaz. ±1 0.980, ambas 0.984, ±2 0.982,
+    + sobremuestreo 0.983 (no ayuda). Datos (Adam, con técnicas): digits 0.884, more_digits 0.979, unión 0.984; sin
+    técnicas 0.867 / 0.961 / 0.965. Recall del 8 0.96, del 5 0.97 (resto ≥ 0.98). Train ≈ 0.996: el límite es
+    generalización, por eso rinde la augmentation y no la capacidad.
   - Parsear `digits.csv` tarda ~8 s (`ast.literal_eval` por fila); por eso el experimento cachea.
 - **Transversal**:
   - `main` imprime la pérdida como "accuracy" y no evalúa validación.

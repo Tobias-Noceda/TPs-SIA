@@ -24,6 +24,7 @@ ej1-generalization = "tp3.experiments.ej1_generalization:main"
 ej1-generalization-analysis = "tp3.analysis.ej1_generalization:main"
 ej2-digits = "tp3.experiments.ej2_digits:main"
 ej2-digits-analysis = "tp3.analysis.ej2_digits:main"
+ej3-digits-analysis = "tp3.analysis.ej3_digits:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
