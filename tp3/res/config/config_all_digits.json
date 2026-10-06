@@ -1,0 +1,91 @@
+{
+    "$schema": "./config.schema.json",
+    "perceptron": {
+        "type": "multi_layer",
+        "arquitecture": [
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } },
+                { "activation_function": { "name": "relu" } }
+            ],
+            [
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } },
+                { "activation_function": { "name": "sigmoid" } }
+            ]
+        ]
+    },
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001,
+        "hyperparameters": { "beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8 }
+    },
+    "loss_function": "hse",
+    "epochs": 1000,
+    "batch_size": 1000,
+    "classification_function": "digits",
+    "datasets": {
+        "train": "res/datasets/more_digits.csv",
+        "test": "res/datasets/digits_test.csv",
+        "validation": "res/datasets/digits_test.csv",
+        "columns": {
+            "input": "image",
+            "output": "label",
+            "expected": "label"
+        }
+    }
+}
