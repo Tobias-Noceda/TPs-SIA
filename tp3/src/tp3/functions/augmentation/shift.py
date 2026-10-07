@@ -1,25 +1,45 @@
+from typing import Tuple
+
 from tp3.types.float import Float
 
 import numpy as np
 import numpy.typing as npt
 from numpy.random import RandomState
 
-def random_shift(images: npt.NDArray[Float], random: RandomState, max_shift: int = 1, side: int = 28) -> npt.NDArray[Float]:
+def random_shift(data: npt.NDArray[Float], random: RandomState, shape: Tuple[int, ...], max_shift: Tuple[int, ...]):
     """
     Moves every flattened `side × side` image by its own random (dx, dy) ∈ [−max_shift, max_shift]²,
     filling the uncovered border with 0 (background).
     """
-    if max_shift == 0:
-        return images
+    dimensions = len(shape)
+    count = len(data)
 
-    count = len(images)
-    padded = np.pad(images.reshape(count, side, side), ((0, 0), (max_shift, max_shift), (max_shift, max_shift)))
-    dx, dy = random.randint(-max_shift, max_shift + 1, size=(2, count))
+    reshaped = data.reshape((count, *shape))
 
-    shifted = np.empty((count, side, side), dtype=images.dtype)
-    for x in range(-max_shift, max_shift + 1):
-        for y in range(-max_shift, max_shift + 1):
-            selected = (dx == x) & (dy == y)
-            shifted[selected] = padded[selected, max_shift - y:max_shift - y + side, max_shift - x:max_shift - x + side]
+    paddings = [(0, 0)] + [(shift, shift) for shift in max_shift]
+    padded = np.pad(reshaped, paddings, mode="constant", constant_values=0)
+
+    sampled_shifts = np.column_stack([
+        random.randint(-shift, shift + 1, size=count)
+        for shift in max_shift
+    ])
+
+    sample_indices = np.arange(count).reshape((count,) + (1,) * dimensions)
+
+    spatial_indices = []
+    for dimension, (size, max_displacement) in enumerate(zip(shape, max_shift)):
+        indices = (
+            np.arange(size)[None, :]
+            + max_displacement
+            - sampled_shifts[:, dimension][:, None]
+        )
+
+        spatial_indices.append(
+            indices.reshape(
+                (count,) + (1,) * dimension + (size,) + (1,) * (dimensions - dimension - 1)
+            )
+        )
+
+    shifted = padded[(sample_indices, *spatial_indices)]
 
     return shifted.reshape(count, -1)
