@@ -9,6 +9,7 @@ from tp3.interfaces.perceptron import Perceptron
 from tp3.models.layer import Layer
 from tp3.models.neuron import Neuron
 
+from tp3.types.augmentation_function import AugmentationFunction
 from tp3.types.classification_option import ClassificationOption
 from tp3.types.epoch_result import EpochResult
 from tp3.types.loss_function import DerivativeLossFunction, LossFunction
@@ -34,6 +35,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
 
     loss_function: LossFunction
     derivative_loss_function: DerivativeLossFunction
+
+    augment: AugmentationFunction
 
     input_size: int
 
@@ -69,10 +72,8 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
         results: List[EpochResult] = []
-        # Error of the previous epoch, for the learning rate functions that adapt to it
         previous_loss = np.float64(np.inf)
         for epoch in trange(epochs):
-            # Predictions made while training, stored in dataset order to compute the epoch loss
             predictions = np.empty_like(expected)
 
             order = self.random.permutation(len(inputs))
@@ -80,7 +81,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
                 batch = order[start:start + self.batch_size]
                 expect = expected[batch]
 
-                outputs = [inputs[batch]]
+                outputs = [self.augment(inputs[batch], self.random)]
                 activation_derivatives: List[npt.NDArray[Float]] = []
 
                 for layer in self.layers:

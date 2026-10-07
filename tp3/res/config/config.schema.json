@@ -217,8 +217,17 @@
         "datasets": {
             "type": "object",
             "description": "Paths to the datasets for training, testing and validation and the columns to use for the input and output of the perceptron",
-            "required": ["train", "test", "validation", "columns"],
+            "required": ["train", "test", "validation", "columns", "shape"],
             "properties": {
+                "shape": {
+                    "type": "array",
+                    "description": "The data shape, default is [28, 28]",
+                    "default": [28, 28],
+                    "items": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
                 "train": {
                     "type": "string",
                     "description": "Path to the training dataset"
@@ -235,6 +244,37 @@
                     "type": "boolean",
                     "description": "Standardize every input column (z-score) using the training set mean and standard deviation, also applied to test and validation",
                     "default": false
+                },
+                "augmentation_function": {
+                    "type": "object",
+                    "description": "The dataset augmentation function to use for testing the perceptron",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The dataset augmentation function to use for testing the perceptron",
+                            "enum": ["none", "shift"],
+                            "default": "none"
+                        },
+                        "hyperparameters": {
+                            "type": "object",
+                            "description": "The hyperparameters for the augmentation function (if needed)",
+                            "properties": {
+                                "max_shift": {
+                                    "type": "array",
+                                    "description": "The max_shifting hyperparameter for the shifting augmentation function, default is [1, 1]",
+                                    "default": [1, 1],
+                                    "items": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    }
+                                }
+                            },
+                            "default": {
+                                "shape": [28, 28],
+                                "max_shift": [1, 1]
+                            }
+                        }
+                    }
                 },
                 "columns": {
                     "type": "object",

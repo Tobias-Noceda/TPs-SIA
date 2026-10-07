@@ -6,6 +6,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
 
 from tp3.types.config.classification import ClassificationFunctions
+from tp3.types.config.augmentation import AugmentationFunctions
 from tp3.types.config.config import PerceptronConfig
 
 from tp3.types.config.activation import ActivationFunctions
@@ -97,5 +98,11 @@ def load_config(path: str) -> PerceptronConfig:
     }
     data["classification_function"] = ClassificationFunctions(data["classification_function"]).function()
     data["test_in_train"] = bool(data.get("test_in_train", False))
+
+    data["datasets"]["shape"] = tuple(data["datasets"].get("shape", (28, 28)))
+
+    augmentation_function = data["datasets"].get("augmentation_function", {})
+    augmentation_function_hyper = augmentation_function.get("hyperparameters")
+    data["datasets"]["augmentation_function"] = AugmentationFunctions(augmentation_function.get("name", "none")).function(data["datasets"]["shape"], augmentation_function_hyper)
 
     return cast(PerceptronConfig, data)

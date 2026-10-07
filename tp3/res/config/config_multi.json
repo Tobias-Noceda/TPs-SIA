@@ -17,6 +17,7 @@
     "epochs": 1000,
     "classification_function": "fraud",
     "datasets": {
+        "shape": [9],
         "train": "res/fraud_mini_dataset.csv",
         "test": "tp3/res/datasets/test.csv",
         "validation": "tp3/res/datasets/validation.csv",

@@ -21,6 +21,7 @@
     "epochs": 10000,
     "classification_function": "sign",
     "datasets": {
+        "shape": [2],
         "train": "res/datasets/tests/xor.csv",
         "test": "res/datasets/tests/xor.csv",
         "validation": "res/datasets/tests/xor.csv",

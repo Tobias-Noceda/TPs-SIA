@@ -14,6 +14,7 @@
     "epochs": 1000,
     "classification_function": "equals",
     "datasets": {
+        "shape": [2],
         "train": "res/datasets/tests/and.csv",
         "test": "res/datasets/tests/and.csv",
         "validation": "res/datasets/tests/and.csv",

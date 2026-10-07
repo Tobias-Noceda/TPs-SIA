@@ -30,6 +30,7 @@ def create_model(data: PerceptronConfig):
     batch_size = data["batch_size"]
     classification_function = data["classification_function"]
     datasets = data["datasets"]
+    augmentation_function = datasets["augmentation_function"]
     epsilon = data["epsilon"]
     test_in_train = data["test_in_train"]
     initialization = data["initialization"]
@@ -114,7 +115,7 @@ def create_model(data: PerceptronConfig):
             for layer in arquitecture
         ]
 
-        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, train_inputs.shape[1], batch_size, epsilon, random, initialization)
+        perceptron = MultiLayerPerceptron(layers, learning_rate, loss_function, derivative_loss_function, augmentation_function, train_inputs.shape[1], batch_size, epsilon, random, initialization)
 
         if test_in_train:
             test_function = lambda: accuracy(perceptron.test(test_inputs, test_expected, classification_function))
