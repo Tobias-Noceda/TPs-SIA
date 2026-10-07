@@ -61,7 +61,7 @@ class MultiLayerPerceptron(Perceptron[npt.NDArray[Float]]):
             prev_size = len(l)
 
     @override
-    def train(self, inputs, expected, epochs, classification_function, test_function=None) -> Tuple[EpochResult, ...]:
+    def train(self, inputs, expected, epochs, classification_function, test_function=None):
         inputs = self.__validate_parameters(inputs)
         expected = np.asarray(expected, dtype=np.float64)
 
