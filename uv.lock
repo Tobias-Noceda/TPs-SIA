@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -12,6 +12,7 @@ members = [
     "tp1",
     "tp2",
     "tp3",
+    "tp4",
     "tps-sia",
 ]
 
@@ -714,6 +715,29 @@ requires-dist = [
 name = "tp3"
 version = "0.1.0"
 source = { editable = "tp3" }
+dependencies = [
+    { name = "jsonschema" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pyqt6" },
+    { name = "tqdm" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jsonschema", specifier = ">=4.26.0" },
+    { name = "matplotlib", specifier = ">=3.11.1" },
+    { name = "numpy", specifier = ">=2.5.2" },
+    { name = "pandas", specifier = ">=3.0.6" },
+    { name = "pyqt6", specifier = ">=6.11.0" },
+    { name = "tqdm", specifier = ">=4.70.0" },
+]
+
+[[package]]
+name = "tp4"
+version = "0.1.0"
+source = { editable = "tp4" }
 dependencies = [
     { name = "jsonschema" },
     { name = "matplotlib" },

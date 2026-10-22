@@ -1,0 +1,26 @@
+[project]
+name = "tp4"
+version = "0.1.0"
+description = "Unsupervised learning: Kohonen, Oja and Hopfield"
+readme = "README.md"
+authors = [
+    { name = "Tobias-Noceda", email = "tnoceda@itba.edu.ar" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "jsonschema>=4.26.0",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.2",
+    "pandas>=3.0.6",
+    "pyqt6>=6.11.0",
+    "tqdm>=4.70.0",
+]
+
+[project.scripts]
+tp4 = "tp4:main"
+kohonen-sweep = "tp4.experiments.kohonen_sweep:main"
+kohonen-sweep-analysis = "tp4.analysis.kohonen_sweep:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"

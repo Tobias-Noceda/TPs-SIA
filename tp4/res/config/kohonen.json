@@ -1,0 +1,31 @@
+{
+    "$schema": "./config.schema.json",
+    "kohonen": {
+        "grid_size": 6,
+        "topology": "rectangular",
+        "similarity": "euclidean",
+        "neighborhood": { "name": "step" },
+        "initialization": "samples"
+    },
+    "learning_rate": { "type": "linear", "value": 0.5, "hyperparameters": { "final": 0.01 } },
+    "radius": { "type": "linear", "value": 6, "hyperparameters": { "final": 1 } },
+    "epochs": 500,
+    "seed": 42,
+    "dataset": {
+        "path": "res/datasets/creadores.csv",
+        "normalize": "z_score",
+        "columns": {
+            "input": [
+                "followers", "average_reach", "average_impressions", "average_video_views", "monthly_posts",
+                "argentina_audience_pct", "non_follower_reach_pct",
+                "likes_per_1000", "comments_per_1000", "saves_per_1000", "shares_per_1000", "profile_visits_per_1000",
+                "price_usd", "sponsored_posts_pct",
+                "topic_football_pct", "topic_makeup_pct", "topic_dogs_pct", "topic_art_pct",
+                "content_tutorial_pct", "content_review_pct", "content_entertainment_pct", "content_showcase_pct",
+                "average_caption_words", "average_watch_time_seconds",
+                "video_posts_pct", "short_form_posts_pct", "trend_posts_pct"
+            ],
+            "label": "name"
+        }
+    }
+}

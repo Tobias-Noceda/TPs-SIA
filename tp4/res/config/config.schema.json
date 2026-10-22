@@ -1,0 +1,147 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TP4 config",
+    "description": "TP4 configuration properties for the Kohonen network's hyperparameters",
+    "type": "object",
+    "required": ["kohonen", "learning_rate", "radius", "epochs", "dataset"],
+    "$defs": {
+        "schedule": {
+            "type": "object",
+            "description": "A value that changes with the iteration i out of epochs · samples",
+            "required": ["type", "value"],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "constant: value; inverse: value / (i + 1), floored at final; linear: value to final; exponential: geometric decay from value to final",
+                    "enum": ["constant", "inverse", "linear", "exponential"]
+                },
+                "value": {
+                    "type": "number",
+                    "description": "Initial value",
+                    "exclusiveMinimum": 0
+                },
+                "hyperparameters": {
+                    "type": "object",
+                    "description": "Hyperparameters of the schedule (if needed)",
+                    "properties": {
+                        "final": {
+                            "type": "number",
+                            "description": "Value at the last iteration (linear, exponential) or lower bound (inverse)",
+                            "minimum": 0
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": { "type": { "enum": ["linear", "exponential"] } },
+                        "required": ["type"]
+                    },
+                    "then": {
+                        "required": ["hyperparameters"],
+                        "properties": { "hyperparameters": { "required": ["final"] } }
+                    }
+                }
+            ]
+        }
+    },
+    "properties": {
+        "kohonen": {
+            "type": "object",
+            "description": "The self-organizing map with its configuration properties",
+            "required": ["grid_size"],
+            "properties": {
+                "grid_size": {
+                    "type": "integer",
+                    "description": "k of the k × k grid of neurons",
+                    "minimum": 2
+                },
+                "topology": {
+                    "type": "string",
+                    "description": "Shape of the grid: rectangular (4 neighbors at R = 1) or hexagonal (6 neighbors at R = 1)",
+                    "enum": ["rectangular", "hexagonal"],
+                    "default": "rectangular"
+                },
+                "similarity": {
+                    "type": "string",
+                    "description": "Measure used to pick the winner neuron",
+                    "enum": ["euclidean", "exponential"],
+                    "default": "euclidean"
+                },
+                "neighborhood": {
+                    "type": "object",
+                    "description": "How strongly the neurons around the winner are updated",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "step: full update within R (Kohonen rule); gaussian: e^(-d² / 2R²)",
+                            "enum": ["step", "gaussian"]
+                        }
+                    },
+                    "default": { "name": "step" }
+                },
+                "initialization": {
+                    "type": "string",
+                    "description": "Initial weights: random training samples, or uniform within each feature's range",
+                    "enum": ["samples", "uniform"],
+                    "default": "samples"
+                }
+            }
+        },
+        "learning_rate": {
+            "$ref": "#/$defs/schedule",
+            "description": "Learning rate η(i), should be < 1 and decrease to 0"
+        },
+        "radius": {
+            "$ref": "#/$defs/schedule",
+            "description": "Neighborhood radius R(i) on the grid, from up to the grid size down to 1 (or constant)"
+        },
+        "epochs": {
+            "type": "integer",
+            "description": "Passes over the dataset, one sample per iteration (theory suggests about 500 · features iterations in total)",
+            "minimum": 1
+        },
+        "seed": {
+            "type": "integer",
+            "description": "Seed for the weight initialization and the sample order (random if missing)"
+        },
+        "dataset": {
+            "type": "object",
+            "description": "The dataset to map and the columns to use",
+            "required": ["path", "columns"],
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Path to the CSV dataset (relative to the working directory)"
+                },
+                "normalize": {
+                    "type": "string",
+                    "description": "Normalization of the input columns before training",
+                    "enum": ["none", "z_score", "min_max", "unit_length"],
+                    "default": "z_score"
+                },
+                "columns": {
+                    "type": "object",
+                    "description": "Columns of the dataset",
+                    "required": ["input"],
+                    "properties": {
+                        "input": {
+                            "type": "array",
+                            "description": "Numeric columns that make up each sample",
+                            "items": { "type": "string" },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        },
+                        "label": {
+                            "type": "string",
+                            "description": "Column that names each sample, used to label the results"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
