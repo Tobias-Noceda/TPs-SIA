@@ -12,12 +12,15 @@ dependencies = [
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pandas>=3.0.6",
+    "pygame>=2.6.1",
     "pyqt6>=6.11.0",
+    "tensorflow>=2.22.0rc0",
     "tqdm>=4.70.0",
 ]
 
 [project.scripts]
 tp3 = "tp3:main"
+drawer = "drawer:main"
 ej1-learning = "tp3.experiments.ej1_learning:main"
 ej1-learning-analysis = "tp3.analysis.ej1_learning:main"
 ej1-generalization = "tp3.experiments.ej1_generalization:main"
