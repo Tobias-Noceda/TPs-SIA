@@ -4,19 +4,24 @@ from typing import cast
 
 from tp4.config import load_config
 
+from tp4.functions.components.fixed import fixed_components
+from tp4.functions.linear_algebra.cosine import cosine_similarity
+from tp4.functions.linear_algebra.orientation import align
 from tp4.functions.metrics.hits import hits
 from tp4.models.kohonen import Kohonen
+from tp4.models.oja import Oja
 from tp4.parsers.dataset_parser import parse_dataset
 from tp4.models.pca import PCA
-from tp4.types.config.config import Config, NeuralNetworkConfig, PCAConfig
+from tp4.types.config.config import Config, NeuralNetworkConfig, OjaConfig, PCAConfig
 from tp4.types.config.method import Methods
+from tp4.visualization.oja import plot_convergence, plot_index_comparison, plot_loadings
 from tp4.visualization.pca import plot_biplot, plot_heatmap, plot_index, plot_scree
 
 import numpy as np
 from numpy.random import MT19937, RandomState, SeedSequence
 import matplotlib.pyplot as plt
 
-parser = argparse.ArgumentParser(description="Unsupervised learning: Kohonen self-organizing map and PCA.")
+parser = argparse.ArgumentParser(description="Unsupervised learning: Kohonen self-organizing map, PCA and Oja's rule.")
 
 parser.add_argument("-c", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
 parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output .npz file for the trained model and results (optional)")
@@ -60,6 +65,8 @@ def main():
         run_kohonen(args, method, cast(NeuralNetworkConfig, config))
     elif method is Methods.PCA:
         run_pca(args, cast(PCAConfig, config))
+    elif method is Methods.OJA:
+        run_oja(args, cast(OjaConfig, config))
 
 def run_pca(args: argparse.Namespace, config: PCAConfig):
     if "pca" not in config or config["pca"] is None:
@@ -114,6 +121,71 @@ def run_pca(args: argparse.Namespace, config: PCAConfig):
         if len(variables) >= 2:
             plot_biplot(scores, model.eigenvectors, ratio, variables, list(labels))
         plot_index(scores, list(labels))
+        plt.show()
+
+def run_oja(args: argparse.Namespace, config: OjaConfig):
+    dataset = config["dataset"]
+    variables = dataset["columns"]["input"]
+    raw, labels = parse_dataset(dataset["path"], variables, dataset["columns"].get("label", None))
+    normalize, _ = dataset["normalize"](raw)
+    inputs = normalize(raw)
+
+    model = Oja(config["oja"]["learning_rate"], config["oja"]["initialization"], RandomState(MT19937(SeedSequence(config["seed"]))))
+    results = model.train(inputs, config["epochs"])
+
+    # Reference: PC1 of the same samples (the PCA standardizes the raw inputs itself)
+    pca = PCA(fixed_components(1))
+    pca.fit(raw)
+    component = pca.eigenvectors[:, 0]
+
+    # The sign of w is arbitrary, like the eigenvector's: point it to the same side as PC1
+    weights = align(model.weights, component)
+    sign = np.sign(weights @ model.weights)
+    index = model.predict(inputs) * sign
+    pc1 = pca.scores(raw)[:, 0]
+
+    cosine = cosine_similarity(weights, component)
+    norm = np.linalg.norm(weights)
+    print(f"‖w‖ = {norm:.6f}")
+    print(f"cos(w, PC1) = {cosine:.6f} (angle {np.degrees(np.arccos(np.clip(cosine, -1, 1))):.3f}°)")
+    print(f"Index variance {index.var():.4f} vs λ1 {pca.eigenvalues[0]:.4f} (equal when w = PC1, ‖w‖ = 1)")
+
+    print("Weights (Oja vs PC1):")
+    for k in np.argsort(-np.abs(component)):
+        print(f"  {weights[k]:+.4f}  {component[k]:+.4f}  {variables[k]}")
+
+    ranks = lambda values: np.argsort(np.argsort(values))
+    print(f"Pearson r(index, PC1) = {np.corrcoef(index, pc1)[0, 1]:.6f}")
+    print(f"Spearman ρ(index, PC1) = {np.corrcoef(ranks(index), ranks(pc1))[0, 1]:.6f}")
+
+    if labels is not None:
+        order = np.argsort(index)[::-1]
+        print("Index highest:", ", ".join(f"{labels[i]} ({index[i]:+.2f})" for i in order[:5]))
+        print("Index lowest: ", ", ".join(f"{labels[i]} ({index[i]:+.2f})" for i in order[::-1][:5]))
+
+    history = np.array([result.weights for result in results]) * sign
+    norms = np.array([result.norm for result in results])
+
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        np.savez(
+            args.output,
+            weights=weights,
+            history=history,
+            norms=norms,
+            index=index,
+            pc1=component,
+            pc1_scores=pc1,
+            labels=labels if labels is not None else np.empty(0),
+            columns=np.array(variables),
+        )
+
+    if args.plot:
+        cosines = np.abs(history @ component) / np.linalg.norm(history, axis=1)
+        plot_convergence(cosines, norms)
+        plot_loadings(weights, component, variables)
+        plot_index(index, list(labels) if labels is not None else None, name="Oja index")
+        plot_index_comparison(index, pc1, list(labels) if labels is not None else None)
         plt.show()
 
 def run_kohonen(args: argparse.Namespace, method: Methods, config: NeuralNetworkConfig):

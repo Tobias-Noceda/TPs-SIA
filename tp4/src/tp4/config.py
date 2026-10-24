@@ -18,6 +18,8 @@ from tp4.types.config.schedule import ScheduleFunctions
 from tp4.types.config.similarity import SimilarityFunctions
 from tp4.types.config.topology import Topologies
 
+import numpy as np
+
 # Schema is read at runtime so any edit to this file drives validation automatically.
 # @link https://json-schema.org/
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "res" / "config" / "config.schema.json"
@@ -121,5 +123,12 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
             "components": ComponentCriteria(components["criterion"]).function(components.get("value", None)),
             "orientation": Orientations(data["pca"].get("orientation", "max_loading_positive")).function(),
         }
+    elif data["method"] is Methods.OJA:
+        oja = data["oja"]
+        data["oja"] = {
+            "learning_rate": np.float64(oja["learning_rate"]),
+            "initialization": InitializationFunctions(oja.get("initialization", "unit_uniform")).function(),
+        }
+        data["epochs"] = int(data["epochs"])
 
     return data["method"], cast(Config, data)

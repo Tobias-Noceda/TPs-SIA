@@ -92,9 +92,10 @@ def plot_biplot(scores: npt.NDArray[Float], loadings: npt.NDArray[Float], ratio:
     figure.tight_layout()
     return figure
 
-def plot_index(scores: npt.NDArray[Float], labels: Sequence[str] | None, component: int = 0) -> Figure:
-    """Score of every sample on one component, sorted: the component used as an index."""
-    values = scores[:, component]
+def plot_index(scores: npt.NDArray[Float], labels: Sequence[str] | None, component: int = 0, name: str | None = None) -> Figure:
+    """Score of every sample on one component (or a 1-D index), sorted: the component used as an index."""
+    values = scores[:, component] if scores.ndim == 2 else scores
+    name = name if name is not None else f"PC{component + 1}"
     order = np.argsort(values)[::-1]
     names = np.asarray(labels)[order] if labels is not None else order.astype(str)
     figure, ax = plt.subplots(figsize=(max(10, 0.25 * len(values)), 5))
@@ -102,8 +103,8 @@ def plot_index(scores: npt.NDArray[Float], labels: Sequence[str] | None, compone
     ax.bar(range(len(values)), values[order], color=[_BLUE if v >= 0 else "#c0392f" for v in values[order]])
     ax.set_xticks(range(len(values)), names, rotation=90, fontsize=7)
     ax.axhline(0, color=_MUTED, linewidth=0.8)
-    ax.set_ylabel(f"PC{component + 1}")
-    ax.set_title(f"PC{component + 1} per sample")
+    ax.set_ylabel(name)
+    ax.set_title(f"{name} per sample")
     _clean(ax)
 
     figure.tight_layout()

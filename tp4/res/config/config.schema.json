@@ -78,10 +78,11 @@
     "properties": {
         "method": {
             "type": "string",
-            "description": "Method to run: kohonen (self-organizing map) or pca (principal component analysis)",
+            "description": "Method to run: kohonen (self-organizing map), pca (principal component analysis) or oja (Oja's rule neuron)",
             "enum": [
                 "kohonen",
-                "pca"
+                "pca",
+                "oja"
             ]
         },
         "kohonen": {
@@ -136,10 +137,11 @@
                 },
                 "initialization": {
                     "type": "string",
-                    "description": "Initial weights: random training samples, or uniform within each feature's range",
+                    "description": "Initial weights: random training samples, uniform within each feature's range, or uniform in [0, 1)",
                     "enum": [
                         "samples",
-                        "uniform"
+                        "uniform",
+                        "unit_uniform"
                     ],
                     "default": "samples"
                 }
@@ -155,12 +157,12 @@
         },
         "epochs": {
             "type": "integer",
-            "description": "Passes over the dataset, one sample per iteration (theory suggests about 500 · features iterations in total)",
+            "description": "Passes over the dataset, one sample per iteration (Kohonen: theory suggests about 500 · features iterations in total)",
             "minimum": 1
         },
         "seed": {
             "type": "integer",
-            "description": "Seed for the weight initialization and the sample order (random if missing)"
+            "description": "Seed for the weight initialization and the sample order (Kohonen) (random if missing)"
         },
         "dataset": {
             "type": "object",
@@ -297,6 +299,31 @@
                 }
             },
             "additionalProperties": false
+        },
+        "oja": {
+            "type": "object",
+            "description": "Single linear neuron trained with Oja's rule, w converges to the first principal component (the dataset must be z-score normalized)",
+            "required": [
+                "learning_rate"
+            ],
+            "properties": {
+                "learning_rate": {
+                    "type": "number",
+                    "description": "Constant η; must satisfy η · ‖x‖² ≲ 1 (e.g. 0.001 for ~30 standardized features), larger values diverge",
+                    "exclusiveMinimum": 0
+                },
+                "initialization": {
+                    "type": "string",
+                    "description": "Initial weights: uniform in [0, 1), uniform within each feature's range, or a random training sample",
+                    "enum": [
+                        "unit_uniform",
+                        "uniform",
+                        "samples"
+                    ],
+                    "default": "unit_uniform"
+                }
+            },
+            "additionalProperties": false
         }
     },
     "allOf": [
@@ -339,6 +366,33 @@
                     "dataset": {
                         "properties": {
                             "normalize": false
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "method": {
+                        "const": "oja"
+                    }
+                },
+                "required": [
+                    "method"
+                ]
+            },
+            "then": {
+                "required": [
+                    "oja",
+                    "epochs"
+                ],
+                "properties": {
+                    "dataset": {
+                        "properties": {
+                            "normalize": {
+                                "const": "z_score"
+                            }
                         }
                     }
                 }
