@@ -4,8 +4,7 @@
     "description": "TP4 configuration properties for the unsupervised methods' hyperparameters",
     "type": "object",
     "required": [
-        "method",
-        "dataset"
+        "method"
     ],
     "$defs": {
         "schedule": {
@@ -78,11 +77,12 @@
     "properties": {
         "method": {
             "type": "string",
-            "description": "Method to run: kohonen (self-organizing map), pca (principal component analysis) or oja (Oja's rule neuron)",
+            "description": "Method to run: kohonen (self-organizing map), pca (principal component analysis), oja (Oja's rule neuron) or hopfield (associative memory)",
             "enum": [
                 "kohonen",
                 "pca",
-                "oja"
+                "oja",
+                "hopfield"
             ]
         },
         "kohonen": {
@@ -162,7 +162,7 @@
         },
         "seed": {
             "type": "integer",
-            "description": "Seed for the weight initialization and the sample order (Kohonen) (random if missing)"
+            "description": "Seed for the weight initialization and the sample order (Kohonen), the initial weights (Oja) or the noise and asynchronous update order (Hopfield) (random if missing)"
         },
         "dataset": {
             "type": "object",
@@ -324,6 +324,66 @@
                 }
             },
             "additionalProperties": false
+        },
+        "hopfield": {
+            "type": "object",
+            "description": "Discrete Hopfield network: stores ±1 patterns and recalls the one most alike a noisy query",
+            "required": [
+                "patterns",
+                "query"
+            ],
+            "properties": {
+                "patterns": {
+                    "type": "array",
+                    "description": "Pattern files to store (.png: dark = 1, light = -1; .txt: '#' = 1, '.' = -1), all of the same size; the file name is the pattern's name",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                },
+                "update": {
+                    "type": "string",
+                    "description": "synchronous: every neuron from S(t) at once (may end in a 2-cycle); asynchronous: one neuron at a time in random order (always converges)",
+                    "enum": [
+                        "synchronous",
+                        "asynchronous"
+                    ],
+                    "default": "synchronous"
+                },
+                "max_iterations": {
+                    "type": "integer",
+                    "description": "Upper bound of iterations per query (an asynchronous iteration updates every neuron once)",
+                    "minimum": 1,
+                    "default": 100
+                },
+                "query": {
+                    "type": "object",
+                    "description": "Noisy queries built from a stored pattern",
+                    "required": [
+                        "pattern",
+                        "noise"
+                    ],
+                    "properties": {
+                        "pattern": {
+                            "type": "string",
+                            "description": "Name (file name without extension) of the stored pattern to corrupt"
+                        },
+                        "noise": {
+                            "type": "array",
+                            "description": "Fractions of flipped entries, one query per level",
+                            "items": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                            },
+                            "minItems": 1
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
         }
     },
     "allOf": [
@@ -343,7 +403,8 @@
                     "kohonen",
                     "learning_rate",
                     "radius",
-                    "epochs"
+                    "epochs",
+                    "dataset"
                 ]
             }
         },
@@ -360,7 +421,8 @@
             },
             "then": {
                 "required": [
-                    "pca"
+                    "pca",
+                    "dataset"
                 ],
                 "properties": {
                     "dataset": {
@@ -385,7 +447,8 @@
             "then": {
                 "required": [
                     "oja",
-                    "epochs"
+                    "epochs",
+                    "dataset"
                 ],
                 "properties": {
                     "dataset": {
@@ -396,6 +459,23 @@
                         }
                     }
                 }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "method": {
+                        "const": "hopfield"
+                    }
+                },
+                "required": [
+                    "method"
+                ]
+            },
+            "then": {
+                "required": [
+                    "hopfield"
+                ]
             }
         }
     ]

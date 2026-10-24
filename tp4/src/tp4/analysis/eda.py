@@ -1,10 +1,12 @@
 import argparse
+from ctypes import cast
 from pathlib import Path
 
 from tp4.config import load_config
 from tp4.functions.linear_algebra.eigen import sorted_eigen
 from tp4.functions.normalization.z_score import fit_z_score, z_score
 from tp4.functions.statistics.correlation import correlation_matrix
+from tp4.types.config.config import PCAConfig
 from tp4.visualization.pca import plot_heatmap
 
 import numpy as np
@@ -134,7 +136,11 @@ def plots(df: pd.DataFrame, inputs: list[str], directory: Path) -> None:
 
 def main():
     args = parser.parse_args()
-    dataset = load_config(args.config)["dataset"]
+    _, config = load_config(args.config)
+    if "dataset" not in config:
+        raise ValueError(f"Config {args.config} has no dataset to analyze")
+    
+    dataset = config["dataset"]
     inputs = dataset["columns"]["input"]
 
     df = pd.read_csv(dataset["path"])

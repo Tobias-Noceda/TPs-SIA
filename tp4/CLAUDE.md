@@ -30,15 +30,16 @@ Agrupar creadores considerando perfil comercial, audiencia y contenido.
      actualización mensual).
 - Foco: métodos no supervisados + interpretación; no análisis de marketing exhaustivo.
 
-### Ejercicio 2 — Memoria asociativa (Hopfield) ⏳
+### Ejercicio 2 — Memoria asociativa (Hopfield) ✅ implementado (falta análisis)
 
 - 2.1: 5 QR (menú, vinos, cócteles, postres, especiales) en `datos/hopfield` → matrices binarias
   37×37; almacenarlos, consultar con ruido de distintos niveles, analizar iteraciones y energía por
   paso, limitaciones.
 - 2.2 (recomendado primero): letras 5×5 en ±1; almacenar 4, análisis de ortogonalidad y capacidad,
   patrón muy ruidoso → estado espurio.
-- QR en `res/datasets/hopfield/`.
-- Activación: `sign(h)` conservando el estado anterior si `h = 0` (la `step` de tp3 da {0,1}, no sirve).
+- QR en `res/datasets/hopfield/` (PNG 37×37, 0/1). Letras 5×5 en `res/datasets/letters/*.txt` (`#` = 1, `.` = −1):
+  A C E H J L M O T X.
+- Activación: `sign(h, previous)` conservando el estado anterior si `h = 0` (`np.sign` da 0, no sirve).
 
 ## Ejecución
 
@@ -53,6 +54,7 @@ uv run kohonen-sweep-analysis [-i res/output/kohonen_sweep]        # → summary
 uv run tp4 --config res/config/pca.json [--output res/output/pca.npz] [--plot]
 uv run eda --config res/config/pca.json [-o res/output/eda] [--threshold 0.9]
 uv run tp4 --config res/config/oja.json [--output res/output/oja.npz] [--plot]
+uv run tp4 --config res/config/hopfield_letters.json [--output res/output/hopfield.npz] [--plot]   # o hopfield_qr.json
 ```
 
 PCA imprime autovalores (λ, % explicado, acumulado, `*` = componentes conservadas), cargas de PC1/PC2
@@ -72,6 +74,12 @@ Spearman entre índice y scores de PC1, y los 5 creadores más altos/bajos del �
 w (alineado con PC1), w por época, ‖w‖ por época, índice, PC1, scores de PC1, etiquetas y columnas;
 `--plot` muestra convergencia (|cos(w, PC1)| y ‖w‖ por época), barras w vs PC1, índice por creador y
 dispersión índice vs PC1.
+Hopfield imprime N, p, p/N vs 0.15, matriz de solapamiento ξμ·ξν/N (máx/media fuera de la diagonal),
+estabilidad de cada patrón almacenado (entradas que cambian con una actualización) y, por nivel de ruido,
+pasos, convergencia (`stable` | `cycle` | `max_iterations`), energía por paso y resultado: patrón almacenado
+(solapamiento +1), inverso (−1) o espurio (con el patrón más cercano y su distancia de Hamming); `--output`
+guarda pesos, patrones, consultas, estados y energías por paso; `--plot` muestra patrones, heatmap de
+solapamiento, estados por paso por nivel, energía por paso y solapamiento final vs ruido.
 `res/output/` está en `.gitignore`.
 
 ## Configuración
@@ -81,11 +89,15 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 | Clave | Valores |
 |---|---|
-| `method` | `kohonen` \| `pca` \| `oja` (obligatorio): decide qué bloques se exigen y qué corre `main` |
+| `method` | `kohonen` \| `pca` \| `oja` \| `hopfield` (obligatorio): decide qué bloques se exigen y qué corre `main` |
 | `pca.components` | `{ criterion: kaiser }` (default, λ > 1) \| `{ criterion: variance, value ∈ (0, 1] }` (menor q con acumulado ≥ value) \| `{ criterion: fixed, value: q }` |
 | `pca.orientation` | `max_loading_positive` (default: la carga de mayor módulo de cada autovector es positiva) \| `none` |
 | `oja.learning_rate` | η constante (obligatorio); estable solo si η · ‖x‖² ≲ 1 → 0.001 con las 27 entradas |
 | `oja.initialization` | `unit_uniform` (default, U[0, 1) como en la teoría) \| `uniform` \| `samples` |
+| `hopfield.patterns` | lista de archivos `.png` (oscuro = 1) o `.txt`; el nombre del patrón es el del archivo sin extensión |
+| `hopfield.update` | `synchronous` (default, Algoritmo 11: todo S(t+1) desde S(t), puede ciclar) \| `asynchronous` (una neurona por vez en orden aleatorio, H no crece) |
+| `hopfield.max_iterations` | tope de iteraciones por consulta (default 100) |
+| `hopfield.query` | `{ pattern: nombre almacenado, noise: [fracciones ∈ [0, 1]] }`: una consulta por nivel, invirtiendo exactamente round(nivel · N) entradas |
 | `kohonen.grid_size` | k ≥ 2 (grilla k × k) |
 | `kohonen.topology` | `rectangular` (default, 4 vecinos con R = 1) \| `hexagonal` (6 vecinos) |
 | `kohonen.similarity` | `euclidean` (default) \| `exponential` (`1 − e^{−d²}`: mismo ganador que euclídea) |
@@ -94,7 +106,7 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 | `learning_rate`, `radius` | schedule `{ type, value, hyperparameters?: { final } }`: `constant`; `inverse` (`value/(i+1)`, piso `final`); `linear` y `exponential` (de `value` a `final`, `final` obligatorio). `i` = iteración global de `epochs · P` |
 | `epochs` | pasadas por el dataset, una muestra por iteración (teoría: ~500 · n iteraciones) |
 | `seed` | opcional: `RandomState(MT19937(SeedSequence(seed)))` para pesos iniciales y orden |
-| `dataset` | `path`, `normalize` (kohonen; en oja solo `z_score`; prohibido en pca: `z_score` default \| `min_max` \| `unit_length` \| `none`), `columns.input` (lista explícita), `columns.label` (opcional, p. ej. `name`) |
+| `dataset` | obligatorio salvo en hopfield: `path`, `normalize` (kohonen; en oja solo `z_score`; prohibido en pca: `z_score` default \| `min_max` \| `unit_length` \| `none`), `columns.input` (lista explícita), `columns.label` (opcional, p. ej. `name`) |
 
 ## Arquitectura
 
@@ -106,6 +118,8 @@ src/tp4/
 ├── interfaces/projection.py        # Projection: fit(inputs), project(inputs) -> (P, q)
 ├── models/kohonen.py               # Kohonen(UnsupervisedNetwork[EpochResult])
 ├── models/pca.py                   # PCA(Projection): pasos del procedimiento de Clase 15.2 p.32
+├── interfaces/associative_memory.py # AssociativeMemory[R]: store(patterns), recall(query) -> R
+├── models/hopfield.py              # Hopfield(AssociativeMemory[HopfieldRecall]): pesos de Hebb, dinámica sign
 ├── models/oja.py                   # Oja(UnsupervisedNetwork[OjaEpochResult]): una neurona lineal, regla de Oja
 ├── functions/
 │   ├── normalization/              # z_score (copia de tp3 + wrapper), min_max, unit_length, identity
@@ -113,6 +127,10 @@ src/tp4/
 │   ├── neighborhood/               # step, gaussian
 │   ├── schedule/                   # constant, inverse, linear, exponential (factories value, final)
 │   ├── initialization/             # samples, uniform, unit_uniform
+│   ├── activation/sign.py          # sign(h, previous): ±1, conserva el estado si h = 0
+│   ├── update/                     # synchronous, asynchronous (una iteración S(t) → S(t+1))
+│   ├── energy/hopfield.py          # H = −½ sᵀ W s
+│   ├── noise/flip.py               # invierte round(nivel · N) entradas distintas
 │   ├── hebbian/oja.py              # Δw = η · s · (x − s · w)
 │   ├── topology/                   # rectangular, hexagonal (posiciones con vecinos a distancia 1)
 │   ├── metrics/                    # quantization_error, topographic_error, u_matrix, hits
@@ -120,8 +138,10 @@ src/tp4/
 │   ├── linear_algebra/             # sorted_eigen (eigh, descendente), orientation (max_loading_positive, align), cosine
 │   └── components/                 # kaiser, variance, fixed (ComponentSelection)
 ├── parsers/dataset_parser.py       # CSV numérico → X (P, n) + etiquetas
+├── parsers/pattern_parser.py       # .png / .txt → patrón ±1 (N,) + forma
 ├── visualization/kohonen.py        # draw_grid (polígonos por neurona), plot_map, plot_components, plot_training
 ├── visualization/pca.py            # plot_heatmap (divergente), plot_scree, plot_biplot, plot_index
+├── visualization/hopfield.py       # plot_patterns, plot_recalls, plot_energy, plot_overlap_by_noise
 ├── visualization/oja.py            # plot_convergence, plot_loadings (w vs PC1), plot_index_comparison
 ├── experiments/kohonen_sweep.py    # barrido k × η₀ × R₀ × semillas (paralelo)
 ├── analysis/kohonen_sweep.py       # summary.csv + plots/sweep.png
@@ -162,6 +182,11 @@ src/tp4/
   10⁻² → |cos| 0.982, 5·10⁻³ → 0.993, 10⁻³ → 0.9996, 10⁻⁴ → 0.99999 (se estabiliza en ~100 épocas).
 - Oja exige datos centrados (`normalize: z_score`, el esquema rechaza otro valor): así w → v₁ de la
   matriz de correlación, la misma que usa PCA. El signo de w es arbitrario: se alinea con PC1 (`align`).
+- **Hopfield sigue el Algoritmo 11**: `W = Ξᵀ Ξ / N` con diagonal 0 (la imagen dice "j = 1": es j = i);
+  S(0) = ζ; itera hasta S(t+1) = S(t). Síncrono puede quedar en un 2-ciclo (S(t+1) = S(t−1)): se corta y
+  se informa `cycle`. `HopfieldRecall.steps` guarda S(0)…S(t_final) con su energía (el paso que confirma
+  la estabilidad no se repite). No usa `UnsupervisedNetwork` (no hay épocas): interfaz `AssociativeMemory`.
+- La semilla de Hopfield controla el ruido de las consultas y el orden asíncrono.
 - El slide escribe `argmin e^{−‖x−w‖²}` para la exponencial: es argmax; se implementó como
   disimilitud `1 − e^{−d²}`.
 
@@ -187,5 +212,12 @@ src/tp4/
   Con la orientación de PCA, índice alto = perros/profundidad (@mundoanimal.ar, @consejoscaninos),
   bajo = fútbol/arte masivos (@futbolsinvueltas, @galeriacotidiana): el índice no es "mejor creador",
   es la posición en el eje tamaño ↔ profundidad, y su signo es arbitrario.
+- Hopfield verificado: ejemplo del slide (ξ1 = (1,1,−1,−1), ξ2 = −ξ1, ζ = (1,−1,−1,−1) → ξ1 en 1 paso,
+  H 0 → −3, ambos modos); asíncrono con H no creciente en 400 consultas aleatorias; síncrono cicla a veces.
+- Letras H J L X (las 4 más ortogonales de las 10: |ξμ·ξν|/N máx 0.28, media 0.11; p/N = 0.16 > 0.15),
+  todas estables. Consultas desde J (seed 42, síncrono): 0–30% de ruido → J; 40% → espurio; 50% → inverso de H.
+- QR: solapamientos 0.58–0.86 (fondo blanco y marcas de posición comunes), ningún QR es estable
+  (71–225 entradas cambian) → toda consulta cae en el mismo estado espurio (o su inverso), incluso
+  sin ruido: p/N = 0.004 es chico pero los patrones están lejos de ser ortogonales.
 - Pendiente: decidir variables finales (sacar 1 `topic_*` y 1 `content_*`, y redundantes del bloque de
-  alcance), decisiones (1.4), Hopfield (ej. 2).
+  alcance), decisiones (1.4), análisis de Hopfield (ej. 2).

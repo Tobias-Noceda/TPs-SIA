@@ -1,6 +1,7 @@
 from typing import NotRequired, TypedDict
 
 from tp4.types.config.dataset import Dataset
+from tp4.types.config.hopfield import HopfieldDefinition
 from tp4.types.config.kohonen import KohonenDefinition
 from tp4.types.config.method import Methods
 from tp4.types.config.oja import OjaDefinition
@@ -56,4 +57,17 @@ class OjaConfig(TypedDict):
     oja: OjaDefinition
     epochs: int
 
-type Config = PCAConfig | NeuralNetworkConfig | OjaConfig
+class HopfieldConfig(TypedDict):
+    """
+    Configuration of a Hopfield run.
+
+    Attributes:
+        method: Always hopfield.
+        seed: Seed for the noise and the asynchronous update order (None = random).
+        hopfield: Patterns, update rule and queries (hopfield).
+    """
+    method: Methods
+    seed: int | None
+    hopfield: HopfieldDefinition
+
+type Config = PCAConfig | NeuralNetworkConfig | OjaConfig | HopfieldConfig

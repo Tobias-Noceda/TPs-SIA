@@ -1,0 +1,20 @@
+{
+    "$schema": "./config.schema.json",
+    "method": "hopfield",
+    "seed": 42,
+    "hopfield": {
+        "patterns": [
+            "res/datasets/hopfield/food_menu_qr.png",
+            "res/datasets/hopfield/wine_menu_qr.png",
+            "res/datasets/hopfield/beverages_menu_qr.png",
+            "res/datasets/hopfield/dessert_menu_qr.png",
+            "res/datasets/hopfield/specials_menu_qr.png"
+        ],
+        "update": "synchronous",
+        "max_iterations": 100,
+        "query": {
+            "pattern": "wine_menu_qr",
+            "noise": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        }
+    }
+}
