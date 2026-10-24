@@ -1,12 +1,10 @@
 import argparse
-from ctypes import cast
 from pathlib import Path
 
 from tp4.config import load_config
 from tp4.functions.linear_algebra.eigen import sorted_eigen
 from tp4.functions.normalization.z_score import fit_z_score, z_score
 from tp4.functions.statistics.correlation import correlation_matrix
-from tp4.types.config.config import PCAConfig
 from tp4.visualization.pca import plot_heatmap
 
 import numpy as np

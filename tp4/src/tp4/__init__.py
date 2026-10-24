@@ -18,6 +18,7 @@ from tp4.parsers.pattern_parser import parse_pattern
 from tp4.models.pca import PCA
 from tp4.types.config.config import HopfieldConfig, NeuralNetworkConfig, OjaConfig, PCAConfig
 from tp4.types.config.method import Methods
+from tp4.visualization.hopfield import plot_energy, plot_overlap_by_noise, plot_patterns, plot_recalls
 from tp4.visualization.oja import plot_convergence, plot_index_comparison, plot_loadings
 from tp4.visualization.pca import plot_biplot, plot_heatmap, plot_index, plot_scree
 
@@ -288,6 +289,14 @@ def run_hopfield(args: argparse.Namespace, config: HopfieldConfig):
             convergence=np.array([recall.convergence.value for recall in recalls]),
             results=np.array(results),
         )
+
+    if args.plot:
+        plot_patterns(patterns, shape, names)
+        plot_heatmap(overlap, names, names, "Overlap ξμ · ξν / N between stored patterns")
+        plot_recalls(recalls, levels, shape, results)
+        plot_energy(recalls, levels)
+        plot_overlap_by_noise(levels, overlaps, names)
+        plt.show()
 
 def run_kohonen(args: argparse.Namespace, method: Methods, config: NeuralNetworkConfig):
     model, results, inputs, _, _, _ = create_model(method, config)
