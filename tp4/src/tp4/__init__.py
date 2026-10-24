@@ -9,7 +9,6 @@ from tp4.functions.components.fixed import fixed_components
 from tp4.functions.linear_algebra.cosine import cosine_similarity
 from tp4.functions.linear_algebra.orientation import align
 from tp4.functions.metrics.hits import hits
-from tp4.functions.noise.flip import flip_noise
 from tp4.models.hopfield import Hopfield
 from tp4.models.kohonen import Kohonen
 from tp4.models.oja import Oja
@@ -214,6 +213,8 @@ def run_hopfield(args: argparse.Namespace, config: HopfieldConfig):
     n: int
     p, n = patterns.shape
 
+    noise_function = hopfield["query"]["noise_function"]
+
     # Single generator: same seed => same noisy queries and same asynchronous order
     random = RandomState(MT19937(SeedSequence(config["seed"])))
     model = Hopfield(hopfield["update"], hopfield["max_iterations"], random)
@@ -243,7 +244,7 @@ def run_hopfield(args: argparse.Namespace, config: HopfieldConfig):
     results = []
     print(f"Queries from {names[target]}:")
     for level in levels:
-        query = flip_noise(random, patterns[target], level)
+        query = noise_function(random, patterns[target], level)
         recall = model.recall(query)
         recalls.append(recall)
 

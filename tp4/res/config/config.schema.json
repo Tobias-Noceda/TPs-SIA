@@ -366,8 +366,21 @@
                     ],
                     "properties": {
                         "pattern": {
+                            "type": ["array", "string"],
+                            "description": "Name(s) (file name(s) without extension) of the stored pattern(s) to corrupt",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        },
+                        "noise_type": {
                             "type": "string",
-                            "description": "Name (file name without extension) of the stored pattern to corrupt"
+                            "enum": [
+                                "flip"
+                            ],
+                            "description": "Types of noise to apply to the query, one query per type",
+                            "default": "flip"
                         },
                         "noise": {
                             "type": "array",
