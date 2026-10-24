@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from typing import cast
 
 from tp4.config import load_config
 
@@ -7,7 +8,7 @@ from tp4.functions.metrics.hits import hits
 from tp4.models.kohonen import Kohonen
 from tp4.parsers.dataset_parser import parse_dataset
 from tp4.models.pca import PCA
-from tp4.types.config.config import Config
+from tp4.types.config.config import Config, NeuralNetworkConfig, PCAConfig
 from tp4.types.config.method import Methods
 from tp4.visualization.pca import plot_biplot, plot_heatmap, plot_index, plot_scree
 
@@ -21,49 +22,46 @@ parser.add_argument("-c", "--config", dest="config", type=str, required=True, he
 parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output .npz file for the trained model and results (optional)")
 parser.add_argument("-p", "--plot", dest="plot", action="store_true", help="Show the plots of the method")
 
-def create_model(data: Config):
-    if "learning_rate" not in data or "radius" not in data or "epochs" not in data:
-        raise ValueError("Kohonen configuration is missing learning_rate, radius or epochs in the config file.")
+def create_model(method: Methods, data: NeuralNetworkConfig):
+    if method is Methods.KOHONEN and "kohonen" in data:
+        dataset = data["dataset"]
+        kohonen = data["kohonen"]
 
-    if "kohonen" not in data:
-        raise ValueError("Kohonen configuration is missing in the config file.")
-    
-    dataset = data["dataset"]
-    kohonen = data["kohonen"]
+        # Single generator for the whole model: same seed => same initial weights and same sample order
+        seed = SeedSequence(data["seed"])
+        random = RandomState(MT19937(seed))
 
-    # Single generator for the whole model: same seed => same initial weights and same sample order
-    seed = SeedSequence(data["seed"])
-    random = RandomState(MT19937(seed))
+        inputs, labels = parse_dataset(dataset["path"], dataset["columns"]["input"], dataset["columns"].get("label", None))
+        normalize, denormalize = dataset["normalize"](inputs)
+        inputs = normalize(inputs)
 
-    inputs, labels = parse_dataset(dataset["path"], dataset["columns"]["input"], dataset["columns"].get("label", None))
-    normalize, denormalize = dataset["normalize"](inputs)
-    inputs = normalize(inputs)
+        model = Kohonen(
+            kohonen["grid_size"],
+            kohonen["topology"],
+            kohonen["similarity"],
+            kohonen["neighborhood"],
+            data["learning_rate"],
+            data["radius"],
+            kohonen["initialization"],
+            random,
+        )
 
-    model = Kohonen(
-        kohonen["grid_size"],
-        kohonen["topology"],
-        kohonen["similarity"],
-        kohonen["neighborhood"],
-        data["learning_rate"],
-        data["radius"],
-        kohonen["initialization"],
-        random,
-    )
+        results = model.train(inputs, data["epochs"])
 
-    results = model.train(inputs, data["epochs"])
-
-    return model, results, inputs, labels, denormalize, seed
+        return model, results, inputs, labels, denormalize, seed
+    else:
+        raise ValueError("Invalid method or missing configuration for the specified method.")
 
 def main():
     args = parser.parse_args()
-    config = load_config(args.config)
+    method, config = load_config(args.config)
 
-    if config["method"] is Methods.KOHONEN:
-        run_kohonen(args, config)
-    elif config["method"] is Methods.PCA:
-        run_pca(args, config)
+    if method is Methods.KOHONEN:
+        run_kohonen(args, method, cast(NeuralNetworkConfig, config))
+    elif method is Methods.PCA:
+        run_pca(args, cast(PCAConfig, config))
 
-def run_pca(args: argparse.Namespace, config: Config):
+def run_pca(args: argparse.Namespace, config: PCAConfig):
     if "pca" not in config or config["pca"] is None:
         raise ValueError("PCA configuration is missing in the config file.")
     
@@ -118,8 +116,8 @@ def run_pca(args: argparse.Namespace, config: Config):
         plot_index(scores, list(labels))
         plt.show()
 
-def run_kohonen(args: argparse.Namespace, config: Config):
-    model, results, inputs, _, _, _ = create_model(config)
+def run_kohonen(args: argparse.Namespace, method: Methods, config: NeuralNetworkConfig):
+    model, results, inputs, _, _, _ = create_model(method, config)
 
     winners = model.predict(inputs)
     counts = hits(winners, model.neurons)

@@ -6,25 +6,36 @@ from tp4.types.config.method import Methods
 from tp4.types.config.pca import PCADefinition
 from tp4.types.schedule_function import ScheduleFunction
 
-class Config(TypedDict):
+class PCAConfig(TypedDict):
     """
-    Configuration of a run: the method and its blocks.
+    Configuration of a PCA run.
 
     Attributes:
-        method: Method to run, it decides which of the blocks below are present.
-        seed: Seed for every random draw (None = random).
-        dataset: Dataset path, columns and normalization (the normalization isn't used by PCA).
-        kohonen: Grid and functions of the map (kohonen).
-        learning_rate: η(i) schedule (kohonen).
-        radius: R(i) schedule (kohonen).
-        epochs: Passes over the dataset, iterations = epochs · samples (kohonen).
+        dataset: Dataset path, columns.
         pca: Component selection and eigenvector signs (pca).
+    """
+    dataset: Dataset
+    pca: PCADefinition
+
+class NeuralNetworkConfig(PCAConfig):
+    """
+    Configuration of a Neural Network run: the method and its blocks.
+
+    Attributes:
+        method: Method to run, it decides which network architecture is used.
+        seed: Seed for every random draw (None = random).
+        dataset: Dataset path, columns and normalization.
+        kohonen: Grid and functions of the map (kohonen).
+        learning_rate: η(i) schedule.
+        radius: R(i) schedule.
+        epochs: Passes over the dataset, iterations = epochs · samples.
     """
     method: Methods
     seed: int | None
     dataset: Dataset
     kohonen: NotRequired[KohonenDefinition]
-    learning_rate: NotRequired[ScheduleFunction]
-    radius: NotRequired[ScheduleFunction]
-    epochs: NotRequired[int]
-    pca: NotRequired[PCADefinition]
+    learning_rate: ScheduleFunction
+    radius: ScheduleFunction
+    epochs: int
+
+type Config = PCAConfig | NeuralNetworkConfig

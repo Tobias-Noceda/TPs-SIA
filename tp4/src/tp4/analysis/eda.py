@@ -78,7 +78,7 @@ def checks(df: pd.DataFrame, inputs: list[str], threshold: float) -> None:
     for i in range(len(columns)):
         for j in range(i + 1, len(columns)):
             r = correlation.iloc[i, j]
-            if abs(r) >= threshold:
+            if abs(r) >= threshold: # type: ignore
                 both = columns[i] in inputs and columns[j] in inputs
                 print(f"  {r:+.4f}  {columns[i]} ~ {columns[j]}{'  (both in inputs)' if both else ''}")
 

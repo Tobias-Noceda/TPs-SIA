@@ -60,7 +60,7 @@ def _load_schema() -> dict[str, Any]:
     with open(SCHEMA_PATH, "r") as file:
         return json.load(file)
 
-def load_config(path: str) -> Config:
+def load_config(path: str) -> tuple[Methods, Config]:
     """
     Load the config JSON at `path` and validate it against res/config/config.schema.json.
 
@@ -71,7 +71,7 @@ def load_config(path: str) -> Config:
 
     return parse_config(data, path)
 
-def parse_config(data: dict[str, Any], path: str = "<memory>") -> Config:
+def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods, Config]:
     """
     Validate an already loaded config dict (e.g. built by an experiment) and resolve it.
 
@@ -122,4 +122,4 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> Config:
             "orientation": Orientations(data["pca"].get("orientation", "max_loading_positive")).function(),
         }
 
-    return cast(Config, data)
+    return data["method"], cast(Config, data)
