@@ -18,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 tp4 = "tp4:main"
+eda = "tp4.analysis.eda:main"
 kohonen-sweep = "tp4.experiments.kohonen_sweep:main"
 kohonen-sweep-analysis = "tp4.analysis.kohonen_sweep:main"
 

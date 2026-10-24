@@ -6,11 +6,14 @@ from typing import Any, cast
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
 
-from tp4.types.config.config import KohonenConfig
+from tp4.types.config.config import Config
 
+from tp4.types.config.components import ComponentCriteria
 from tp4.types.config.initialization import InitializationFunctions
+from tp4.types.config.method import Methods
 from tp4.types.config.neighborhood import NeighborhoodFunctions
 from tp4.types.config.normalization import NormalizationFunctions
+from tp4.types.config.orientation import Orientations
 from tp4.types.config.schedule import ScheduleFunctions
 from tp4.types.config.similarity import SimilarityFunctions
 from tp4.types.config.topology import Topologies
@@ -57,7 +60,7 @@ def _load_schema() -> dict[str, Any]:
     with open(SCHEMA_PATH, "r") as file:
         return json.load(file)
 
-def load_config(path: str) -> KohonenConfig:
+def load_config(path: str) -> Config:
     """
     Load the config JSON at `path` and validate it against res/config/config.schema.json.
 
@@ -68,7 +71,7 @@ def load_config(path: str) -> KohonenConfig:
 
     return parse_config(data, path)
 
-def parse_config(data: dict[str, Any], path: str = "<memory>") -> KohonenConfig:
+def parse_config(data: dict[str, Any], path: str = "<memory>") -> Config:
     """
     Validate an already loaded config dict (e.g. built by an experiment) and resolve it.
 
@@ -93,20 +96,30 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> KohonenConfig:
             f"Expected structure:\n{_describe(schema)}"
         )
 
-    kohonen = data["kohonen"]
-    data["kohonen"] = {
-        "grid_size": int(kohonen["grid_size"]),
-        "topology": Topologies(kohonen.get("topology", "rectangular")).topology(),
-        "similarity": SimilarityFunctions(kohonen.get("similarity", "euclidean")).function(),
-        "neighborhood": NeighborhoodFunctions(kohonen.get("neighborhood", {"name": "step"})["name"]).function(),
-        "initialization": InitializationFunctions(kohonen.get("initialization", "samples")).function(),
-    }
-    for schedule in ("learning_rate", "radius"):
-        data[schedule] = ScheduleFunctions(data[schedule]["type"]).factory(
-            data[schedule]["value"], data[schedule].get("hyperparameters", None)
-        )
-    data["epochs"] = int(data["epochs"])
+    data["method"] = Methods(data["method"])
     data["seed"] = int(data["seed"]) if "seed" in data else None
+    # PCA standardizes by itself, so its dataset has no normalization: the default is only a placeholder
     data["dataset"]["normalize"] = NormalizationFunctions(data["dataset"].get("normalize", "z_score")).function()
 
-    return cast(KohonenConfig, data)
+    if data["method"] is Methods.KOHONEN:
+        kohonen = data["kohonen"]
+        data["kohonen"] = {
+            "grid_size": int(kohonen["grid_size"]),
+            "topology": Topologies(kohonen.get("topology", "rectangular")).topology(),
+            "similarity": SimilarityFunctions(kohonen.get("similarity", "euclidean")).function(),
+            "neighborhood": NeighborhoodFunctions(kohonen.get("neighborhood", {"name": "step"})["name"]).function(),
+            "initialization": InitializationFunctions(kohonen.get("initialization", "samples")).function(),
+        }
+        for schedule in ("learning_rate", "radius"):
+            data[schedule] = ScheduleFunctions(data[schedule]["type"]).factory(
+                data[schedule]["value"], data[schedule].get("hyperparameters", None)
+            )
+        data["epochs"] = int(data["epochs"])
+    elif data["method"] is Methods.PCA:
+        components = data["pca"].get("components", {"criterion": "kaiser"})
+        data["pca"] = {
+            "components": ComponentCriteria(components["criterion"]).function(components.get("value", None)),
+            "orientation": Orientations(data["pca"].get("orientation", "max_loading_positive")).function(),
+        }
+
+    return cast(Config, data)

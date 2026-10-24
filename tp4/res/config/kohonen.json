@@ -1,5 +1,6 @@
 {
     "$schema": "./config.schema.json",
+    "method": "kohonen",
     "kohonen": {
         "grid_size": 6,
         "topology": "rectangular",

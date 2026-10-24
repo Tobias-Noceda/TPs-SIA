@@ -1,19 +1,30 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "TP4 config",
-    "description": "TP4 configuration properties for the Kohonen network's hyperparameters",
+    "description": "TP4 configuration properties for the unsupervised methods' hyperparameters",
     "type": "object",
-    "required": ["kohonen", "learning_rate", "radius", "epochs", "dataset"],
+    "required": [
+        "method",
+        "dataset"
+    ],
     "$defs": {
         "schedule": {
             "type": "object",
             "description": "A value that changes with the iteration i out of epochs · samples",
-            "required": ["type", "value"],
+            "required": [
+                "type",
+                "value"
+            ],
             "properties": {
                 "type": {
                     "type": "string",
                     "description": "constant: value; inverse: value / (i + 1), floored at final; linear: value to final; exponential: geometric decay from value to final",
-                    "enum": ["constant", "inverse", "linear", "exponential"]
+                    "enum": [
+                        "constant",
+                        "inverse",
+                        "linear",
+                        "exponential"
+                    ]
                 },
                 "value": {
                     "type": "number",
@@ -36,22 +47,49 @@
             "allOf": [
                 {
                     "if": {
-                        "properties": { "type": { "enum": ["linear", "exponential"] } },
-                        "required": ["type"]
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "linear",
+                                    "exponential"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
                     },
                     "then": {
-                        "required": ["hyperparameters"],
-                        "properties": { "hyperparameters": { "required": ["final"] } }
+                        "required": [
+                            "hyperparameters"
+                        ],
+                        "properties": {
+                            "hyperparameters": {
+                                "required": [
+                                    "final"
+                                ]
+                            }
+                        }
                     }
                 }
             ]
         }
     },
     "properties": {
+        "method": {
+            "type": "string",
+            "description": "Method to run: kohonen (self-organizing map) or pca (principal component analysis)",
+            "enum": [
+                "kohonen",
+                "pca"
+            ]
+        },
         "kohonen": {
             "type": "object",
             "description": "The self-organizing map with its configuration properties",
-            "required": ["grid_size"],
+            "required": [
+                "grid_size"
+            ],
             "properties": {
                 "grid_size": {
                     "type": "integer",
@@ -61,32 +99,48 @@
                 "topology": {
                     "type": "string",
                     "description": "Shape of the grid: rectangular (4 neighbors at R = 1) or hexagonal (6 neighbors at R = 1)",
-                    "enum": ["rectangular", "hexagonal"],
+                    "enum": [
+                        "rectangular",
+                        "hexagonal"
+                    ],
                     "default": "rectangular"
                 },
                 "similarity": {
                     "type": "string",
                     "description": "Measure used to pick the winner neuron",
-                    "enum": ["euclidean", "exponential"],
+                    "enum": [
+                        "euclidean",
+                        "exponential"
+                    ],
                     "default": "euclidean"
                 },
                 "neighborhood": {
                     "type": "object",
                     "description": "How strongly the neurons around the winner are updated",
-                    "required": ["name"],
+                    "required": [
+                        "name"
+                    ],
                     "properties": {
                         "name": {
                             "type": "string",
                             "description": "step: full update within R (Kohonen rule); gaussian: e^(-d² / 2R²)",
-                            "enum": ["step", "gaussian"]
+                            "enum": [
+                                "step",
+                                "gaussian"
+                            ]
                         }
                     },
-                    "default": { "name": "step" }
+                    "default": {
+                        "name": "step"
+                    }
                 },
                 "initialization": {
                     "type": "string",
                     "description": "Initial weights: random training samples, or uniform within each feature's range",
-                    "enum": ["samples", "uniform"],
+                    "enum": [
+                        "samples",
+                        "uniform"
+                    ],
                     "default": "samples"
                 }
             }
@@ -111,7 +165,10 @@
         "dataset": {
             "type": "object",
             "description": "The dataset to map and the columns to use",
-            "required": ["path", "columns"],
+            "required": [
+                "path",
+                "columns"
+            ],
             "properties": {
                 "path": {
                     "type": "string",
@@ -120,18 +177,27 @@
                 "normalize": {
                     "type": "string",
                     "description": "Normalization of the input columns before training",
-                    "enum": ["none", "z_score", "min_max", "unit_length"],
+                    "enum": [
+                        "none",
+                        "z_score",
+                        "min_max",
+                        "unit_length"
+                    ],
                     "default": "z_score"
                 },
                 "columns": {
                     "type": "object",
                     "description": "Columns of the dataset",
-                    "required": ["input"],
+                    "required": [
+                        "input"
+                    ],
                     "properties": {
                         "input": {
                             "type": "array",
                             "description": "Numeric columns that make up each sample",
-                            "items": { "type": "string" },
+                            "items": {
+                                "type": "string"
+                            },
                             "minItems": 1,
                             "uniqueItems": true
                         },
@@ -142,6 +208,141 @@
                     }
                 }
             }
+        },
+        "pca": {
+            "type": "object",
+            "description": "Principal component analysis over the correlation matrix (the dataset is standardized by the method itself)",
+            "properties": {
+                "components": {
+                    "type": "object",
+                    "description": "How many components to keep",
+                    "required": [
+                        "criterion"
+                    ],
+                    "properties": {
+                        "criterion": {
+                            "type": "string",
+                            "description": "kaiser: eigenvalue > 1; variance: smallest q with cumulative explained variance ≥ value; fixed: q = value",
+                            "enum": [
+                                "kaiser",
+                                "variance",
+                                "fixed"
+                            ]
+                        },
+                        "value": {
+                            "type": "number",
+                            "description": "Cumulative variance threshold in (0, 1] (variance) or number of components ≥ 1 (fixed)",
+                            "exclusiveMinimum": 0
+                        }
+                    },
+                    "allOf": [
+                        {
+                            "if": {
+                                "properties": {
+                                    "criterion": {
+                                        "const": "variance"
+                                    }
+                                },
+                                "required": [
+                                    "criterion"
+                                ]
+                            },
+                            "then": {
+                                "required": [
+                                    "value"
+                                ],
+                                "properties": {
+                                    "value": {
+                                        "maximum": 1
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "if": {
+                                "properties": {
+                                    "criterion": {
+                                        "const": "fixed"
+                                    }
+                                },
+                                "required": [
+                                    "criterion"
+                                ]
+                            },
+                            "then": {
+                                "required": [
+                                    "value"
+                                ],
+                                "properties": {
+                                    "value": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "default": {
+                        "criterion": "kaiser"
+                    }
+                },
+                "orientation": {
+                    "type": "string",
+                    "description": "Sign of each eigenvector (it's arbitrary): max_loading_positive makes its largest absolute loading positive; none keeps the solver's sign",
+                    "enum": [
+                        "max_loading_positive",
+                        "none"
+                    ],
+                    "default": "max_loading_positive"
+                }
+            },
+            "additionalProperties": false
         }
-    }
+    },
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "method": {
+                        "const": "kohonen"
+                    }
+                },
+                "required": [
+                    "method"
+                ]
+            },
+            "then": {
+                "required": [
+                    "kohonen",
+                    "learning_rate",
+                    "radius",
+                    "epochs"
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "method": {
+                        "const": "pca"
+                    }
+                },
+                "required": [
+                    "method"
+                ]
+            },
+            "then": {
+                "required": [
+                    "pca"
+                ],
+                "properties": {
+                    "dataset": {
+                        "properties": {
+                            "normalize": false
+                        }
+                    }
+                }
+            }
+        }
+    ]
 }

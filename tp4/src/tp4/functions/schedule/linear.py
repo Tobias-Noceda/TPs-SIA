@@ -3,7 +3,7 @@ from tp4.types.schedule_function import ScheduleFunction
 
 import numpy as np
 
-# Linear decay from the initial value to the final one (R(0) = grid size down to 1)
+# Linear decay from the initial value to the final one, e.g. R(0) = grid size down to 1
 def linear_schedule(value: Float, final: Float | None = None) -> ScheduleFunction:
     """value at i = 0, final at the last iteration. Requires final."""
     if final is None:
