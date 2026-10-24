@@ -19,8 +19,6 @@ dependencies = [
 [project.scripts]
 tp4 = "tp4:main"
 eda = "tp4.analysis.eda:main"
-kohonen-sweep = "tp4.experiments.kohonen_sweep:main"
-kohonen-sweep-analysis = "tp4.analysis.kohonen_sweep:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

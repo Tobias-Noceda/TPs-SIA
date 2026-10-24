@@ -46,10 +46,7 @@ Desde `tp4/` (paths de datasets relativos al cwd):
 
 ```bash
 uv sync --all-packages   # ¡no `uv sync` a secas desde la raíz: desinstala los demás TPs del venv!
-uv run tp4 --config res/config/kohonen.json [--output res/output/kohonen.npz] [--plot]
-uv run kohonen-sweep -c res/config/kohonen.json [--grid-sizes 4 6 8 10] [--learning-rates 0.1 0.5 0.9] \
-    [--radii 1 k/2 k] [--seeds 3] [--epochs N]                     # → res/output/kohonen_sweep/runs/*.npz
-uv run kohonen-sweep-analysis [-i res/output/kohonen_sweep]        # → summary.csv + plots/sweep.png
+uv run tp4 --config res/config/kohonen.json
 uv run tp4 --config res/config/pca.json [--output res/output/pca.npz] [--plot]
 uv run eda --config res/config/pca.json [-o res/output/eda] [--threshold 0.9]
 ```
@@ -63,10 +60,7 @@ estandarizado, matriz de correlación, histogramas) e imprime chequeos sobre **t
 numéricas: faltantes, duplicados, constantes, columnas derivadas, composiciones, pares |r| ≥ umbral
 y dependencias lineales exactas entre las entradas.
 
-`tp4` imprime QE, TE, neuronas muertas y los creadores por neurona; `--output` guarda pesos (normalizados
-y desnormalizados), posiciones, ganadoras, coordenadas, etiquetas, hits, matriz U y resultados por
-época; `--plot` muestra hits + matriz U, QE/TE por época y un *component plane* por variable.
-`res/output/` está en `.gitignore`.
+Kohonen imprime QE, TE y neuronas muertas. `res/output/` está en `.gitignore`.
 
 ## Configuración
 
@@ -110,10 +104,7 @@ src/tp4/
 │   ├── linear_algebra/             # sorted_eigen (eigh, descendente), orientation (max_loading_positive, align)
 │   └── components/                 # kaiser, variance, fixed (ComponentSelection)
 ├── parsers/dataset_parser.py       # CSV numérico → X (P, n) + etiquetas
-├── visualization/kohonen.py        # draw_grid (polígonos por neurona), plot_map, plot_components, plot_training
 ├── visualization/pca.py            # plot_heatmap (divergente), plot_scree, plot_biplot, plot_index
-├── experiments/kohonen_sweep.py    # barrido k × η₀ × R₀ × semillas (paralelo)
-├── analysis/kohonen_sweep.py       # summary.csv + plots/sweep.png
 ├── analysis/eda.py                 # EDA del dataset de una config
 └── types/                          # Float, Samples, GridPositions/Distances, *Function aliases,
     └── config/                     #   Topology, EpochResult + TypedDicts/enums de la config
@@ -134,8 +125,8 @@ src/tp4/
 - Un schedule de R puede bajar de 1 (con `step`, R < 1 actualiza solo la ganadora): se controla con `final`.
 - Métricas por época: QE (media ‖x − W_bmu‖, euclídea siempre) y TE (fracción con 1ª y 2ª BMU no
   adyacentes). Neuronas muertas = hits 0.
-- **Normalización devuelve (normalize, denormalize)**: los *component planes* se muestran en las
-  unidades originales; `unit_length` no es invertible (denormalize = None).
+- **Normalización devuelve (normalize, denormalize)**: permite volver los pesos a las unidades
+  originales; `unit_length` no es invertible (denormalize = None).
 - **PCA sigue Clase 15.2 p.32 paso a paso** en `PCA.fit`: X → estandarizar (`fit_z_score`, desvío
   poblacional) → Sx = Zᵀ Z / P (= `np.corrcoef`) → `eigh` → orden descendente → V → Y = Z V. El modelo
   estandariza solo, por eso `dataset.normalize` está prohibido con `method: pca`.
@@ -153,8 +144,6 @@ src/tp4/
 - `res/config/kohonen.json` usa las 27 variables no derivadas (sin las 4 derivadas exactas ni
   id/name). Ajustar tras el EDA (1.1).
 - Dataset real, 6×6 / η 0.5→0.01 / R 6→1 / 500 épocas: QE 2.59, TE 0.02, 15/36 muertas (~2 s).
-  Barrido k ∈ {3..6} × η₀ ∈ {0.1, 0.5, 0.9} × R₀ ∈ {1, k/2, k} × 3 semillas: QE baja siempre con k
-  (más neuronas por creador), así que elegir k mirando también neuronas muertas y TE, no solo QE.
 - PCA verificado: ejemplo de p.28 (λ = 6, 3, 2; V = p.30 salvo signo); sobre creadores Sx == `np.corrcoef`,
   Σλ = p, cov(Y) = diag(λ), λ = s²/P del SVD de Z, V ortonormal.
 - PCA con las 27 entradas: PC1 49.7%, PC2 9.2%; Kaiser conserva 6 (81%). PC1 opone tamaño/formato
