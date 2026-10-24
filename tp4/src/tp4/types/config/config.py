@@ -1,24 +1,30 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from tp4.types.config.dataset import Dataset
 from tp4.types.config.kohonen import KohonenDefinition
+from tp4.types.config.method import Methods
+from tp4.types.config.pca import PCADefinition
 from tp4.types.schedule_function import ScheduleFunction
 
-class KohonenConfig(TypedDict):
+class Config(TypedDict):
     """
-    Configuration for the Kohonen network.
+    Configuration of a run: the method and its blocks.
 
     Attributes:
-        kohonen: Grid and functions of the map.
-        learning_rate: η(i) schedule.
-        radius: R(i) schedule.
-        epochs: Passes over the dataset (iterations = epochs · samples).
-        seed: Seed for weight initialization and shuffling (None = random).
-        dataset: Dataset path, columns and normalization.
+        method: Method to run, it decides which of the blocks below are present.
+        seed: Seed for every random draw (None = random).
+        dataset: Dataset path, columns and normalization (the normalization isn't used by PCA).
+        kohonen: Grid and functions of the map (kohonen).
+        learning_rate: η(i) schedule (kohonen).
+        radius: R(i) schedule (kohonen).
+        epochs: Passes over the dataset, iterations = epochs · samples (kohonen).
+        pca: Component selection and eigenvector signs (pca).
     """
-    kohonen: KohonenDefinition
-    learning_rate: ScheduleFunction
-    radius: ScheduleFunction
-    epochs: int
+    method: Methods
     seed: int | None
     dataset: Dataset
+    kohonen: NotRequired[KohonenDefinition]
+    learning_rate: NotRequired[ScheduleFunction]
+    radius: NotRequired[ScheduleFunction]
+    epochs: NotRequired[int]
+    pca: NotRequired[PCADefinition]
