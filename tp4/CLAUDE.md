@@ -24,7 +24,7 @@ Agrupar creadores considerando perfil comercial, audiencia y contenido.
   2. **Kohonen**: agrupar creadores con todas sus variables; variar hiperparámetros y justificar la
      elección; analizar grilla, distribución de creadores y matriz U; interpretar regiones
      (¿coinciden con PC1/PC2? ¿qué indica una distancia alta en la matriz U?). ✅ implementado
-  3. **Oja**: índice de creadores; interpretarlo; ¿elegir siempre el máximo?; comparar con PC1. ⏳
+  3. **Oja**: índice de creadores; interpretarlo; ¿elegir siempre el máximo?; comparar con PC1. ✅ implementado
   4. **Decisiones de campaña**: fútbol (alcance / descubrimiento / profundidad educativa), comparar
      con selección por `followers`, mantenimiento del sistema (nuevas campañas, creadores, variables,
      actualización mensual).
@@ -46,9 +46,13 @@ Desde `tp4/` (paths de datasets relativos al cwd):
 
 ```bash
 uv sync --all-packages   # ¡no `uv sync` a secas desde la raíz: desinstala los demás TPs del venv!
-uv run tp4 --config res/config/kohonen.json
+uv run tp4 --config res/config/kohonen.json [--output res/output/kohonen.npz] [--plot]
+uv run kohonen-sweep -c res/config/kohonen.json [--grid-sizes 4 6 8 10] [--learning-rates 0.1 0.5 0.9] \
+    [--radii 1 k/2 k] [--seeds 3] [--epochs N]                     # → res/output/kohonen_sweep/runs/*.npz
+uv run kohonen-sweep-analysis [-i res/output/kohonen_sweep]        # → summary.csv + plots/sweep.png
 uv run tp4 --config res/config/pca.json [--output res/output/pca.npz] [--plot]
 uv run eda --config res/config/pca.json [-o res/output/eda] [--threshold 0.9]
+uv run tp4 --config res/config/oja.json [--output res/output/oja.npz] [--plot]
 ```
 
 PCA imprime autovalores (λ, % explicado, acumulado, `*` = componentes conservadas), cargas de PC1/PC2
@@ -60,7 +64,15 @@ estandarizado, matriz de correlación, histogramas) e imprime chequeos sobre **t
 numéricas: faltantes, duplicados, constantes, columnas derivadas, composiciones, pares |r| ≥ umbral
 y dependencias lineales exactas entre las entradas.
 
-Kohonen imprime QE, TE y neuronas muertas. `res/output/` está en `.gitignore`.
+`tp4` imprime QE, TE, neuronas muertas y los creadores por neurona; `--output` guarda pesos (normalizados
+y desnormalizados), posiciones, ganadoras, coordenadas, etiquetas, hits, matriz U y resultados por
+época; `--plot` muestra hits + matriz U, QE/TE por época y un *component plane* por variable.
+Oja imprime ‖w‖, cos(w, PC1) y ángulo, var(índice) vs λ₁, pesos de Oja vs cargas de PC1, Pearson y
+Spearman entre índice y scores de PC1, y los 5 creadores más altos/bajos del índice; `--output` guarda
+w (alineado con PC1), w por época, ‖w‖ por época, índice, PC1, scores de PC1, etiquetas y columnas;
+`--plot` muestra convergencia (|cos(w, PC1)| y ‖w‖ por época), barras w vs PC1, índice por creador y
+dispersión índice vs PC1.
+`res/output/` está en `.gitignore`.
 
 ## Configuración
 
@@ -69,18 +81,20 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 | Clave | Valores |
 |---|---|
-| `method` | `kohonen` \| `pca` (obligatorio): decide qué bloques se exigen y qué corre `main` |
+| `method` | `kohonen` \| `pca` \| `oja` (obligatorio): decide qué bloques se exigen y qué corre `main` |
 | `pca.components` | `{ criterion: kaiser }` (default, λ > 1) \| `{ criterion: variance, value ∈ (0, 1] }` (menor q con acumulado ≥ value) \| `{ criterion: fixed, value: q }` |
 | `pca.orientation` | `max_loading_positive` (default: la carga de mayor módulo de cada autovector es positiva) \| `none` |
+| `oja.learning_rate` | η constante (obligatorio); estable solo si η · ‖x‖² ≲ 1 → 0.001 con las 27 entradas |
+| `oja.initialization` | `unit_uniform` (default, U[0, 1) como en la teoría) \| `uniform` \| `samples` |
 | `kohonen.grid_size` | k ≥ 2 (grilla k × k) |
 | `kohonen.topology` | `rectangular` (default, 4 vecinos con R = 1) \| `hexagonal` (6 vecinos) |
 | `kohonen.similarity` | `euclidean` (default) \| `exponential` (`1 − e^{−d²}`: mismo ganador que euclídea) |
 | `kohonen.neighborhood` | `{ name: step }` (default, regla de Kohonen: todo d ≤ R se actualiza igual) \| `{ name: gaussian }` (`e^{−d²/2R²}`) |
-| `kohonen.initialization` | `samples` (default, muestras al azar → evita neuronas muertas) \| `uniform` (U[min, max] por variable) |
+| `kohonen.initialization` | `samples` (default, muestras al azar → evita neuronas muertas) \| `uniform` (U[min, max] por variable) \| `unit_uniform` (U[0, 1)) |
 | `learning_rate`, `radius` | schedule `{ type, value, hyperparameters?: { final } }`: `constant`; `inverse` (`value/(i+1)`, piso `final`); `linear` y `exponential` (de `value` a `final`, `final` obligatorio). `i` = iteración global de `epochs · P` |
 | `epochs` | pasadas por el dataset, una muestra por iteración (teoría: ~500 · n iteraciones) |
 | `seed` | opcional: `RandomState(MT19937(SeedSequence(seed)))` para pesos iniciales y orden |
-| `dataset` | `path`, `normalize` (solo kohonen, prohibido en pca: `z_score` default \| `min_max` \| `unit_length` \| `none`), `columns.input` (lista explícita), `columns.label` (opcional, p. ej. `name`) |
+| `dataset` | `path`, `normalize` (kohonen; en oja solo `z_score`; prohibido en pca: `z_score` default \| `min_max` \| `unit_length` \| `none`), `columns.input` (lista explícita), `columns.label` (opcional, p. ej. `name`) |
 
 ## Arquitectura
 
@@ -92,19 +106,25 @@ src/tp4/
 ├── interfaces/projection.py        # Projection: fit(inputs), project(inputs) -> (P, q)
 ├── models/kohonen.py               # Kohonen(UnsupervisedNetwork[EpochResult])
 ├── models/pca.py                   # PCA(Projection): pasos del procedimiento de Clase 15.2 p.32
+├── models/oja.py                   # Oja(UnsupervisedNetwork[OjaEpochResult]): una neurona lineal, regla de Oja
 ├── functions/
 │   ├── normalization/              # z_score (copia de tp3 + wrapper), min_max, unit_length, identity
 │   ├── similarity/                 # euclidean, exponential
 │   ├── neighborhood/               # step, gaussian
 │   ├── schedule/                   # constant, inverse, linear, exponential (factories value, final)
-│   ├── initialization/             # samples, uniform
+│   ├── initialization/             # samples, uniform, unit_uniform
+│   ├── hebbian/oja.py              # Δw = η · s · (x − s · w)
 │   ├── topology/                   # rectangular, hexagonal (posiciones con vecinos a distancia 1)
 │   ├── metrics/                    # quantization_error, topographic_error, u_matrix, hits
 │   ├── statistics/correlation.py   # Zᵀ Z / P
-│   ├── linear_algebra/             # sorted_eigen (eigh, descendente), orientation (max_loading_positive, align)
+│   ├── linear_algebra/             # sorted_eigen (eigh, descendente), orientation (max_loading_positive, align), cosine
 │   └── components/                 # kaiser, variance, fixed (ComponentSelection)
 ├── parsers/dataset_parser.py       # CSV numérico → X (P, n) + etiquetas
+├── visualization/kohonen.py        # draw_grid (polígonos por neurona), plot_map, plot_components, plot_training
 ├── visualization/pca.py            # plot_heatmap (divergente), plot_scree, plot_biplot, plot_index
+├── visualization/oja.py            # plot_convergence, plot_loadings (w vs PC1), plot_index_comparison
+├── experiments/kohonen_sweep.py    # barrido k × η₀ × R₀ × semillas (paralelo)
+├── analysis/kohonen_sweep.py       # summary.csv + plots/sweep.png
 ├── analysis/eda.py                 # EDA del dataset de una config
 └── types/                          # Float, Samples, GridPositions/Distances, *Function aliases,
     └── config/                     #   Topology, EpochResult + TypedDicts/enums de la config
@@ -125,14 +145,23 @@ src/tp4/
 - Un schedule de R puede bajar de 1 (con `step`, R < 1 actualiza solo la ganadora): se controla con `final`.
 - Métricas por época: QE (media ‖x − W_bmu‖, euclídea siempre) y TE (fracción con 1ª y 2ª BMU no
   adyacentes). Neuronas muertas = hits 0.
-- **Normalización devuelve (normalize, denormalize)**: permite volver los pesos a las unidades
-  originales; `unit_length` no es invertible (denormalize = None).
+- **Normalización devuelve (normalize, denormalize)**: los *component planes* se muestran en las
+  unidades originales; `unit_length` no es invertible (denormalize = None).
 - **PCA sigue Clase 15.2 p.32 paso a paso** en `PCA.fit`: X → estandarizar (`fit_z_score`, desvío
   poblacional) → Sx = Zᵀ Z / P (= `np.corrcoef`) → `eigh` → orden descendente → V → Y = Z V. El modelo
   estandariza solo, por eso `dataset.normalize` está prohibido con `method: pca`.
 - El signo de un autovector es arbitrario (p.46 "autovector opuesto"): `max_loading_positive` lo fija
   para que sea reproducible; para comparar Oja vs PC1 usar `align(v, reference)`.
 - `scores` proyecta sobre todas las PCs; `project` solo sobre las q elegidas.
+- **Oja sigue el Algoritmo 12 al pie de la letra**: por época, cada muestra **en el orden del
+  dataset** (sin barajar), `s = x · w; w += η · s · (x − s · w)` con **η constante**; w inicial U[0, 1).
+  La semilla solo afecta el w inicial. `train` guarda w por época (monitoreo, no altera el algoritmo).
+  Si w diverge (no finito) se lanza `ValueError` sugiriendo bajar η.
+- **η de la teoría (η₀ ≤ 0.5, 1/(1.2 λ₁) ≈ 0.06) diverge** con 27 entradas estandarizadas
+  (máx ‖x‖² = 60): hace falta η · ‖x‖² ≲ 1. Con η constante el punto fijo queda sesgado por η:
+  10⁻² → |cos| 0.982, 5·10⁻³ → 0.993, 10⁻³ → 0.9996, 10⁻⁴ → 0.99999 (se estabiliza en ~100 épocas).
+- Oja exige datos centrados (`normalize: z_score`, el esquema rechaza otro valor): así w → v₁ de la
+  matriz de correlación, la misma que usa PCA. El signo de w es arbitrario: se alinea con PC1 (`align`).
 - El slide escribe `argmin e^{−‖x−w‖²}` para la exponencial: es argmax; se implementó como
   disimilitud `1 − e^{−d²}`.
 
@@ -144,6 +173,8 @@ src/tp4/
 - `res/config/kohonen.json` usa las 27 variables no derivadas (sin las 4 derivadas exactas ni
   id/name). Ajustar tras el EDA (1.1).
 - Dataset real, 6×6 / η 0.5→0.01 / R 6→1 / 500 épocas: QE 2.59, TE 0.02, 15/36 muertas (~2 s).
+  Barrido k ∈ {3..6} × η₀ ∈ {0.1, 0.5, 0.9} × R₀ ∈ {1, k/2, k} × 3 semillas: QE baja siempre con k
+  (más neuronas por creador), así que elegir k mirando también neuronas muertas y TE, no solo QE.
 - PCA verificado: ejemplo de p.28 (λ = 6, 3, 2; V = p.30 salvo signo); sobre creadores Sx == `np.corrcoef`,
   Σλ = p, cov(Y) = diag(λ), λ = s²/P del SVD de Z, V ortonormal.
 - PCA con las 27 entradas: PC1 49.7%, PC2 9.2%; Kaiser conserva 6 (81%). PC1 opone tamaño/formato
@@ -151,5 +182,10 @@ src/tp4/
   profundidad (palabras de caption, saves, comments, visitas al perfil, watch time, tutorial/review; +).
   PC1 alto: cuentas de perros; bajo: fútbol/maquillaje masivos. PC2: showcase + arte (+) vs audiencia
   argentina + perros (−).
+- Oja con las 27 entradas, η = 0.001, 500 épocas, seed 42: ‖w‖ = 1.0033, cos(w, PC1) = 0.99959 (1.6°),
+  var(índice) 13.50 vs λ₁ 13.42, Pearson 0.99996 y Spearman 1.0 con los scores de PC1 (mismo ranking).
+  Con la orientación de PCA, índice alto = perros/profundidad (@mundoanimal.ar, @consejoscaninos),
+  bajo = fútbol/arte masivos (@futbolsinvueltas, @galeriacotidiana): el índice no es "mejor creador",
+  es la posición en el eje tamaño ↔ profundidad, y su signo es arbitrario.
 - Pendiente: decidir variables finales (sacar 1 `topic_*` y 1 `content_*`, y redundantes del bloque de
-  alcance), Oja (1.3), decisiones (1.4), Hopfield (ej. 2).
+  alcance), decisiones (1.4), Hopfield (ej. 2).

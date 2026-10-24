@@ -3,6 +3,7 @@ from typing import NotRequired, TypedDict
 from tp4.types.config.dataset import Dataset
 from tp4.types.config.kohonen import KohonenDefinition
 from tp4.types.config.method import Methods
+from tp4.types.config.oja import OjaDefinition
 from tp4.types.config.pca import PCADefinition
 from tp4.types.schedule_function import ScheduleFunction
 
@@ -38,4 +39,21 @@ class NeuralNetworkConfig(PCAConfig):
     radius: ScheduleFunction
     epochs: int
 
-type Config = PCAConfig | NeuralNetworkConfig
+class OjaConfig(TypedDict):
+    """
+    Configuration of an Oja run.
+
+    Attributes:
+        method: Always oja.
+        seed: Seed for the initial weights (None = random).
+        dataset: Dataset path, columns and normalization (z_score).
+        oja: Constant learning rate and initial weights (oja).
+        epochs: Passes over the dataset, in its order.
+    """
+    method: Methods
+    seed: int | None
+    dataset: Dataset
+    oja: OjaDefinition
+    epochs: int
+
+type Config = PCAConfig | NeuralNetworkConfig | OjaConfig
