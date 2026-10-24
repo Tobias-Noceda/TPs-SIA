@@ -17,6 +17,7 @@ from tp4.types.config.orientation import Orientations
 from tp4.types.config.schedule import ScheduleFunctions
 from tp4.types.config.similarity import SimilarityFunctions
 from tp4.types.config.topology import Topologies
+from tp4.types.config.update import UpdateRules
 
 import numpy as np
 
@@ -101,7 +102,8 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
     data["method"] = Methods(data["method"])
     data["seed"] = int(data["seed"]) if "seed" in data else None
     # PCA standardizes by itself, so its dataset has no normalization: the default is only a placeholder
-    data["dataset"]["normalize"] = NormalizationFunctions(data["dataset"].get("normalize", "z_score")).function()
+    if "dataset" in data:
+        data["dataset"]["normalize"] = NormalizationFunctions(data["dataset"].get("normalize", "z_score")).function()
 
     if data["method"] is Methods.KOHONEN:
         kohonen = data["kohonen"]
@@ -130,5 +132,16 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
             "initialization": InitializationFunctions(oja.get("initialization", "unit_uniform")).function(),
         }
         data["epochs"] = int(data["epochs"])
+    elif data["method"] is Methods.HOPFIELD:
+        hopfield = data["hopfield"]
+        data["hopfield"] = {
+            "patterns": list(hopfield["patterns"]),
+            "update": UpdateRules(hopfield.get("update", "synchronous")).function(),
+            "max_iterations": int(hopfield.get("max_iterations", 100)),
+            "query": {
+                "pattern": hopfield["query"]["pattern"],
+                "noise": [np.float64(level) for level in hopfield["query"]["noise"]],
+            },
+        }
 
     return data["method"], cast(Config, data)

@@ -4,15 +4,19 @@ from typing import cast
 
 from tp4.config import load_config
 
+from tp4.functions.activation.sign import sign
 from tp4.functions.components.fixed import fixed_components
 from tp4.functions.linear_algebra.cosine import cosine_similarity
 from tp4.functions.linear_algebra.orientation import align
 from tp4.functions.metrics.hits import hits
+from tp4.functions.noise.flip import flip_noise
+from tp4.models.hopfield import Hopfield
 from tp4.models.kohonen import Kohonen
 from tp4.models.oja import Oja
 from tp4.parsers.dataset_parser import parse_dataset
+from tp4.parsers.pattern_parser import parse_pattern
 from tp4.models.pca import PCA
-from tp4.types.config.config import Config, NeuralNetworkConfig, OjaConfig, PCAConfig
+from tp4.types.config.config import HopfieldConfig, NeuralNetworkConfig, OjaConfig, PCAConfig
 from tp4.types.config.method import Methods
 from tp4.visualization.oja import plot_convergence, plot_index_comparison, plot_loadings
 from tp4.visualization.pca import plot_biplot, plot_heatmap, plot_index, plot_scree
@@ -21,7 +25,7 @@ import numpy as np
 from numpy.random import MT19937, RandomState, SeedSequence
 import matplotlib.pyplot as plt
 
-parser = argparse.ArgumentParser(description="Unsupervised learning: Kohonen self-organizing map, PCA and Oja's rule.")
+parser = argparse.ArgumentParser(description="Unsupervised learning: Kohonen self-organizing map, PCA, Oja's rule and Hopfield network.")
 
 parser.add_argument("-c", "--config", dest="config", type=str, required=True, help="Configuration JSON file")
 parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output .npz file for the trained model and results (optional)")
@@ -67,6 +71,8 @@ def main():
         run_pca(args, cast(PCAConfig, config))
     elif method is Methods.OJA:
         run_oja(args, cast(OjaConfig, config))
+    elif method is Methods.HOPFIELD:
+        run_hopfield(args, cast(HopfieldConfig, config))
 
 def run_pca(args: argparse.Namespace, config: PCAConfig):
     if "pca" not in config or config["pca"] is None:
@@ -187,6 +193,101 @@ def run_oja(args: argparse.Namespace, config: OjaConfig):
         plot_index(index, list(labels) if labels is not None else None, name="Oja index")
         plot_index_comparison(index, pc1, list(labels) if labels is not None else None)
         plt.show()
+
+def run_hopfield(args: argparse.Namespace, config: HopfieldConfig):
+    hopfield = config["hopfield"]
+
+    parsed = [parse_pattern(path) for path in hopfield["patterns"]]
+    names = [Path(path).stem for path in hopfield["patterns"]]
+    shapes = {shape for _, shape in parsed}
+    if len(shapes) != 1:
+        raise ValueError(f"Every pattern must have the same shape, got {sorted(shapes)}.")
+    if len(set(names)) != len(names):
+        raise ValueError("Pattern file names must be unique: they name the patterns.")
+    if hopfield["query"]["pattern"] not in names:
+        raise ValueError(f"Query pattern '{hopfield['query']['pattern']}' is not stored: {names}.")
+    
+    shape = parsed[0][1]
+    patterns = np.array([pattern for pattern, _ in parsed])
+
+    p: int
+    n: int
+    p, n = patterns.shape
+
+    # Single generator: same seed => same noisy queries and same asynchronous order
+    random = RandomState(MT19937(SeedSequence(config["seed"])))
+    model = Hopfield(hopfield["update"], hopfield["max_iterations"], random)
+    model.store(patterns)
+
+    print(f"N = {n} neurons ({shape[0]}x{shape[1]}), p = {p} patterns: p / N = {p / n:.4f} (capacity ≈ 0.15 → p ≤ {int(0.15 * n)})")
+
+    # Orthogonality: overlap ξμ · ξν / N, 0 for orthogonal patterns (no crosstalk)
+    overlap = patterns @ patterns.T / n
+    off = np.abs(overlap[~np.eye(p, dtype=bool)])
+    print("Overlap ξμ · ξν / N:")
+    print("  " + " ".join(f"{name[:10]:>10}" for name in names))
+    for name, row in zip(names, overlap):
+        print(f"  {' '.join(f'{value:>+10.3f}' for value in row)}  {name}")
+    if p > 1:
+        print(f"|overlap| off the diagonal: max {off.max():.3f}, mean {off.mean():.3f}")
+
+    # A stored pattern is a fixed point if one update leaves it unchanged
+    print("Stability of the stored patterns (entries flipped by one synchronous update):")
+    for name, pattern in zip(names, patterns):
+        flipped = int(np.sum(sign(model.weights @ pattern, pattern) != pattern))
+        print(f"  {name}: {'stable' if flipped == 0 else f'{flipped} entries flip'}")
+
+    target = names.index(hopfield["query"]["pattern"])
+    levels = hopfield["query"]["noise"]
+    recalls = []
+    results = []
+    print(f"Queries from {names[target]}:")
+    for level in levels:
+        query = flip_noise(random, patterns[target], level)
+        recall = model.recall(query)
+        recalls.append(recall)
+
+        final = recall.state @ patterns.T / n
+        nearest = int(np.argmax(np.abs(final)))
+        if final[nearest] == 1:
+            result = names[nearest]
+        elif final[nearest] == -1:
+            result = f"inverse of {names[nearest]}"
+        else:
+            distance = int(np.sum(recall.state != np.sign(final[nearest]) * patterns[nearest]))
+            result = f"spurious ({'' if final[nearest] > 0 else 'inverse of '}{names[nearest]} at {distance})"
+        results.append(result)
+
+        energies = " → ".join(f"{step.energy:.2f}" for step in recall.steps)
+        print(f"  noise {level:>4.0%}: {len(recall.steps) - 1:>3} steps, {recall.convergence.value:<14} → {result}")
+        print(f"    H: {energies}")
+
+    overlaps = np.array([recall.state @ patterns.T / n for recall in recalls])
+    # Recalls have different lengths: one (steps, N) states / (steps,) energies array per noise level
+    states = np.empty(len(recalls), dtype=object)
+    energies = np.empty(len(recalls), dtype=object)
+    for k, recall in enumerate(recalls):
+        states[k] = np.array([step.state for step in recall.steps])
+        energies[k] = np.array([step.energy for step in recall.steps])
+
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        np.savez(
+            args.output,
+            weights=model.weights,
+            patterns=patterns,
+            names=np.array(names),
+            shape=np.array(shape),
+            overlap=overlap,
+            levels=np.array(levels),
+            queries=np.array([recall.steps[0].state for recall in recalls]),
+            finals=np.array([recall.state for recall in recalls]),
+            final_overlaps=overlaps,
+            states=states,
+            energies=energies,
+            convergence=np.array([recall.convergence.value for recall in recalls]),
+            results=np.array(results),
+        )
 
 def run_kohonen(args: argparse.Namespace, method: Methods, config: NeuralNetworkConfig):
     model, results, inputs, _, _, _ = create_model(method, config)

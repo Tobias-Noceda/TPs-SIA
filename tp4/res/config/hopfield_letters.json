@@ -1,0 +1,19 @@
+{
+    "$schema": "./config.schema.json",
+    "method": "hopfield",
+    "seed": 42,
+    "hopfield": {
+        "patterns": [
+            "res/datasets/letters/H.txt",
+            "res/datasets/letters/J.txt",
+            "res/datasets/letters/L.txt",
+            "res/datasets/letters/X.txt"
+        ],
+        "update": "synchronous",
+        "max_iterations": 100,
+        "query": {
+            "pattern": "J",
+            "noise": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        }
+    }
+}
