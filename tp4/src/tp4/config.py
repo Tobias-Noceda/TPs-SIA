@@ -12,6 +12,7 @@ from tp4.types.config.components import ComponentCriteria
 from tp4.types.config.initialization import InitializationFunctions
 from tp4.types.config.method import Methods
 from tp4.types.config.neighborhood import NeighborhoodFunctions
+from tp4.types.config.noise import NoiseFunctions
 from tp4.types.config.normalization import NormalizationFunctions
 from tp4.types.config.orientation import Orientations
 from tp4.types.config.schedule import ScheduleFunctions
@@ -140,6 +141,7 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
             "max_iterations": int(hopfield.get("max_iterations", 100)),
             "query": {
                 "pattern": hopfield["query"]["pattern"],
+                "noise_function": NoiseFunctions(hopfield["query"].get("noise_type", "flip")).function(),
                 "noise": [np.float64(level) for level in hopfield["query"]["noise"]],
             },
         }
