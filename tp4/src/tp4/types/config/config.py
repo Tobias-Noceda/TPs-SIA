@@ -31,6 +31,7 @@ class NeuralNetworkConfig(PCAConfig):
         learning_rate: η(i) schedule.
         radius: R(i) schedule.
         epochs: Passes over the dataset, iterations = epochs · samples.
+        pca_config: Optional PCA of the same inputs (None = not run).
     """
     method: Methods
     seed: int | None
@@ -39,6 +40,7 @@ class NeuralNetworkConfig(PCAConfig):
     learning_rate: ScheduleFunction
     radius: ScheduleFunction
     epochs: int
+    pca_config: PCADefinition | None
 
 class OjaConfig(TypedDict):
     """

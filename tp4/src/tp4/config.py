@@ -15,6 +15,7 @@ from tp4.types.config.neighborhood import NeighborhoodFunctions
 from tp4.types.config.noise import NoiseFunctions
 from tp4.types.config.normalization import NormalizationFunctions
 from tp4.types.config.orientation import Orientations
+from tp4.types.config.pca import PCADefinition
 from tp4.types.config.schedule import ScheduleFunctions
 from tp4.types.config.similarity import SimilarityFunctions
 from tp4.types.config.topology import Topologies
@@ -63,6 +64,13 @@ def _describe(schema: dict[str, Any], indent: int = 1, root: dict[str, Any] | No
 def _load_schema() -> dict[str, Any]:
     with open(SCHEMA_PATH, "r") as file:
         return json.load(file)
+
+def _parse_pca(pca: dict[str, Any]) -> PCADefinition:
+    components = pca.get("components", {"criterion": "kaiser"})
+    return {
+        "components": ComponentCriteria(components["criterion"]).function(components.get("value", None)),
+        "orientation": Orientations(pca.get("orientation", "max_loading_positive")).function(),
+    }
 
 def load_config(path: str) -> tuple[Methods, Config]:
     """
@@ -120,12 +128,10 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
                 data[schedule]["value"], data[schedule].get("hyperparameters", None)
             )
         data["epochs"] = int(data["epochs"])
+        # Optional: PCA of the same inputs, to compare the map with PC1/PC2
+        data["pca_config"] = _parse_pca(data["pca"]) if "pca" in data else None
     elif data["method"] is Methods.PCA:
-        components = data["pca"].get("components", {"criterion": "kaiser"})
-        data["pca"] = {
-            "components": ComponentCriteria(components["criterion"]).function(components.get("value", None)),
-            "orientation": Orientations(data["pca"].get("orientation", "max_loading_positive")).function(),
-        }
+        data["pca"] = _parse_pca(data["pca"])
     elif data["method"] is Methods.OJA:
         oja = data["oja"]
         data["oja"] = {
