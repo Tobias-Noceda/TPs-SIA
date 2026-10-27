@@ -141,6 +141,7 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> tuple[Methods,
             "max_iterations": int(hopfield.get("max_iterations", 100)),
             "query": {
                 "pattern": hopfield["query"]["pattern"],
+                "noise_type": NoiseFunctions(hopfield["query"].get("noise_type", "flip")),
                 "noise_function": NoiseFunctions(hopfield["query"].get("noise_type", "flip")).function(),
                 "noise": [np.float64(level) for level in hopfield["query"]["noise"]],
             },

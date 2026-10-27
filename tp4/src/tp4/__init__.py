@@ -242,9 +242,9 @@ def run_hopfield(args: argparse.Namespace, config: HopfieldConfig):
     levels = hopfield["query"]["noise"]
     recalls = []
     results = []
-    print(f"Queries from {names[target]}:")
+    print(f"Queries from {names[target]} ({hopfield['query']['noise_type'].value} noise):")
     for level in levels:
-        query = noise_function(random, patterns[target], level)
+        query = noise_function(random, patterns[target], shape, level)
         recall = model.recall(query)
         recalls.append(recall)
 

@@ -377,14 +377,18 @@
                         "noise_type": {
                             "type": "string",
                             "enum": [
-                                "flip"
+                                "flip",
+                                "fade",
+                                "corner",
+                                "scratch",
+                                "stain"
                             ],
-                            "description": "Types of noise to apply to the query, one query per type",
+                            "description": "Noise applied to the queries: flip (round(level · N) random entries change sign), fade (low toner: round(level · #black) random black pixels turn white), corner (torn corner: the round(level · N) pixels closest in L1 to a random corner turn white), scratch (random 1-px straight lines turn white until round(level · N) pixels are covered), stain (ink blot: the round(level · N) pixels closest to a random center turn black)",
                             "default": "flip"
                         },
                         "noise": {
                             "type": "array",
-                            "description": "Fractions of flipped entries, one query per level",
+                            "description": "Severity of each query (fraction of pixels hit, of black pixels for fade), one query per level",
                             "items": {
                                 "type": "number",
                                 "minimum": 0,
