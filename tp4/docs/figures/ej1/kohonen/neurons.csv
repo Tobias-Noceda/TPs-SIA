@@ -1,0 +1,26 @@
+row,column,hits,u_matrix,topic,pc1,pc2,reach,discovery,depth,conversion,creators
+0,0,3,1.867,makeup,-5.33,-1.32,1.7,0.91,-1.11,-0.83,"@mateconideas, @brillourbano, @maquillajereal"
+0,1,3,1.504,football,-5.4,-1.13,1.68,1.02,-1.08,-0.72,"@crearenreels, @galeriacotidiana, @futbolsinvueltas"
+0,2,1,2.286,football,-4.19,-0.39,0.75,0.86,-0.87,-0.64,@makeupconsejos
+0,3,2,1.979,makeup,-1.88,-0.25,0.06,0.43,-0.36,-0.36,"@bellezasimple, @brilloytendencia"
+0,4,3,1.769,makeup,-1.02,-0.3,-0.23,0.37,-0.23,-0.26,"@tallerurbano, @cosmeticaconsciente, @brochasymates"
+1,0,1,2.573,makeup,-3.51,0.35,0.91,0.67,-0.86,-0.68,@glamencasa
+1,1,2,2.32,football,-4.62,-0.58,1.22,0.95,-0.96,-0.64,"@tribunacreativa, @golconmate"
+1,2,3,2.083,football,-3.0,-0.08,0.63,0.66,-0.66,-0.45,"@vidaperruna, @tacticavisual, @lookdecancha"
+1,3,1,2.874,football,-2.07,-0.18,0.08,0.42,-0.64,-0.5,@patitasenred
+1,4,2,2.524,dogs,0.76,-0.27,-0.4,0.02,0.13,0.03,"@huellasargentinas, @patitascontentas"
+2,0,4,2.124,art,-1.56,1.87,0.08,0.47,-0.49,-0.54,"@pincelcotidiano, @artealpaso, @artequeinspira, @entrelienzos"
+2,1,0,2.753,football,-1.79,0.94,0.3,0.47,-0.47,-0.28,
+2,2,2,2.844,football,-1.0,0.43,0.03,0.21,-0.29,-0.24,"@futbolcononda, @jugadayestilo"
+2,3,0,3.084,football,2.21,-0.16,-0.49,-0.53,0.49,0.35,
+2,4,3,2.324,dogs,2.63,-0.36,-0.7,-0.38,0.5,0.35,"@estiloydetalle, @clubdelasmascotas, @adoptafelicidad"
+3,0,1,2.09,art,-0.17,1.96,-0.22,0.25,-0.15,-0.18,@rinconcreativo
+3,1,1,2.374,art,1.44,1.07,-0.46,-0.43,0.08,0.02,@canvasycafe
+3,2,2,2.155,football,2.14,0.49,-0.56,-0.47,0.48,0.34,"@canchaaldia, @manosalaobra"
+3,3,3,1.884,football,3.64,0.15,-0.71,-0.79,0.89,0.65,"@pasionalbirroja, @futbolentrepases, @pasiondepotrero"
+3,4,1,2.11,dogs,4.58,-0.88,-0.78,-1.1,1.06,0.85,@guiadehuellas
+4,0,2,1.616,art,1.54,1.73,-0.51,-0.2,0.31,0.17,"@trazosyreels, @colorenmovimiento"
+4,1,2,1.448,art,2.05,1.49,-0.64,-0.29,0.43,0.32,"@arteentusmanos, @creatividadaldia"
+4,2,2,2.006,football,2.55,0.98,-0.64,-0.53,0.54,0.42,"@brochasycolor, @reelconideas"
+4,3,1,2.004,dogs,4.53,-0.68,-0.8,-1.08,1.12,0.91,@reelargentino
+4,4,5,1.547,dogs,5.28,-1.6,-0.81,-1.28,1.27,1.16,"@huellasyconsejos, @perrosfelices.ar, @ideasconhuella, @mundoanimal.ar, @consejoscaninos"
