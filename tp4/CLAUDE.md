@@ -47,15 +47,16 @@ Desde `tp4/` (paths de datasets relativos al cwd):
 
 ```bash
 uv sync --all-packages   # ¡no `uv sync` a secas desde la raíz: desinstala los demás TPs del venv!
-uv run tp4 --config res/config/kohonen.json [--output res/output/kohonen.npz] [--plot]
-uv run kohonen-sweep -c res/config/kohonen.json [--grid-sizes 4 6 8 10] [--learning-rates 0.1 0.5 0.9] \
-    [--radii 1 k/2 k] [--seeds 3] [--epochs N]                     # → res/output/kohonen_sweep/runs/*.npz
-uv run kohonen-sweep-analysis [-i res/output/kohonen_sweep]        # → summary.csv + plots/sweep.png
+uv run tp4 --config res/config/kohonen.json        # o kohonen_22.json / kohonen_pca.json
 uv run tp4 --config res/config/pca.json [--output res/output/pca.npz] [--plot]
 uv run eda --config res/config/pca.json [-o res/output/eda] [--threshold 0.9]
 uv run tp4 --config res/config/oja.json [--output res/output/oja.npz] [--plot]
-uv run tp4 --config res/config/hopfield_letters.json [--output res/output/hopfield.npz] [--plot]   # o hopfield_qr.json
+uv run tp4 --config res/config/hopfield_letters.json [--output res/output/hopfield.npz]   # o hopfield_qr.json
 ```
+
+En esta rama (`tp4`) Kohonen solo imprime métricas (sin `--output` ni `--plot`), Hopfield no tiene
+`--plot`, y no existen `kohonen-sweep` / `kohonen-sweep-analysis` ni `visualization/kohonen.py` /
+`visualization/hopfield.py`: esas partes están en las ramas `tp4-ej1` y `tp4-analysis`.
 
 PCA imprime autovalores (λ, % explicado, acumulado, `*` = componentes conservadas), cargas de PC1/PC2
 ordenadas por |carga| y los 5 creadores más altos/bajos en PC1; `--output` guarda autovalores,
@@ -66,9 +67,8 @@ estandarizado, matriz de correlación, histogramas) e imprime chequeos sobre **t
 numéricas: faltantes, duplicados, constantes, columnas derivadas, composiciones, pares |r| ≥ umbral
 y dependencias lineales exactas entre las entradas.
 
-`tp4` imprime QE, TE, neuronas muertas y los creadores por neurona; `--output` guarda pesos (normalizados
-y desnormalizados), posiciones, ganadoras, coordenadas, etiquetas, hits, matriz U y resultados por
-época; `--plot` muestra hits + matriz U, QE/TE por época y un *component plane* por variable.
+Kohonen imprime QE, TE y neuronas muertas (con bloque `pca`, también cuántas componentes entran y su
+% de varianza).
 Oja imprime ‖w‖, cos(w, PC1) y ángulo, var(índice) vs λ₁, pesos de Oja vs cargas de PC1, Pearson y
 Spearman entre índice y scores de PC1, y los 5 creadores más altos/bajos del índice; `--output` guarda
 w (alineado con PC1), w por época, ‖w‖ por época, índice, PC1, scores de PC1, etiquetas y columnas;
@@ -78,8 +78,8 @@ Hopfield imprime N, p, p/N vs 0.15, matriz de solapamiento ξμ·ξν/N (máx/me
 estabilidad de cada patrón almacenado (entradas que cambian con una actualización) y, por nivel de ruido,
 pasos, convergencia (`stable` | `cycle` | `max_iterations`), energía por paso y resultado: patrón almacenado
 (solapamiento +1), inverso (−1) o espurio (con el patrón más cercano y su distancia de Hamming); `--output`
-guarda pesos, patrones, consultas, estados y energías por paso; `--plot` muestra patrones, heatmap de
-solapamiento, estados por paso por nivel, energía por paso y solapamiento final vs ruido.
+guarda pesos, patrones, solapamiento, consultas, estados y energías por paso, solapamientos finales,
+convergencia y resultado por nivel.
 `res/output/` está en `.gitignore`.
 
 ## Configuración
@@ -97,7 +97,9 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 | `hopfield.patterns` | lista de archivos `.png` (oscuro = 1) o `.txt`; el nombre del patrón es el del archivo sin extensión |
 | `hopfield.update` | `synchronous` (default, Algoritmo 11: todo S(t+1) desde S(t), puede ciclar) \| `asynchronous` (una neurona por vez en orden aleatorio, H no crece) |
 | `hopfield.max_iterations` | tope de iteraciones por consulta (default 100) |
-| `hopfield.query` | `{ pattern: nombre almacenado, noise: [fracciones ∈ [0, 1]] }`: una consulta por nivel, invirtiendo exactamente round(nivel · N) entradas |
+| `hopfield.query` | `{ pattern: nombre almacenado, noise_type?, noise: [niveles ∈ [0, 1]] }`: una consulta por nivel (el esquema acepta lista en `pattern`, pero `run_hopfield` solo maneja un nombre) |
+| `hopfield.query.noise_type` | `flip` (default, round(nivel · N) entradas cambian de signo) \| `fade` (round(nivel · #negros) negros → blanco) \| `corner` (los round(nivel · N) píxeles más cercanos en L1 a una esquina al azar → blanco) \| `scratch` (líneas rectas de 1 px → blanco hasta cubrir round(nivel · N)) \| `stain` (disco de round(nivel · N) píxeles alrededor de un centro al azar → negro) |
+| `pca` con `method: kohonen` | opcional: si está, Kohonen entrena sobre los scores de las q componentes conservadas (P, q) en vez de las variables normalizadas (se ignora `dataset.normalize`) |
 | `kohonen.grid_size` | k ≥ 2 (grilla k × k) |
 | `kohonen.topology` | `rectangular` (default, 4 vecinos con R = 1) \| `hexagonal` (6 vecinos) |
 | `kohonen.similarity` | `euclidean` (default) \| `exponential` (`1 − e^{−d²}`: mismo ganador que euclídea) |
@@ -130,7 +132,7 @@ src/tp4/
 │   ├── activation/sign.py          # sign(h, previous): ±1, conserva el estado si h = 0
 │   ├── update/                     # synchronous, asynchronous (una iteración S(t) → S(t+1))
 │   ├── energy/hopfield.py          # H = −½ sᵀ W s
-│   ├── noise/flip.py               # invierte round(nivel · N) entradas distintas
+│   ├── noise/                      # flip, fade, corner, scratch, stain (+ nearest: k más cercanas, empates al azar)
 │   ├── hebbian/oja.py              # Δw = η · s · (x − s · w)
 │   ├── topology/                   # rectangular, hexagonal (posiciones con vecinos a distancia 1)
 │   ├── metrics/                    # quantization_error, topographic_error, u_matrix, hits
@@ -139,13 +141,9 @@ src/tp4/
 │   └── components/                 # kaiser, variance, fixed (ComponentSelection)
 ├── parsers/dataset_parser.py       # CSV numérico → X (P, n) + etiquetas
 ├── parsers/pattern_parser.py       # .png / .txt → patrón ±1 (N,) + forma
-├── visualization/kohonen.py        # draw_grid (polígonos por neurona), plot_map, plot_components, plot_training
 ├── visualization/pca.py            # plot_heatmap (divergente), plot_scree, plot_biplot, plot_index
-├── visualization/hopfield.py       # plot_patterns, plot_recalls, plot_energy, plot_overlap_by_noise
 ├── visualization/oja.py            # plot_convergence, plot_loadings (w vs PC1), plot_index_comparison
-├── experiments/kohonen_sweep.py    # barrido k × η₀ × R₀ × semillas (paralelo)
-├── analysis/kohonen_sweep.py       # summary.csv + plots/sweep.png
-├── analysis/eda.py                 # EDA del dataset de una config
+├── analysis/eda.py                 # EDA del dataset de una config (script `eda`)
 └── types/                          # Float, Samples, GridPositions/Distances, *Function aliases,
     └── config/                     #   Topology, EpochResult + TypedDicts/enums de la config
 ```
@@ -187,6 +185,12 @@ src/tp4/
   se informa `cycle`. `HopfieldRecall.steps` guarda S(0)…S(t_final) con su energía (el paso que confirma
   la estabilidad no se repite). No usa `UnsupervisedNetwork` (no hay épocas): interfaz `AssociativeMemory`.
 - La semilla de Hopfield controla el ruido de las consultas y el orden asíncrono.
+- **Ruidos de Hopfield** modelan daños de un QR impreso (`NoiseFunction(random, pattern, shape, level)`):
+  `flip` es el ruido simétrico de la teoría; `fade`, `corner` y `scratch` solo blanquean y `stain` solo
+  ennegrece, así que no son simétricos. Las regiones compactas (`corner`, `stain`) usan
+  `nearest_entries` para afectar exactamente round(nivel · N) píxeles.
+- **PCA antes de Kohonen** (bloque `pca` opcional): `PCA.project` ya estandariza, así que reemplaza a
+  `dataset.normalize` y no hay `denormalize` (los pesos quedan en el espacio de las PCs).
 - El slide escribe `argmin e^{−‖x−w‖²}` para la exponencial: es argmax; se implementó como
   disimilitud `1 − e^{−d²}`.
 
@@ -196,10 +200,12 @@ src/tp4/
   contigua y disjunta, la matriz U marca los bordes, QE 1.2 → 0.2, misma semilla ⇒ mismos pesos.
   Funciona en ambas topologías y con vecindad step o gaussiana.
 - `res/config/kohonen.json` usa las 27 variables no derivadas (sin las 4 derivadas exactas ni
-  id/name). Ajustar tras el EDA (1.1).
+  id/name). `kohonen_22.json` además saca los casi duplicados (impresiones, vistas, followers,
+  video/trend posts; ver `decisions/kohonen_dataset.md`). `kohonen_pca.json` entrena sobre las PCs
+  de Kaiser de las 27.
 - Dataset real, 6×6 / η 0.5→0.01 / R 6→1 / 500 épocas: QE 2.59, TE 0.02, 15/36 muertas (~2 s).
-  Barrido k ∈ {3..6} × η₀ ∈ {0.1, 0.5, 0.9} × R₀ ∈ {1, k/2, k} × 3 semillas: QE baja siempre con k
-  (más neuronas por creador), así que elegir k mirando también neuronas muertas y TE, no solo QE.
+  Barrido k ∈ {3..6} × η₀ ∈ {0.1, 0.5, 0.9} × R₀ ∈ {1, k/2, k} × 3 semillas (rama `tp4-ej1`): QE baja
+  siempre con k (más neuronas por creador), así que elegir k mirando también neuronas muertas y TE, no solo QE.
 - PCA verificado: ejemplo de p.28 (λ = 6, 3, 2; V = p.30 salvo signo); sobre creadores Sx == `np.corrcoef`,
   Σλ = p, cov(Y) = diag(λ), λ = s²/P del SVD de Z, V ortonormal.
 - PCA con las 27 entradas: PC1 49.7%, PC2 9.2%; Kaiser conserva 6 (81%). PC1 opone tamaño/formato
@@ -219,5 +225,5 @@ src/tp4/
 - QR: solapamientos 0.58–0.86 (fondo blanco y marcas de posición comunes), ningún QR es estable
   (71–225 entradas cambian) → toda consulta cae en el mismo estado espurio (o su inverso), incluso
   sin ruido: p/N = 0.004 es chico pero los patrones están lejos de ser ortogonales.
-- Pendiente: decidir variables finales (sacar 1 `topic_*` y 1 `content_*`, y redundantes del bloque de
-  alcance), decisiones (1.4), análisis de Hopfield (ej. 2).
+- Pendiente: elegir set final (27 / 22 / PCs), traer a esta rama salida y gráficos de Kohonen y
+  gráficos de Hopfield, decisiones (1.4), análisis de Hopfield con los distintos ruidos (ej. 2).
