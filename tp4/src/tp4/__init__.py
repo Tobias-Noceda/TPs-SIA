@@ -40,8 +40,20 @@ def create_model(method: Methods, data: NeuralNetworkConfig):
         random = RandomState(MT19937(seed))
 
         inputs, labels = parse_dataset(dataset["path"], dataset["columns"]["input"], dataset["columns"].get("label", None))
-        normalize, denormalize = dataset["normalize"](inputs)
-        inputs = normalize(inputs)
+        denormalize = None
+        pca = data["pca_config"]
+
+        # Optional: replace the variables by their scores on the kept components, (P, n) → (P, q)
+        if pca is not None:
+            pca_model = PCA(pca["components"], pca["orientation"])
+            pca_model.fit(inputs)
+            inputs = pca_model.project(inputs)
+
+            explained = pca_model.explained_variance_ratio[:pca_model.components].sum()
+            print(f"PCA: {pca_model.components} components ({explained:.2%} of the variance) as inputs")
+        else:
+            normalize, denormalize = dataset["normalize"](inputs)
+            inputs = normalize(inputs)
 
         model = Kohonen(
             kohonen["grid_size"],
@@ -73,7 +85,7 @@ def main():
     elif method is Methods.HOPFIELD:
         run_hopfield(args, cast(HopfieldConfig, config))
 
-def run_pca(args: argparse.Namespace, config: PCAConfig):
+def run_pca(args: argparse.Namespace, config: PCAConfig, analyse: bool = True):
     if "pca" not in config or config["pca"] is None:
         raise ValueError("PCA configuration is missing in the config file.")
     
@@ -98,12 +110,12 @@ def run_pca(args: argparse.Namespace, config: PCAConfig):
         for k in np.argsort(-np.abs(loadings)):
             print(f"  {loadings[k]:+.3f}  {variables[k]}")
 
-    if labels is not None:
+    if analyse and labels is not None:
         order = np.argsort(scores[:, 0])[::-1]
         print("PC1 highest:", ", ".join(f"{labels[i]} ({scores[i, 0]:+.2f})" for i in order[:5]))
         print("PC1 lowest: ", ", ".join(f"{labels[i]} ({scores[i, 0]:+.2f})" for i in order[::-1][:5]))
 
-    if args.output:
+    if analyse and args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         np.savez(
             args.output,
@@ -119,7 +131,7 @@ def run_pca(args: argparse.Namespace, config: PCAConfig):
             columns=np.array(variables),
         )
 
-    if args.plot and labels is not None:
+    if analyse and args.plot and labels is not None:
         plot_scree(model.eigenvalues, model.components)
         names = [f"PC{i + 1}" for i in range(model.components)]
         plot_heatmap(model.eigenvectors[:, :model.components], variables, names, "Loadings of the kept components")
