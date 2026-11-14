@@ -1,0 +1,39 @@
+{
+    "autoencoder": {
+        "type": "basic",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 2,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 35,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "loss_function": "mse",
+    "learning_rate": {
+        "type": "constant",
+        "value": 0.5
+    },
+    "epochs": 20000,
+    "batch_size": 32,
+    "goal_pixels": 1,
+    "stop_at_goal": true,
+    "seed": 42,
+    "initialization": "random",
+    "dataset": {
+        "path": "res/datasets/font.h"
+    }
+}

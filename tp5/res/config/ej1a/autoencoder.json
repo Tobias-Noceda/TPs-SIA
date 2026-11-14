@@ -1,0 +1,63 @@
+{
+    "autoencoder": {
+        "type": "basic",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 25,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 15,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 2,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 15,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 25,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 35,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "loss_function": "bce",
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001
+    },
+    "epochs": 20000,
+    "batch_size": 32,
+    "goal_pixels": 1,
+    "stop_at_goal": true,
+    "seed": 42,
+    "initialization": "xavier",
+    "dataset": {
+        "path": "res/datasets/font.h"
+    }
+}
