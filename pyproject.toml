@@ -19,6 +19,7 @@ tp1 = { workspace = true }
 tp2 = { workspace = true }
 tp3 = { workspace = true }
 tp4 = { workspace = true }
+tp5 = { workspace = true }
 
 [tool.uv.workspace]
 members = [
@@ -26,6 +27,7 @@ members = [
     "tp2",
     "tp3",
     "tp4",
+    "tp5",
 ]
 
 [build-system]
