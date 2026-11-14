@@ -5,6 +5,7 @@ from tp5.models.multi_layer_perceptron import MultiLayerPerceptron
 from tp5.models.neuron import Neuron
 from tp5.parsers.font_parser import parse_font
 from tp5.types.config.config import AutoencoderConfig
+from tp5.types.image_shape import ImageShape
 from tp5.types.training_run import TrainingRun
 
 from numpy.random import MT19937, RandomState, SeedSequence
@@ -35,7 +36,9 @@ def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: 
 
 def run_basic(config: AutoencoderConfig) -> TrainingRun:
     """Train a basic autoencoder (expected output = input) over the glyphs of the dataset."""
-    inputs, labels, shape = parse_font(config["dataset"]["path"])
+    inputs, labels, (height, width) = parse_font(config["dataset"]["path"])
+    # Glyphs are binary grayscale images
+    shape = ImageShape(height, width, 1)
 
     # Single generator for the whole model: same seed => same weights and same shuffling
     seed = SeedSequence(config["seed"])

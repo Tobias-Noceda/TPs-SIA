@@ -28,6 +28,10 @@ Desde `tp5/` (paths relativos al cwd):
 ```bash
 uv sync --all-packages   # ¡no `uv sync` a secas desde la raíz!
 uv run tp5 --config res/config/ej1a/autoencoder.json [--output res/output/run.npz] [--plot [--plot-dir res/output/plots]]
+# Explorador web del espacio latente: entrenar + guardar + abrir
+uv run tp5 -c res/config/ej1a/autoencoder.json -o res/output/ej1a/autoencoder.npz -i
+# ... o con pesos ya entrenados (sin reentrenar)
+uv run tp5 --load res/output/ej1a/autoencoder.npz -i [--port 8000] [--host 127.0.0.1] [--no-browser]
 uv run tp5 --config res/config/ej1a/baseline.json             # 35-2-35 con GD: no llega
 uv run ej1a-sweep [-s 5] [-e 20000] [--studies architecture optimizer ...] [-w N] [--force]
 uv run ej1a-analysis [-i res/output/ej1a]
@@ -39,6 +43,14 @@ uv run ej1a-analysis [-i res/output/ej1a]
   guarda los PNG en `--plot-dir` (default `res/output/plots`); sin el flag solo entrena. `main` no abre
   ventanas: `plot_run(run)` sin `save_dir` (`plt.show()`) queda en el código pero no se usa (el backend
   interactivo crasheaba con GLib `xsettings ... antialiasing`).
+- **`-i/--interactive`**: explorador web (`web/`), servidor `http.server` de la stdlib en localhost con el
+  modelo en memoria; todo decode pasa por Python (`Autoencoder.decode`), sin reentrenar. `--load` reconstruye
+  la corrida desde un `.npz` de `--output` (config guardada + pesos) y reemplaza a `--config` (son
+  excluyentes). La página: mapa del latente (2 ejes elegibles, click en un patrón = cargar su código,
+  click/arrastre = mover esos 2 ejes, grilla decodificada opcional sobre esos ejes con el resto fijo),
+  un slider por cada `z_k` (sirve para n > 2), salida del decoder (cruda o binarizada) + patrón más
+  cercano y badge "new", tabla ordenable de códigos y error de reconstrucción. URL opcional:
+  `?x=0&y=2&grid=1&size=15&binarize=1&sample=4`.
 - `ej1a-sweep`: estudio de **un factor por vez** sobre la config base (`STUDIES`): arquitectura,
   optimizador, pérdida, `batch_size`, activación latente, activación oculta, inicialización; semillas
   `0…s−1`; corridas en paralelo a `res/output/ej1a/runs/{study}__{variant}__s{seed}.npz` (saltea las
@@ -90,6 +102,10 @@ src/tp5/
 │   └── pixel_error.py          # píxeles incorrectos por patrón
 ├── parsers/font_parser.py      # font.h → (32, 35) en {0, 1}, etiquetas, forma (7, 5)
 ├── persistence/run_file.py     # save_run (.npz con config, history, latente, reconstrucciones, pesos), load_parameters
+├── web/
+│   ├── explorer.py             # LatentExplorer: dataset() y decode(z) en JSON, genérico en ImageShape (h, w, c)
+│   ├── server.py               # serve(): GET / y /static/*, GET /api/dataset, POST /api/decode {z: [[...]]}
+│   └── static/                 # index.html, app.js, style.css (sin dependencias ni CDN)
 ├── visualization/
 │   ├── glyphs.py               # draw_glyph (píxeles incorrectos en rojo)
 │   ├── autoencoder.py          # history, reconstructions, latent, latent_grid, interpolation; plot_run
@@ -119,6 +135,14 @@ src/tp5/
   `interpolation` el segmento entre dos patrones (por default, vecinos en el latente con mayor distancia
   de Hamming). Cada glifo se titula con el patrón de entrenamiento más cercano y la distancia; en azul
   los que están a > goal_pixels de todos (= letra nueva).
+- **Explorador reutilizable**: la página solo conoce "imágenes (h, w, c) aplanadas channels-last con valores
+  en [0, 1]" (`ImageShape`, `TrainingRun.shape`); grises con `ink` (1 = negro, glifos) o RGB (c = 3). Para el
+  dataset RGB del ej. 2 alcanza con armar un `LatentExplorer(model, inputs, labels, ImageShape(h, w, 3), ink=False)`.
+  Distancia al más cercano: píxeles distintos binarizando en 0.5 si el dataset es binario, MAE si no.
+  Rangos de los sliders: rango de los códigos de entrenamiento ± 25%. Decodes del navegador: siempre el
+  último pedido, uno por vez (`latestOnly`).
+- `persistence.run_file.load_run`: reconstruye el modelo (`build_basic_autoencoder` + `load_parameters`);
+  `.npz` viejos con `shape` (h, w) se leen como 1 canal.
 - Persistencia: el `.npz` guarda la config original; `analysis` reconstruye el modelo con
   `build_basic_autoencoder` + `load_parameters` (reconstrucciones idénticas a las guardadas).
 
