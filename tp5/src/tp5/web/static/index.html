@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Latent Space Explorer</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Latent space explorer</h1>
+    <p id="summary" class="muted">Loading…</p>
+  </header>
+
+  <main>
+    <section class="panel" id="map-panel">
+      <div class="panel-head">
+        <h2>Latent map</h2>
+        <div class="controls">
+          <label>x <select id="axis-x"></select></label>
+          <label>y <select id="axis-y"></select></label>
+          <label><input type="checkbox" id="grid-toggle"> decoded grid</label>
+          <label>size <input type="number" id="grid-size" min="3" max="40" value="12"></label>
+        </div>
+      </div>
+      <p class="hint">Click a sample to load its code · click or drag elsewhere to move the two axes shown · other coordinates stay as set in the sliders.</p>
+      <div class="map-wrap">
+        <canvas id="map"></canvas>
+        <div id="tooltip" hidden></div>
+      </div>
+    </section>
+
+    <section class="panel" id="decoder-panel">
+      <div class="panel-head">
+        <h2>Decoder output</h2>
+        <label id="binarize-label" hidden><input type="checkbox" id="binarize"> binarize (≥ 0.5)</label>
+      </div>
+      <div class="output-row">
+        <figure>
+          <canvas id="output" class="image"></canvas>
+          <figcaption>decode(z)</figcaption>
+        </figure>
+        <figure>
+          <canvas id="nearest" class="image"></canvas>
+          <figcaption id="nearest-caption">nearest sample</figcaption>
+        </figure>
+      </div>
+      <p id="novelty"></p>
+
+      <div class="panel-head">
+        <h3>Latent coordinates</h3>
+        <div class="controls">
+          <button id="random">Random</button>
+          <button id="mean">Mean</button>
+          <button id="reset" disabled>Selected sample</button>
+        </div>
+      </div>
+      <div id="sliders"></div>
+      <p class="code"><span class="muted">z =</span> <span id="z-text"></span></p>
+    </section>
+
+    <section class="panel" id="table-panel">
+      <h2>Training samples in the latent space</h2>
+      <div class="table-wrap">
+        <table id="codes">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
