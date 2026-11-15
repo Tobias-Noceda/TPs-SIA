@@ -5,13 +5,20 @@ from typing import Any, Dict, List
 from tp5.config import parse_config
 from tp5.functions.pixel_error import pixel_errors
 from tp5.models.basic_autoencoder import BasicAutoencoder
-from tp5.runners.basic import build_basic_autoencoder
+from tp5.runners.basic import Builder, build_basic_autoencoder
+from tp5.runners.denoising import build_denoising_autoencoder
 from tp5.types.config.autoencoder import AutoencoderType
 from tp5.types.image_shape import ImageShape
 from tp5.types.training_run import TrainingRun
 
 import numpy as np
 from numpy.random import RandomState
+
+# How to rebuild (untrained) each autoencoder type before loading its weights
+BUILDERS: Dict[AutoencoderType, Builder] = {
+    AutoencoderType.BASIC: build_basic_autoencoder,
+    AutoencoderType.DENOISING: build_denoising_autoencoder,
+}
 
 def save_run(path: str, run: TrainingRun) -> None:
     """
@@ -61,12 +68,12 @@ def load_run(path: str) -> TrainingRun:
     config = parse_config(source, path)
 
     autoencoder_type = config["autoencoder"]["type"]
-    if autoencoder_type is not AutoencoderType.BASIC:
+    if autoencoder_type not in BUILDERS:
         raise NotImplementedError(f"Loading a '{autoencoder_type.value}' autoencoder is not implemented yet.")
 
     inputs = data["inputs"]
     # The random generator only draws the initial weights, which are overwritten right away
-    model = build_basic_autoencoder(config, inputs.shape[1], RandomState(0))
+    model = BUILDERS[autoencoder_type](config, inputs.shape[1], RandomState(0))
     model.encoder.load_parameters(load_parameters(data, "encoder"))
     model.decoder.load_parameters(load_parameters(data, "decoder"))
 

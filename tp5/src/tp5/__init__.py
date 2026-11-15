@@ -4,8 +4,11 @@ from typing import Callable, Dict
 from tp5.config import load_config
 from tp5.functions.pixel_error import pixel_errors
 from tp5.persistence.generated import GENERATED_DIR
+from tp5.persistence.noisy_file import NOISY_DIR
 from tp5.persistence.run_file import load_run, save_run
 from tp5.runners.basic import run_basic
+from tp5.models.denoising_autoencoder import DenoisingAutoencoder
+from tp5.runners.denoising import run_denoising
 from tp5.types.config.autoencoder import AutoencoderType
 from tp5.types.config.config import AutoencoderConfig
 from tp5.types.training_run import TrainingRun
@@ -21,10 +24,12 @@ parser.add_argument("--host", dest="host", type=str, default="127.0.0.1", help="
 parser.add_argument("--port", dest="port", type=int, default=8000, help="Port of the explorer (default 8000)")
 parser.add_argument("--no-browser", dest="browser", action="store_false", help="Do not open the browser automatically")
 parser.add_argument("--generated-dir", dest="generated_dir", type=str, default=GENERATED_DIR, help=f"Where the explorer's 'Save image' writes (default {GENERATED_DIR})")
+parser.add_argument("--noisy-dir", dest="noisy_dir", type=str, default=NOISY_DIR, help=f"Noisy pattern files listed and saved by the /denoise page (default {NOISY_DIR})")
 
 # What main runs for each autoencoder type of the config
 RUNNERS: Dict[AutoencoderType, Callable[[AutoencoderConfig], TrainingRun]] = {
     AutoencoderType.BASIC: run_basic,
+    AutoencoderType.DENOISING: run_denoising,
 }
 
 def report(run: TrainingRun) -> None:
@@ -32,13 +37,24 @@ def report(run: TrainingRun) -> None:
     wrong = pixel_errors(run.model.reconstruct(run.inputs), run.inputs)
 
     print(f"Epochs: {epoch + 1} ({run.elapsed:.1f} s), seed {run.seed}")
-    print(f"Final loss: {loss:.6g}")
     allowed = run.goal_pixels if run.goal_pixels is not None else 0
-    print(f"Max wrong pixels: {max_errors}; patterns with ≤ {allowed} wrong pixels: {learned}/{len(run.inputs)}"
-          + ("" if run.goal_pixels is not None else " (no goal)"))
+    goal = "" if run.goal_pixels is not None else " (no goal)"
+
+    if isinstance(run.model, DenoisingAutoencoder):
+        # The history measures denoising: a fixed noisy set (copies × patterns) against the clean patterns
+        model = run.model
+        evaluated = len(run.inputs) * model.copies
+        print(f"Noise: {model.noise.__name__} level {model.noise_level}, {model.copies} copies per pattern")
+        print(f"Denoising (fixed noisy set of {evaluated}): loss {loss:.6g}, max wrong pixels {max_errors}; "
+              f"outputs with ≤ {allowed} wrong pixels: {learned}/{evaluated}{goal}")
+        print(f"Clean inputs: max wrong pixels {int(wrong.max())}; patterns with ≤ {allowed} wrong pixels: "
+              f"{int((wrong <= allowed).sum())}/{len(run.inputs)}")
+    else:
+        print(f"Final loss: {loss:.6g}")
+        print(f"Max wrong pixels: {max_errors}; patterns with ≤ {allowed} wrong pixels: {learned}/{len(run.inputs)}{goal}")
     failed = [f"{label} ({count})" for label, count in zip(run.labels, wrong) if count > allowed]
     if failed:
-        print("Not learned:", ", ".join(failed))
+        print("Not learned (clean input):", ", ".join(failed))
 
 def main():
     args = parser.parse_args()
@@ -66,4 +82,4 @@ def main():
         # Imported only when needed, like the plots
         from tp5.web.explorer import LatentExplorer
         from tp5.web.server import serve
-        serve(LatentExplorer.from_run(run, args.generated_dir), args.host, args.port, args.browser)
+        serve(LatentExplorer.from_run(run, args.generated_dir, args.noisy_dir), args.host, args.port, args.browser)

@@ -177,3 +177,55 @@ tbody tr:hover { background: var(--accent-soft); }
 tbody tr.selected { background: var(--accent-soft); outline: 1px solid var(--accent); }
 td canvas.image { width: 22px; vertical-align: middle; }
 td.bad { color: var(--selected); }
+
+/* ---------------------------------------------------------------- navigation */
+nav { display: flex; gap: 4px; margin-bottom: 8px; }
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+nav a:hover { border-color: var(--border); }
+nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* ---------------------------------------------------------------- denoising page */
+input[type="text"] {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  width: 180px;
+}
+input[type="file"] { font: inherit; font-size: 12px; max-width: 230px; }
+.denoise-main { grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr); }
+.denoise-main #all-panel { grid-column: 1 / -1; }
+@media (max-width: 900px) { .denoise-main { grid-template-columns: minmax(0, 1fr); } }
+
+#samples { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+#samples button { padding: 3px; line-height: 0; background: var(--panel); }
+#samples button canvas { width: 22px; }
+#samples button.selected { border-color: var(--selected); outline: 1px solid var(--selected); }
+.level-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; align-items: center; }
+.level-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+.status { font-size: 12px; min-height: 1.4em; margin: 8px 0 0; word-break: break-all; }
+.status.error { color: var(--selected); }
+fieldset { border: 1px solid var(--border); border-radius: 8px; margin: 12px 0 0; padding: 8px 10px 10px; }
+legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
+
+.result-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+.result-row canvas.image { width: 150px; }
+#noisy { cursor: pointer; }
+.result-row figcaption strong { color: var(--text); }
+.good { color: #16a34a; }
+td.good { color: #16a34a; }
+#all-table td canvas.image { width: 28px; }
+#all-table th:nth-child(-n + 5), #all-table td:nth-child(-n + 5) { text-align: center; }
+#all-table th:first-child, #all-table td:first-child { text-align: left; }
+/* Flex/grid rules above must not show elements the scripts hide */
+[hidden] { display: none !important; }
+#result-panel #output { width: 150px; }
+#result-panel #nearest { width: 90px; }

@@ -37,6 +37,9 @@ def run_metadata(run: TrainingRun) -> Dict[str, Any]:
                 described.append(f"{len(layer)} {'/'.join(names)}")
         return described
 
+    # A denoising autoencoder measures its epochs on a fixed noisy set of copies × patterns
+    evaluated = len(run.inputs) * int(getattr(run.model, "copies", 1))
+
     encoder = layers(source["autoencoder"]["encoder"])
     decoder = layers(source["autoencoder"]["decoder"])
     sizes = [str(run.inputs.shape[1])] + [layer.split()[0] for layer in encoder + decoder]
@@ -62,9 +65,16 @@ def run_metadata(run: TrainingRun) -> Dict[str, Any]:
             "final_loss": float(loss),
             "max_wrong_pixels": int(max_errors),
             "patterns_learned": int(learned),
-            "patterns": len(run.inputs),
+            "patterns": evaluated,
+            "noisy_evaluation": hasattr(run.model, "copies"),
         },
         "dataset": source["dataset"]["path"],
+        # Training noise of a denoising autoencoder (None otherwise)
+        "noise": {
+            "type": source["noise"]["type"],
+            "level": source["noise"]["level"],
+            "copies": source["noise"].get("copies", 1),
+        } if source.get("noise") else None,
     }
 
 def save_generated(
@@ -128,3 +138,27 @@ def save_generated(
     for path, pixels, binarized in figures:
         plot_generated(pixels, shape, info, ink, binarized).savefig(path, dpi=150)
     return [path for path, _, _ in figures]
+
+def save_denoising(
+    directory: str | Path,
+    name: str,
+    original: Samples,
+    noisy: Samples,
+    output: Samples,
+    shape: ImageShape,
+    info: Dict[str, Any],
+    ink: bool,
+    binary: bool,
+) -> Path:
+    """
+    Save `{name}.png`: original, noisy input and decoder output (+ binarized for binary datasets) with
+    the data to replicate it. Never overwrites (FileExistsError).
+    """
+    from tp5.visualization.denoising import plot_denoising
+
+    path = Path(directory) / f"{validate_name(name)}.png"
+    if path.exists():
+        raise FileExistsError(f"Already exists: {path.name}. Choose another name.")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plot_denoising(original, noisy, output, shape, info, ink, binary).savefig(path, dpi=150)
+    return path

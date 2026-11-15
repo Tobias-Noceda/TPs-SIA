@@ -12,6 +12,7 @@ from tp5.types.config.config import AutoencoderConfig
 from tp5.types.config.initialization import InitializationFunctions
 from tp5.types.config.learning_rate import LearningRateFunctions
 from tp5.types.config.loss import LossFunctions
+from tp5.types.config.noise import NoiseFunctions
 
 import numpy as np
 
@@ -123,6 +124,13 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> AutoencoderCon
     data["stop_at_goal"] = bool(data.get("stop_at_goal", True))
     data["seed"] = int(data["seed"]) if "seed" in data else None
     data["initialization"] = InitializationFunctions(data.get("initialization", "random")).function()
+    noise = data.get("noise")
+    data["noise"] = {
+        "type": NoiseFunctions(noise["type"]),
+        "function": NoiseFunctions(noise["type"]).function(),
+        "level": float(noise["level"]),
+        "copies": int(noise.get("copies", 1)),
+    } if noise is not None else None
     data["source"] = source
 
     return cast(AutoencoderConfig, data)

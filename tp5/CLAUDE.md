@@ -13,7 +13,7 @@ Fuente: `assignment/SIATP5.pdf`. Teoría en `theory/` (Clase 17 Deep Learning, 1
      incorrecto** (o justificar por qué solo un subconjunto).
   3. Gráfico 2-D de los patrones en el espacio latente.
   4. Generar una letra nueva que no esté en el set de entrenamiento.
-- **b) Denoising autoencoder** (pendiente): arquitectura justificada; distorsionar entradas con distintos
+- **b) Denoising autoencoder** ✅ implementado: arquitectura justificada; distorsionar entradas con distintos
   niveles de ruido y estudiar la capacidad de eliminarlo (entrada ruidosa, salida esperada = original).
 
 ### Ejercicio 2 — VAE (pendiente)
@@ -33,6 +33,11 @@ uv run tp5 -c res/config/ej1a/autoencoder.json -o res/output/ej1a/autoencoder.np
 # ... o con pesos ya entrenados (sin reentrenar)
 uv run tp5 --load res/output/ej1a/autoencoder.npz -i [--port 8000] [--host 127.0.0.1] [--no-browser]
 uv run tp5 --config res/config/ej1a/baseline.json             # 35-2-35 con GD: no llega
+# Ej. 1b: denoising autoencoder (entrenar + guardar + abrir; la página de ruido está en /denoise)
+uv run tp5 -c res/config/ej1b/denoising.json -o res/output/ej1b/denoising.npz -i
+uv run tp5 --load res/output/ej1b/denoising.npz -i               # http://localhost:8000/denoise
+# Generador de patrones ruidosos (archivos que /denoise carga)
+uv run noisy --sample a --noise flip --level 0.15 [--seed 7] [--count 5] [--dataset res/datasets/font.h] [--output-dir res/output/ej1/noisy]
 ```
 
 - `main` carga la config, despacha por `autoencoder.type` (`RUNNERS`), entrena e imprime épocas,
@@ -54,6 +59,21 @@ uv run tp5 --config res/config/ej1a/baseline.json             # 35-2-35 con GD: 
   un slider por cada `z_k` (sirve para n > 2), salida del decoder (cruda o binarizada) + patrón más
   cercano y badge "new", tabla ordenable de códigos y error de reconstrucción. URL opcional:
   `?x=0&y=2&grid=1&size=15&binarize=1&sample=4`.
+- **`/denoise`** (misma sesión `-i`, sirve con cualquier AE: con el básico es la línea de base): elegir la
+  muestra limpia (salida esperada), ruido `flip | salt_pepper | gaussian` con nivel y semilla (las mismas
+  funciones de Python que en el entrenamiento; default = ruido de entrenamiento; cambiar nivel conserva la
+  semilla, "New noise" sortea otra), click en píxeles de la entrada ruidosa para invertirlos a mano.
+  Muestra original / ruidosa / salida (+ binarizada) con píxeles mal (o MAE), código latente y muestra más
+  cercana. "All samples" aplica el mismo ruido a las 32 (tabla + resumen: error medio entrada → salida,
+  recuperadas ≤ tolerancia). **Save image**: figura con nombre (mismas reglas que 1a.4) en
+  `--generated-dir`, con ruido de entrada, errores y modelo. **Archivos ruidosos**: lista del
+  `--noisy-dir` + selector de archivo local, valida forma de imagen y que la etiqueta esté en el dataset,
+  ◀ ▶ entre variantes; "Save noisy pattern" guarda la entrada actual (editada o no) en el mismo formato.
+  URL opcional: `?sample=a&type=flip&level=0.2&seed=7&all=1&binarize=1&file=<nombre>.json`.
+- **`noisy`** (herramienta, no corrida de modelo): `--sample` tiene que ser una etiqueta del dataset (o
+  `#índice`; si no, error listando las válidas). Escribe `res/output/ej1/noisy/{ruido}-{YYYYmmdd-HHMMSS}.json`
+  (nunca sobrescribe: sufijo `-2`…) con `dataset, label, index, image_shape, noise {type, level, seed},
+  original, noisy [variantes], created`. JSON y no `.h`: gaussiano y RGB (ej. 2) son continuos.
 
 ## Configuración
 
@@ -62,7 +82,7 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 | Clave | Valores |
 |---|---|
-| `autoencoder.type` | `basic` (implementado) \| `denoising` \| `variational` (reservados: `main` lanza `NotImplementedError`) |
+| `autoencoder.type` | `basic` \| `denoising` (implementados) \| `variational` (reservado: `main` lanza `NotImplementedError`) |
 | `autoencoder.encoder.arquitecture` | capas sin la de entrada; la **última es el espacio latente**. Cada capa: lista de neuronas `{ activation_function }` (estilo tp3) **o** forma compacta `{ neurons, activation_function }` |
 | `autoencoder.decoder.arquitecture` | ídem; su entrada es el latente y la última capa debe tener tantas neuronas como píxeles (35) |
 | `activation_function` | `{ name: linear\|tanh\|logistic\|relu, hyperparameters?: { beta?, L? } }` |
@@ -71,10 +91,13 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 | `epochs`, `batch_size`, `epsilon`, `seed`, `initialization` | como tp3 (`random` \| `xavier`) |
 | `goal_pixels` | opcional: un patrón está aprendido con ≤ goal_pixels píxeles mal (binarizando en 0.5). **Sin él no hay objetivo**: el entrenamiento corta solo por `epsilon` (o `epochs`) y "aprendido" = 0 píxeles mal |
 | `stop_at_goal` | default `true`: corta cuando todos los patrones están aprendidos (solo si hay `goal_pixels`) |
+| `noise` | **obligatorio con `denoising`, prohibido con el resto**: `{ type: flip\|salt_pepper\|gaussian, level ∈ [0, 1], copies ≥ 1 (default 1) }`. `flip`: invierte cada píxel con prob. `level`; `salt_pepper`: lo pone en 0 o 1 al azar con prob. `level`; `gaussian`: suma N(0, level²) y recorta a [0, 1]. `copies` = versiones ruidosas por patrón y época |
 | `dataset.path` | archivo `font.h` |
 
 Configs: `res/config/ej1a/autoencoder.json` (35-25-15-**2**-15-25-35, tanh oculta, latente lineal,
 salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35, MSE, GD 0.5).
+`res/config/ej1b/denoising.json`: 35-30-20-**10**-20-30-35 (tanh, latente lineal, salida logística), BCE,
+Adam 0.001, batch 32, xavier, ruido flip 0.1 × 4 copias, 20000 épocas, epsilon 1e-3, goal 1 px.
 
 ## Arquitectura
 
@@ -82,27 +105,34 @@ salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35
 src/tp5/
 ├── __init__.py                 # main: config → RUNNERS[type] (o --load) → report → [--output] → [-i]
 ├── config.py                   # load_config / parse_config (schema + resolución de funciones)
-├── runners/basic.py            # build_basic_autoencoder(config, input_size, random), run_basic(config) -> TrainingRun
+├── runners/basic.py            # build_networks, build_basic_autoencoder, train_run(config, builder), run_basic
+├── runners/denoising.py        # build_denoising_autoencoder, run_denoising
+├── tools/noisy.py              # script `noisy`: patrones ruidosos de una muestra del dataset → JSON
 ├── interfaces/autoencoder.py   # Autoencoder (ABC): encode / decode / reconstruct / train(inputs, expected, epochs)
 ├── models/
 │   ├── neuron.py, layer.py     # copiados de tp3 (W (in, out), bias aparte, grupos de activación)
 │   ├── multi_layer_perceptron.py  # forward (cachea) / backward(∂E/∂O) -> ∂E/∂input / step / predict
-│   └── basic_autoencoder.py    # encoder MLP + decoder MLP entrenados como una sola red
+│   ├── basic_autoencoder.py    # encoder MLP + decoder MLP entrenados como una sola red; hooks _epoch_data / _evaluation_data
+│   └── denoising_autoencoder.py  # entrada ruidosa nueva cada época (copies), métricas sobre un set ruidoso fijo
 ├── functions/
 │   ├── activation/             # linear, tanh, logistic, relu (tp3)
 │   ├── loss/                   # hse, mse (tp3) + binary_cross_entropy
 │   ├── learning_rate/          # constant, momentum, adaptative, adam (tp3)
 │   ├── initialization/         # random, xavier (tp3)
+│   ├── noise/                  # flip, salt_pepper, gaussian: (RandomState, Samples, level) -> Samples
 │   └── pixel_error.py          # píxeles incorrectos por patrón
 ├── parsers/font_parser.py      # font.h → (32, 35) en {0, 1}, etiquetas, forma (7, 5)
 ├── persistence/run_file.py     # save_run (.npz con config, history, latente, reconstrucciones, pesos), load_run, load_parameters
-├── persistence/generated.py    # run_metadata(run), save_generated(model, z, ...) → figura normal (+ binarizada)
+├── persistence/generated.py    # run_metadata(run), save_generated(model, z, ...) → figura normal (+ binarizada), save_denoising
+├── persistence/noisy_file.py   # save_noisy / list_noisy / load_noisy (archivos de patrones ruidosos)
 ├── web/
-│   ├── explorer.py             # LatentExplorer: dataset() y decode(z) en JSON, genérico en ImageShape (h, w, c)
-│   ├── server.py               # serve(): GET / y /static/*, GET /api/dataset, POST /api/decode {z: [[...]]}, POST /api/generate {z: [...], name}
-│   └── static/                 # index.html, app.js, style.css (sin dependencias ni CDN)
+│   ├── explorer.py             # LatentExplorer: dataset, decode, generate, noise, reconstruct, archivos ruidosos, save_denoising
+│   ├── server.py               # GET / y /denoise, /static/*, /api/dataset, /api/noisy[/{nombre}];
+│   │                           # POST /api/decode, /api/generate, /api/noise, /api/reconstruct, /api/noisy, /api/save-denoising
+│   └── static/                 # common.js (helpers), index.html + app.js, denoise.html + denoise.js, style.css (sin CDN)
 ├── visualization/glyphs.py     # draw_glyph (píxeles incorrectos en rojo)
-├── visualization/generated.py  # plot_generated: imagen + datos de replicación (API OO de matplotlib, sin pyplot)
+├── visualization/generated.py  # plot_generated: imagen + datos de replicación (API OO de matplotlib, sin pyplot); describe_model
+├── visualization/denoising.py  # plot_denoising: original / ruidosa / salida (+ binarizada) + datos de replicación
 └── types/                      # Float, Samples, EpochResult, TrainingRun, *Function + config/ (enums y TypedDicts)
 ```
 
@@ -131,6 +161,14 @@ src/tp5/
 - `persistence.run_file.load_run`: reconstruye el modelo (`build_basic_autoencoder` + `load_parameters`);
   `.npz` viejos con `shape` (h, w) se leen como 1 canal.
 - Persistencia: el `.npz` guarda la config original (y `goal_pixels = -1` si no hay objetivo).
+- **DAE** (`DenoisingAutoencoder(BasicAutoencoder)`): mismas redes/pérdida/optimizador; solo cambian dos hooks
+  del loop. `_epoch_data`: entrada = ruido nuevo sobre `copies` repeticiones de los patrones, salida
+  esperada = patrones limpios (la red nunca ve dos veces la misma corrupción). `_evaluation_data`: set
+  ruidoso **fijo** (sorteado una vez, 32 × copies) contra los limpios, así pérdida, máx. píxeles, "aprendidos",
+  `epsilon` y `goal_pixels` miden **denoising**. `report` imprime además el resultado con entradas limpias.
+- **Arquitectura del DAE (1b.1)**: latente de 10 y no de 2: el objetivo es robustez, no un mapa 2-D;
+  un cuello de botella más ancho deja separar los 32 patrones con margen para que una entrada con
+  algunos píxeles mal caiga cerca del código correcto. El explorador igual funciona con n dimensiones.
 
 ## Estado
 
@@ -138,5 +176,9 @@ src/tp5/
   (~2 s); con `goal_pixels: 1` corta en 1359 épocas. `baseline.json`: 4/32,
   máx. 11 píxeles tras 20000 épocas.
 - `--plot` sigue en `main` pero importa `tp5.visualization.autoencoder`, que ya no existe: falla.
-- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); ej. 1b
-  (`denoising`) y ej. 2 (`variational`): agregar runner a `RUNNERS` + claves en el esquema.
+- `denoising.json`: 20000 épocas (~32 s); set ruidoso fijo (128): pérdida 0.0153, máx. 7 px, 125/128 con
+  ≤ 1 px; entradas limpias 32/32. Mismo ruido flip (10 semillas × 32 muestras), píxeles mal en la salida,
+  DAE vs. básico (`ej1a/autoencoder.npz`): 0.05 → 0.02 vs 7.3; 0.1 → 0.18 vs 9.3; 0.2 → 1.9 vs 12.7;
+  0.3 → 6.5 vs 14.8.
+- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); barrido de niveles de ruido
+  para 1b.2; ej. 2 (`variational`): agregar runner a `RUNNERS` + `BUILDERS` + claves en el esquema.
