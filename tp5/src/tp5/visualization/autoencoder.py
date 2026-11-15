@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 
 type Decoder = Callable[[Samples], Samples]
 
-def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int) -> Figure:
+def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int | None) -> Figure:
     """Loss, max wrong pixels and learned patterns per epoch."""
     epochs, loss, max_errors, learned = np.array(history, dtype=np.float64).reshape(-1, 4).T
 
@@ -27,7 +27,8 @@ def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int
     ax_loss.set_title("Loss")
 
     ax_pixels.plot(epochs + 1, max_errors, label="Max wrong pixels")
-    ax_pixels.axhline(goal_pixels, color="gray", linestyle="--", linewidth=1, label=f"Goal ({goal_pixels} px)")
+    if goal_pixels is not None:
+        ax_pixels.axhline(goal_pixels, color="gray", linestyle="--", linewidth=1, label=f"Goal ({goal_pixels} px)")
     ax_pixels.set_xlabel("Epoch")
     ax_pixels.set_ylabel("Wrong pixels")
     ax_learned = ax_pixels.twinx()
@@ -41,7 +42,7 @@ def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int
     fig.tight_layout()
     return fig
 
-def plot_reconstructions(inputs: Samples, reconstructions: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int) -> Figure:
+def plot_reconstructions(inputs: Samples, reconstructions: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int | None) -> Figure:
     """Each original next to its reconstruction (binarized at 0.5), wrong pixels outlined in red."""
     errors = pixel_errors(reconstructions, inputs)
     binarized = (reconstructions >= 0.5).astype(np.float64)
@@ -57,7 +58,10 @@ def plot_reconstructions(inputs: Samples, reconstructions: Samples, labels: List
         top.axis("on")
         bottom.axis("on")
         draw_glyph(top, original, shape, title=labels[i])
-        color = "black" if errors[i] <= goal_pixels else "red"
+        if goal_pixels is not None:
+            color = "black" if errors[i] <= goal_pixels else "red"
+        else:
+            color = "black"
         draw_glyph(bottom, output, shape, wrong=output != original, title=f"{errors[i]} px", title_color=color)
 
     fig.suptitle("Originals (top) and reconstructions (bottom)")
@@ -94,7 +98,7 @@ def latent_grid(latent: Samples, size: int, padding: float = 0.1) -> Tuple[npt.N
     margin = (high - low) * padding
     return np.linspace(low[0] - margin[0], high[0] + margin[0], size), np.linspace(low[1] - margin[1], high[1] + margin[1], size)
 
-def plot_latent_grid(decode: Decoder, latent: Samples, inputs: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int, size: int = 15) -> Figure:
+def plot_latent_grid(decode: Decoder, latent: Samples, inputs: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int | None, size: int = 15) -> Figure:
     """
     Decode a regular grid of latent points. Each glyph is titled with its nearest training pattern
     and the Hamming distance to it; glyphs farther than goal_pixels from every pattern are new (blue).
@@ -125,7 +129,7 @@ def default_pair(latent: Samples, inputs: Samples) -> Tuple[int, int]:
     first = int(np.argmax(pixel_distances))
     return first, int(neighbours[first])
 
-def plot_interpolation(decode: Decoder, latent: Samples, inputs: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int, pair: Tuple[int, int], steps: int = 9) -> Figure:
+def plot_interpolation(decode: Decoder, latent: Samples, inputs: Samples, labels: List[str], shape: Tuple[int, int], goal_pixels: int | None, pair: Tuple[int, int], steps: int = 9) -> Figure:
     """Decode the segment between the latent codes of two patterns."""
     a, b = pair
     t = np.linspace(0, 1, steps)
@@ -147,15 +151,16 @@ def run_figures(run: TrainingRun, pair: Tuple[int, int] | None = None) -> Dict[s
     latent = run.model.encode(run.inputs)
     reconstructions = run.model.reconstruct(run.inputs)
     pair = pair if pair is not None else default_pair(latent, run.inputs)
+    shape = (run.shape.height, run.shape.width)
 
     figures = {
         "history": plot_history(run.history, len(run.inputs), run.goal_pixels),
-        "reconstructions": plot_reconstructions(run.inputs, reconstructions, run.labels, run.shape, run.goal_pixels),
+        "reconstructions": plot_reconstructions(run.inputs, reconstructions, run.labels, shape, run.goal_pixels),
     }
     if latent.shape[1] == 2:
         figures["latent_space"] = plot_latent(latent, run.labels)
-        figures["latent_grid"] = plot_latent_grid(run.model.decode, latent, run.inputs, run.labels, run.shape, run.goal_pixels)
-    figures["interpolation"] = plot_interpolation(run.model.decode, latent, run.inputs, run.labels, run.shape, run.goal_pixels, pair)
+        figures["latent_grid"] = plot_latent_grid(run.model.decode, latent, run.inputs, run.labels, shape, run.goal_pixels)
+    figures["interpolation"] = plot_interpolation(run.model.decode, latent, run.inputs, run.labels, shape, run.goal_pixels, pair)
     return figures
 
 def plot_run(run: TrainingRun, save_dir: str | None = None) -> None:
