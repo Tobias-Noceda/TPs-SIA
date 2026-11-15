@@ -1,4 +1,5 @@
 import time
+from typing import Callable, Tuple
 
 from tp5.models.basic_autoencoder import BasicAutoencoder
 from tp5.models.multi_layer_perceptron import MultiLayerPerceptron
@@ -10,10 +11,9 @@ from tp5.types.training_run import TrainingRun
 
 from numpy.random import MT19937, RandomState, SeedSequence
 
-def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: RandomState) -> BasicAutoencoder:
-    """Untrained autoencoder described by the config, its weights drawn from `random`."""
+def build_networks(config: AutoencoderConfig, input_size: int, random: RandomState) -> Tuple[MultiLayerPerceptron, MultiLayerPerceptron]:
+    """Untrained encoder and decoder described by the config, their weights drawn from `random`."""
     autoencoder = config["autoencoder"]
-    loss_function, derivative_loss_function = config["loss_function"]
 
     def network(layers, size: int) -> MultiLayerPerceptron:
         neurons = [tuple(Neuron(f, df) for f, df in layer) for layer in layers]
@@ -21,6 +21,12 @@ def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: 
 
     encoder = network(autoencoder["encoder"], input_size)
     decoder = network(autoencoder["decoder"], encoder.output_size)
+    return encoder, decoder
+
+def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: RandomState) -> BasicAutoencoder:
+    """Untrained autoencoder described by the config, its weights drawn from `random`."""
+    loss_function, derivative_loss_function = config["loss_function"]
+    encoder, decoder = build_networks(config, input_size, random)
 
     return BasicAutoencoder(
         encoder,
@@ -34,8 +40,14 @@ def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: 
         random,
     )
 
+type Builder = Callable[[AutoencoderConfig, int, RandomState], BasicAutoencoder]
+
 def run_basic(config: AutoencoderConfig) -> TrainingRun:
     """Train a basic autoencoder (expected output = input) over the glyphs of the dataset."""
+    return train_run(config, build_basic_autoencoder)
+
+def train_run(config: AutoencoderConfig, build: Builder) -> TrainingRun:
+    """Build the model with `build` and train it to reproduce the glyphs of the dataset (expected = clean input)."""
     inputs, labels, (height, width) = parse_font(config["dataset"]["path"])
     # Glyphs are binary grayscale images
     shape = ImageShape(height, width, 1)
@@ -44,7 +56,7 @@ def run_basic(config: AutoencoderConfig) -> TrainingRun:
     seed = SeedSequence(config["seed"])
     random = RandomState(MT19937(seed))
 
-    model = build_basic_autoencoder(config, inputs.shape[1], random)
+    model = build(config, inputs.shape[1], random)
 
     start = time.perf_counter()
     history = model.train(inputs, inputs, config["epochs"])

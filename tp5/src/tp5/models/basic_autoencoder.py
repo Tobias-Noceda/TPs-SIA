@@ -72,15 +72,18 @@ class BasicAutoencoder(Autoencoder):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
         results: List[EpochResult] = []
+        # What the end-of-epoch metrics reconstruct (the clean inputs for a basic autoencoder)
+        evaluation_inputs, evaluation_expected = self._evaluation_data(inputs, expected)
         # Error of the previous epoch, for the learning rate functions that adapt to it
         previous_loss = np.float64(np.inf)
         for epoch in trange(epochs, mininterval=0.5):
-            order = self.random.permutation(len(inputs))
-            for start in range(0, len(inputs), self.batch_size):
+            epoch_inputs, epoch_expected = self._epoch_data(inputs, expected)
+            order = self.random.permutation(len(epoch_inputs))
+            for start in range(0, len(epoch_inputs), self.batch_size):
                 batch = order[start:start + self.batch_size]
 
-                output = self.decoder.forward(self.encoder.forward(inputs[batch]))
-                gradient = self.derivative_loss_function(output, expected[batch])
+                output = self.decoder.forward(self.encoder.forward(epoch_inputs[batch]))
+                gradient = self.derivative_loss_function(output, epoch_expected[batch])
                 self.encoder.backward(self.decoder.backward(gradient))
 
                 self.decoder.step(previous_loss)
@@ -88,9 +91,9 @@ class BasicAutoencoder(Autoencoder):
 
             # Measured with the weights at the end of the epoch (32 patterns: cheap), so the stop
             # criterion refers to the model that is returned
-            reconstructions = self.reconstruct(inputs)
-            loss = self.loss_function(reconstructions, expected)
-            errors = pixel_errors(reconstructions, expected)
+            reconstructions = self.reconstruct(evaluation_inputs)
+            loss = self.loss_function(reconstructions, evaluation_expected)
+            errors = pixel_errors(reconstructions, evaluation_expected)
             # Without a goal, a pattern counts as learned only when reconstructed exactly
             allowed = self.goal_pixels if self.goal_pixels is not None else 0
             results.append((epoch, loss, int(errors.max()), int(np.sum(errors <= allowed))))
@@ -104,6 +107,14 @@ class BasicAutoencoder(Autoencoder):
                 break
 
         return tuple(results)
+
+    def _epoch_data(self, inputs: Samples, expected: Samples) -> Tuple[Samples, Samples]:
+        """Inputs and expected outputs trained in one epoch (hook for variants such as the denoising one)."""
+        return inputs, expected
+
+    def _evaluation_data(self, inputs: Samples, expected: Samples) -> Tuple[Samples, Samples]:
+        """Inputs and expected outputs the end-of-epoch metrics and stop criteria use (drawn once per training)."""
+        return inputs, expected
 
     @staticmethod
     def __validate(data: Samples, size: int) -> Samples:

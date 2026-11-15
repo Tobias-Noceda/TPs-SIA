@@ -356,6 +356,66 @@
                     "description": "Path to the font.h file (relative to the cwd)"
                 }
             }
+        },
+        "noise": {
+            "type": "object",
+            "description": "Corruption of the inputs of a denoising autoencoder (required with type denoising, not allowed otherwise). Resampled every epoch; the expected output is always the clean pattern",
+            "required": [
+                "type",
+                "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "flip: each pixel inverted with probability level; salt_pepper: each pixel set to 0 or 1 with probability level; gaussian: + N(0, level²) clipped to [0, 1]",
+                    "enum": [
+                        "flip",
+                        "salt_pepper",
+                        "gaussian"
+                    ]
+                },
+                "level": {
+                    "type": "number",
+                    "description": "Probability per pixel (flip, salt_pepper) or standard deviation (gaussian)",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "copies": {
+                    "type": "integer",
+                    "description": "Noisy versions of every pattern per epoch",
+                    "minimum": 1,
+                    "default": 1
+                }
+            }
         }
-    }
+    },
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "autoencoder": {
+                        "properties": {
+                            "type": {
+                                "const": "denoising"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "autoencoder"
+                ]
+            },
+            "then": {
+                "required": [
+                    "noise"
+                ]
+            },
+            "else": {
+                "properties": {
+                    "noise": false
+                }
+            }
+        }
+    ]
 }

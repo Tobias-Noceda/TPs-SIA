@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Denoising</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <nav><a href="/">Latent space</a><a href="/denoise" aria-current="page">Denoising</a></nav>
+    <h1>Denoising</h1>
+    <p id="summary" class="muted">Loading…</p>
+  </header>
+
+  <main class="denoise-main">
+    <section class="panel" id="input-panel">
+      <h2>Noisy input</h2>
+      <p class="hint">Pick the clean sample (the expected output), then corrupt it with noise, load a noisy file or click pixels of the noisy image to toggle them.</p>
+      <div id="samples"></div>
+
+      <fieldset>
+        <legend>Generate noise</legend>
+        <div class="controls">
+          <label>type <select id="noise-type"></select></label>
+          <label>seed <input type="number" id="noise-seed" min="0" step="1" placeholder="random"></label>
+          <button id="new-noise" title="Same type and level, new random seed">New noise</button>
+        </div>
+        <div class="controls level-row">
+          <input type="range" id="noise-level" min="0" max="1" step="0.01" aria-label="Noise level">
+          <input type="number" id="noise-level-value" min="0" max="1" step="0.01" aria-label="Noise level value">
+        </div>
+        <p class="hint" id="noise-hint"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Noisy pattern files</legend>
+        <div class="controls">
+          <select id="noisy-files" aria-label="Noisy files on the server"></select>
+          <button id="load-file">Load</button>
+          <button id="refresh-files" title="Reload the list of files">↻</button>
+        </div>
+        <div class="controls">
+          <input type="file" id="local-file" accept=".json,application/json" aria-label="Load a local noisy file">
+        </div>
+        <div class="controls" id="variant-controls" hidden>
+          <button id="prev-variant">◀</button>
+          <span id="variant-text" class="muted"></span>
+          <button id="next-variant">▶</button>
+        </div>
+        <div class="controls">
+          <button id="save-noisy" title="Writes the current noisy image as a new noisy file">Save noisy pattern</button>
+        </div>
+      </fieldset>
+      <p id="input-status" class="status"></p>
+    </section>
+
+    <section class="panel" id="result-panel">
+      <div class="panel-head">
+        <h2>Autoencoder output</h2>
+        <label id="binarize-label" hidden><input type="checkbox" id="binarize"> binarize output (≥ 0.5)</label>
+      </div>
+      <p id="source" class="hint"></p>
+      <div class="result-row">
+        <figure>
+          <canvas id="original" class="image"></canvas>
+          <figcaption>original (expected)</figcaption>
+        </figure>
+        <figure>
+          <canvas id="noisy" class="image" title="Click a pixel to toggle it"></canvas>
+          <figcaption id="noisy-caption">noisy input</figcaption>
+        </figure>
+        <figure>
+          <canvas id="output" class="image"></canvas>
+          <figcaption id="output-caption">output</figcaption>
+        </figure>
+        <figure>
+          <canvas id="nearest" class="image"></canvas>
+          <figcaption id="nearest-caption">nearest sample</figcaption>
+        </figure>
+      </div>
+      <p class="code"><span class="muted">z =</span> <span id="z-text"></span></p>
+      <div class="controls">
+        <input type="text" id="save-name" placeholder="file name" aria-label="Name of the saved image">
+        <button id="save">Save image</button>
+        <span id="saved" class="status"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="all-panel">
+      <div class="panel-head">
+        <h2>All samples with the same noise</h2>
+        <label><input type="checkbox" id="all-toggle"> show</label>
+      </div>
+      <p class="hint">Same type, level and seed applied to every sample (one noise draw for the whole batch).</p>
+      <p id="all-summary"></p>
+      <div class="table-wrap" id="all-wrap" hidden>
+        <table id="all-table">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/static/denoise.js"></script>
+</body>
+</html>

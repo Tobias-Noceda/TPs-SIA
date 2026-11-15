@@ -15,6 +15,17 @@ def _format_number(value: Any) -> str:
 def describe(info: Dict[str, Any]) -> List[str]:
     """Lines of text with everything needed to replicate a generated image."""
     coordinates = ", ".join(f"{v:+.4f}" for v in info["latent"])
+    lines = [
+        "Latent point",
+        f"  z = ({coordinates})",
+    ]
+    nearest = info.get("nearest_sample")
+    if nearest is not None:
+        lines.append(f"  nearest sample: '{nearest['label']}' ({nearest['distance']})")
+    return lines + [""] + describe_model(info)
+
+def describe_model(info: Dict[str, Any]) -> List[str]:
+    """Model, seed, cut conditions, training result and dataset of a run (shared by every saved figure)."""
     learning_rate = info["learning_rate"]
     hyper = ", ".join(f"{k}={_format_number(v)}" for k, v in learning_rate.get("hyperparameters", {}).items())
     optimizer = f"{learning_rate['type']} (η = {_format_number(learning_rate['value'])}{', ' + hyper if hyper else ''})"
@@ -23,14 +34,6 @@ def describe(info: Dict[str, Any]) -> List[str]:
     goal = "none" if cut["goal_pixels"] is None else f"≤ {cut['goal_pixels']} px"
 
     lines = [
-        "Latent point",
-        f"  z = ({coordinates})",
-    ]
-    nearest = info.get("nearest_sample")
-    if nearest is not None:
-        lines.append(f"  nearest sample: '{nearest['label']}' ({nearest['distance']})")
-    lines += [
-        "",
         "Model",
         f"  type: {info['type']}",
         f"  architecture: {info['arquitecture']}",
@@ -41,6 +44,11 @@ def describe(info: Dict[str, Any]) -> List[str]:
         f"  batch size: {info['batch_size']}",
         f"  initialization: {info['initialization']}",
         f"  seed: {info['seed']}",
+    ]
+    noise = info.get("noise")
+    if noise:
+        lines.append(f"  training noise: {noise['type']} {_format_number(noise['level'])}, {noise['copies']} copies/epoch")
+    lines += [
         "",
         "Cut conditions",
         f"  max epochs: {cut['epochs']}",
@@ -51,7 +59,9 @@ def describe(info: Dict[str, Any]) -> List[str]:
         f"  epochs trained: {training['epochs_trained']}",
         f"  final loss: {_format_number(training['final_loss'])}",
         f"  max wrong pixels: {training['max_wrong_pixels']}",
-        f"  patterns learned: {training['patterns_learned']}/{training['patterns']}",
+        (f"  noisy outputs learned: {training['patterns_learned']}/{training['patterns']}"
+         if training.get("noisy_evaluation") else
+         f"  patterns learned: {training['patterns_learned']}/{training['patterns']}"),
         "",
         f"Dataset: {info['dataset']}",
     ]
@@ -66,7 +76,9 @@ def plot_generated(image: npt.NDArray[np.float64], shape: ImageShape, info: Dict
 
     figure = Figure(figsize=(11.5, 5.6), layout="constrained")
     # Horizontal gap between the image (with its colour bar) and the metadata, as a fraction of the figure
-    figure.get_layout_engine().set(wspace=0.1)
+    layout = figure.get_layout_engine()
+    if (layout is not None):
+        layout.set(wspace=0.1) # type: ignore
     image_ax, text_ax = figure.subplots(1, 2, width_ratios=[1, 1.35])
 
     if shape.channels == 1:

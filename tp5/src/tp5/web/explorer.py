@@ -3,13 +3,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from tp5.interfaces.autoencoder import Autoencoder
-from tp5.persistence.generated import GENERATED_DIR, run_metadata, save_generated
+from tp5.persistence.generated import GENERATED_DIR, run_metadata, save_denoising, save_generated
+from tp5.persistence.noisy_file import NOISY_DIR, list_noisy, load_noisy, save_noisy
+from tp5.types.config.noise import NoiseFunctions
 from tp5.types.image_shape import ImageShape
 from tp5.types.samples import Samples
 from tp5.types.training_run import TrainingRun
 
 import numpy as np
 import numpy.typing as npt
+from numpy.random import MT19937, RandomState, SeedSequence
 
 # Decimals sent to the browser: enough for sliders and images, keeps the JSON small
 _DECIMALS = 5
@@ -31,6 +34,7 @@ class LatentExplorer:
         margin: Fraction of each latent coordinate range added on both sides of the slider bounds.
         metadata: Seed, parameters and cut conditions written next to every generated image.
         generated_dir: Where "save image" writes the generated images.
+        noisy_dir: Where the noisy pattern files are listed from and saved to.
     """
     model: Autoencoder
     inputs: Samples
@@ -41,6 +45,7 @@ class LatentExplorer:
     margin: float = 0.25
     metadata: Dict[str, Any] = field(default_factory=dict)
     generated_dir: str = GENERATED_DIR
+    noisy_dir: str = NOISY_DIR
 
     latent: Samples = field(init=False, repr=False)
     binary: bool = field(init=False)
@@ -56,8 +61,11 @@ class LatentExplorer:
         self.binary = bool(np.isin(self.inputs, (0.0, 1.0)).all())
 
     @classmethod
-    def from_run(cls, run: TrainingRun, generated_dir: str = GENERATED_DIR) -> "LatentExplorer":
-        explorer = cls(run.model, run.inputs, run.labels, run.shape, metadata=run_metadata(run), generated_dir=generated_dir)
+    def from_run(cls, run: TrainingRun, generated_dir: str = GENERATED_DIR, noisy_dir: str = NOISY_DIR) -> "LatentExplorer":
+        explorer = cls(
+            run.model, run.inputs, run.labels, run.shape,
+            metadata=run_metadata(run), generated_dir=generated_dir, noisy_dir=noisy_dir,
+        )
         if run.goal_pixels is not None:
             explorer.tolerance = run.goal_pixels
         return explorer
@@ -86,6 +94,10 @@ class LatentExplorer:
             "binary": self.binary,
             "tolerance": self.tolerance if self.binary else None,
             "ink": self.ink,
+            # Training noise of a denoising autoencoder (None for the others): defaults of the /denoise page
+            "noise": self.metadata.get("noise"),
+            "noise_types": [noise.value for noise in NoiseFunctions],
+            "dataset": self.metadata.get("dataset"),
         }
 
     def distances(self, images: Samples) -> npt.NDArray[np.float64]:
@@ -126,3 +138,83 @@ class LatentExplorer:
             self.model, z, name, self.image_shape, self.metadata, self.generated_dir,
             binarize=self.binary, ink=self.ink, training_inputs=self.inputs, labels=self.labels,
         )
+
+    # ------------------------------------------------------------------ denoising page
+
+    def _images(self, images: Any) -> Samples:
+        images = np.asarray(images, dtype=np.float64)
+        if images.ndim != 2 or images.shape[1] != self.image_shape.size:
+            raise ValueError(f"Expected a (images, {self.image_shape.size}) matrix, got {images.shape}.")
+        if not np.isfinite(images).all():
+            raise ValueError("Image values must be finite.")
+        return np.clip(images, 0, 1)
+
+    def _index(self, index: Any) -> int:
+        if not isinstance(index, int) or not 0 <= index < len(self.inputs):
+            raise ValueError(f"Sample index must be in [0, {len(self.inputs) - 1}].")
+        return index
+
+    def noise(self, indices: Sequence[int], noise_type: str, level: float, seed: int | None) -> Dict[str, Any]:
+        """Noisy versions of the given samples, with the same noise functions used for training."""
+        indices = [self._index(i) for i in indices]
+        if not 0 <= float(level) <= 1:
+            raise ValueError("The noise level must be in [0, 1].")
+        function = NoiseFunctions(noise_type).function()
+        # Small seeds: shown and typed in the page (JS numbers are exact only up to 2^53)
+        seed = int(seed) if seed is not None else int(np.random.default_rng().integers(0, 2**31))
+        images = function(RandomState(MT19937(SeedSequence(seed))), self.inputs[indices], float(level))
+        return {"images": np.round(images, _DECIMALS).tolist(), "seed": seed}
+
+    def reconstruct(self, images: Any) -> Dict[str, Any]:
+        """Outputs of the whole autoencoder for the given images, with their latent codes and nearest samples."""
+        images = self._images(images)
+        latent = self.model.encode(images)
+        outputs = np.clip(self.model.decode(latent), 0, 1)
+        distances = self.distances(outputs)
+        nearest = np.argmin(distances, axis=1)
+        return {
+            "outputs": np.round(outputs, _DECIMALS).tolist(),
+            "latent": np.round(latent, _DECIMALS).tolist(),
+            "nearest": nearest.tolist(),
+            "distance": np.round(distances[np.arange(len(images)), nearest], _DECIMALS).tolist(),
+        }
+
+    def _error(self, image: npt.NDArray[np.float64], reference: npt.NDArray[np.float64]) -> Any:
+        if self.binary:
+            return int(np.sum((image >= 0.5) != (reference >= 0.5)))
+        return round(float(np.mean(np.abs(image - reference))), 4)
+
+    def list_noisy(self) -> List[str]:
+        return list_noisy(self.noisy_dir)
+
+    def load_noisy(self, name: str) -> Dict[str, Any]:
+        return load_noisy(self.noisy_dir, name)
+
+    def save_noisy(self, index: int, noise: Dict[str, Any], noisy: Any) -> Path:
+        """Save noisy versions of a sample (from the page, possibly edited by hand) in the noisy file format."""
+        index = self._index(index)
+        return save_noisy(
+            self.noisy_dir, str(self.metadata.get("dataset")), self.labels[index], index, self.image_shape,
+            noise, self.inputs[index], self._images(noisy),
+        )
+
+    def save_denoising(self, index: int, noisy: Any, noise: Dict[str, Any], name: str) -> Path:
+        """Save the report figure original / noisy / output of a sample (named by the user)."""
+        index = self._index(index)
+        noisy_image = self._images([noisy])[0]
+        output = np.clip(self.model.reconstruct(noisy_image[None, :])[0], 0, 1)
+        original = self.inputs[index]
+        distances = self.distances(output[None, :])[0]
+        nearest = int(np.argmin(distances))
+        info = {
+            **self.metadata,
+            "sample": self.labels[index],
+            "index": index,
+            "input_noise": noise,
+            "errors": {"noisy": self._error(noisy_image, original), "output": self._error(output, original)},
+            "nearest": {
+                "label": self.labels[nearest],
+                "distance": f"{int(distances[nearest])} wrong px" if self.binary else f"MAE {distances[nearest]:.4f}",
+            },
+        }
+        return save_denoising(self.generated_dir, name, original, noisy_image, output, self.image_shape, info, self.ink, self.binary)
