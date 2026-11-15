@@ -53,7 +53,7 @@
     },
     "epochs": 20000,
     "batch_size": 32,
-    "goal_pixels": 0,
+    "epsilon": 1e-03,
     "stop_at_goal": true,
     "seed": 42,
     "initialization": "xavier",

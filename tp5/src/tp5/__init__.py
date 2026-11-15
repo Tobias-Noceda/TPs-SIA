@@ -3,6 +3,7 @@ from typing import Callable, Dict
 
 from tp5.config import load_config
 from tp5.functions.pixel_error import pixel_errors
+from tp5.persistence.generated import GENERATED_DIR
 from tp5.persistence.run_file import load_run, save_run
 from tp5.runners.basic import run_basic
 from tp5.types.config.autoencoder import AutoencoderType
@@ -21,6 +22,7 @@ parser.add_argument("-i", "--interactive", dest="interactive", action="store_tru
 parser.add_argument("--host", dest="host", type=str, default="127.0.0.1", help="Host of the explorer (default 127.0.0.1)")
 parser.add_argument("--port", dest="port", type=int, default=8000, help="Port of the explorer (default 8000)")
 parser.add_argument("--no-browser", dest="browser", action="store_false", help="Do not open the browser automatically")
+parser.add_argument("--generated-dir", dest="generated_dir", type=str, default=GENERATED_DIR, help=f"Where the explorer's 'Save image' writes (default {GENERATED_DIR})")
 
 # What main runs for each autoencoder type of the config
 RUNNERS: Dict[AutoencoderType, Callable[[AutoencoderConfig], TrainingRun]] = {
@@ -75,4 +77,4 @@ def main():
         # Imported only when needed, like the plots
         from tp5.web.explorer import LatentExplorer
         from tp5.web.server import serve
-        serve(LatentExplorer.from_run(run), args.host, args.port, args.browser)
+        serve(LatentExplorer.from_run(run, args.generated_dir), args.host, args.port, args.browser)
