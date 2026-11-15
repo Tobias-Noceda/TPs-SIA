@@ -14,8 +14,6 @@ parser = argparse.ArgumentParser(description="Autoencoders: basic, denoising and
 parser.add_argument("-c", "--config", dest="config", type=str, required=False, help="Configuration JSON file (required unless --load)")
 parser.add_argument("-l", "--load", dest="load", type=str, required=False, help="Load a trained run (.npz saved with --output) instead of training")
 parser.add_argument("-o", "--output", dest="output", type=str, required=False, help="Output .npz file for the trained model and results (optional)")
-parser.add_argument("-p", "--plot", dest="plot", action="store_true", help="Save the plots of the run as PNG into --plot-dir")
-parser.add_argument("--plot-dir", dest="plot_dir", type=str, default="res/output/plots", help="Directory for the plots (default res/output/plots)")
 
 parser.add_argument("-i", "--interactive", dest="interactive", action="store_true", help="Open the web latent space explorer with the trained model")
 parser.add_argument("--host", dest="host", type=str, default="127.0.0.1", help="Host of the explorer (default 127.0.0.1)")
@@ -61,15 +59,6 @@ def main():
     if args.output:
         save_run(args.output, run)
         print(f"Saved to {args.output}")
-
-    if args.plot:
-        # Imported only when plotting, so training alone never loads matplotlib. Non-interactive
-        # backend: figures are saved to files, never shown in a window
-        import matplotlib
-        matplotlib.use("Agg")
-        from tp5.visualization.autoencoder import plot_run
-        plot_run(run, save_dir=args.plot_dir)
-        print(f"Plots saved to {args.plot_dir}")
 
     if args.interactive:
         # Imported only when needed, like the plots
