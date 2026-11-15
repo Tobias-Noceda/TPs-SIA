@@ -19,6 +19,8 @@ dependencies = [
 [project.scripts]
 tp5 = "tp5:main"
 noisy = "tp5.tools.noisy:main"
+ej1a-sweep = "tp5.tools.ej1a_sweep:main"
+ej1a-analysis = "tp5.tools.ej1a_analysis:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
