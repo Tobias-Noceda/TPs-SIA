@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Sequence
 
 from tp5.interfaces.autoencoder import Autoencoder
+from tp5.persistence.generated import GENERATED_DIR, run_metadata, save_generated
 from tp5.types.image_shape import ImageShape
 from tp5.types.samples import Samples
 from tp5.types.training_run import TrainingRun
@@ -27,6 +29,8 @@ class LatentExplorer:
             sample is considered new; ignored for continuous datasets.
         ink: Grayscale images are drawn with 1 = black (glyphs) instead of 1 = white.
         margin: Fraction of each latent coordinate range added on both sides of the slider bounds.
+        metadata: Seed, parameters and cut conditions written next to every generated image.
+        generated_dir: Where "save image" writes the generated images.
     """
     model: Autoencoder
     inputs: Samples
@@ -35,6 +39,8 @@ class LatentExplorer:
     tolerance: int = 1
     ink: bool = True
     margin: float = 0.25
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    generated_dir: str = GENERATED_DIR
 
     latent: Samples = field(init=False, repr=False)
     binary: bool = field(init=False)
@@ -50,10 +56,11 @@ class LatentExplorer:
         self.binary = bool(np.isin(self.inputs, (0.0, 1.0)).all())
 
     @classmethod
-    def from_run(cls, run: TrainingRun) -> "LatentExplorer":
-        if run.goal_pixels is None:
-            return cls(run.model, run.inputs, run.labels, run.shape)
-        return cls(run.model, run.inputs, run.labels, run.shape, tolerance=run.goal_pixels)
+    def from_run(cls, run: TrainingRun, generated_dir: str = GENERATED_DIR) -> "LatentExplorer":
+        explorer = cls(run.model, run.inputs, run.labels, run.shape, metadata=run_metadata(run), generated_dir=generated_dir)
+        if run.goal_pixels is not None:
+            explorer.tolerance = run.goal_pixels
+        return explorer
 
     @property
     def latent_dim(self) -> int:
@@ -106,3 +113,16 @@ class LatentExplorer:
             "nearest": nearest.tolist(),
             "distance": np.round(distances[np.arange(len(images)), nearest], _DECIMALS).tolist(),
         }
+
+    def generate(self, z: Sequence[float], name: str) -> List[Path]:
+        """
+        Save the decoder output for `z` into generated_dir as report figures (image + seed, parameters,
+        cut conditions and coordinates): as is and, for binary datasets (the font), also binarized.
+        Only called on demand ("Save image" in the page).
+        """
+        if len(z) != self.latent_dim:
+            raise ValueError(f"Expected {self.latent_dim} latent coordinates, got {len(z)}.")
+        return save_generated(
+            self.model, z, name, self.image_shape, self.metadata, self.generated_dir,
+            binarize=self.binary, ink=self.ink, training_inputs=self.inputs, labels=self.labels,
+        )

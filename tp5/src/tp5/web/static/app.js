@@ -509,6 +509,34 @@ $("binarize").addEventListener("change", (event) => {
   drawMap();
 });
 
+// Saves the decoder output for the current z on the server (generated_dir): normal + binarized + JSON
+// The file name is always typed by the user; existing files are never overwritten
+async function save() {
+  const name = $("save-name").value.trim();
+  if (!name) {
+    $("saved").textContent = "Type a file name first.";
+    $("save-name").focus();
+    return;
+  }
+  const button = $("save");
+  button.disabled = true;
+  $("saved").textContent = "Saving…";
+  try {
+    const { files } = await api("/api/generate", { z: state.z, name });
+    $("save-name").value = "";
+    $("saved").textContent = `Saved: ${files.join(", ")}`;
+  } catch (error) {
+    $("saved").textContent = `Could not save: ${error.message}`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("save").addEventListener("click", save);
+$("save-name").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") save();
+});
+
 $("random").addEventListener("click", () => {
   state.z = state.data.bounds.map(([low, high]) => low + Math.random() * (high - low));
   update();

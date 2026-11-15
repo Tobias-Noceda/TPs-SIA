@@ -37,6 +37,15 @@ uv run tp5 --config res/config/ej1a/baseline.json             # 35-2-35 con GD: 
 
 - `main` carga la config, despacha por `autoencoder.type` (`RUNNERS`), entrena e imprime épocas,
   pérdida, máx. píxeles incorrectos, patrones aprendidos y cuáles no. `--output` guarda `.npz`.
+- **Save image** (1a.4, solo a mano desde el explorador, nada se guarda solo): decodifica el `z` actual y
+  guarda en `--generated-dir` (default `res/output/ej1/generated/`) figuras listas para el informe con el
+  **nombre que se escribe en la página** (obligatorio; letras, dígitos, espacios y `. _ - + ( ) ,`; nunca
+  sobrescribe: si existe, pide otro): `{nombre}.png` (salida tal cual, con escala de valores) y
+  `{nombre}_binarized.png` (umbral 0.5,
+  solo si el dataset es binario: la fuente sí, el RGB del ej. 2 no). Cada figura muestra la imagen con
+  grilla de píxeles y al lado lo necesario para replicarla: coordenadas, muestra más cercana, tipo,
+  arquitectura y activaciones, pérdida, optimizador, batch, inicialización, semilla, condiciones de corte
+  (`epochs`, `epsilon`, objetivo de píxeles, `stop_at_goal`), resultado del entrenamiento y dataset.
 - **`-i/--interactive`**: explorador web (`web/`), servidor `http.server` de la stdlib en localhost con el
   modelo en memoria; todo decode pasa por Python (`Autoencoder.decode`), sin reentrenar. `--load` reconstruye
   la corrida desde un `.npz` de `--output` (config guardada + pesos) y reemplaza a `--config` (son
@@ -87,11 +96,13 @@ src/tp5/
 │   └── pixel_error.py          # píxeles incorrectos por patrón
 ├── parsers/font_parser.py      # font.h → (32, 35) en {0, 1}, etiquetas, forma (7, 5)
 ├── persistence/run_file.py     # save_run (.npz con config, history, latente, reconstrucciones, pesos), load_run, load_parameters
+├── persistence/generated.py    # run_metadata(run), save_generated(model, z, ...) → figura normal (+ binarizada)
 ├── web/
 │   ├── explorer.py             # LatentExplorer: dataset() y decode(z) en JSON, genérico en ImageShape (h, w, c)
-│   ├── server.py               # serve(): GET / y /static/*, GET /api/dataset, POST /api/decode {z: [[...]]}
+│   ├── server.py               # serve(): GET / y /static/*, GET /api/dataset, POST /api/decode {z: [[...]]}, POST /api/generate {z: [...], name}
 │   └── static/                 # index.html, app.js, style.css (sin dependencias ni CDN)
 ├── visualization/glyphs.py     # draw_glyph (píxeles incorrectos en rojo)
+├── visualization/generated.py  # plot_generated: imagen + datos de replicación (API OO de matplotlib, sin pyplot)
 └── types/                      # Float, Samples, EpochResult, TrainingRun, *Function + config/ (enums y TypedDicts)
 ```
 

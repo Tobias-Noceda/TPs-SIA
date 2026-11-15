@@ -52,18 +52,36 @@ def _handler(explorer: LatentExplorer) -> type[BaseHTTPRequestHandler]:
             self._send(HTTPStatus.OK, file.read_bytes(), content_type)
 
         def do_POST(self) -> None:
-            if self.path != "/api/decode":
+            if self.path not in ("/api/decode", "/api/generate"):
                 self._json(HTTPStatus.NOT_FOUND, {"error": f"Not found: {self.path}"})
                 return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
-                points = json.loads(self.rfile.read(length))["z"]
-                if not isinstance(points, list) or not 0 < len(points) <= MAX_POINTS:
-                    raise ValueError(f"'z' must be a list of 1 to {MAX_POINTS} latent points.")
-                with lock:
-                    result = explorer.decode(points)
+                body = json.loads(self.rfile.read(length))
+                points = body["z"]
+                if self.path == "/api/generate":
+                    # One latent point [z0, ..., zn-1] and the file name chosen by the user
+                    if not isinstance(points, list) or not all(isinstance(v, (int, float)) for v in points):
+                        raise ValueError("'z' must be a list of latent coordinates.")
+                    name = body.get("name")
+                    if not isinstance(name, str):
+                        raise ValueError("A file name is required.")
+                    with lock:
+                        files = explorer.generate(points, name)
+                    result = {"files": [str(path) for path in files]}
+                else:
+                    if not isinstance(points, list) or not 0 < len(points) <= MAX_POINTS:
+                        raise ValueError(f"'z' must be a list of 1 to {MAX_POINTS} latent points.")
+                    with lock:
+                        result = explorer.decode(points)
             except (ValueError, KeyError, TypeError) as error:
                 self._json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except FileExistsError as error:
+                self._json(HTTPStatus.CONFLICT, {"error": str(error)})
+                return
+            except OSError as error:
+                self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": f"Could not save: {error}"})
                 return
             self._json(HTTPStatus.OK, result)
 

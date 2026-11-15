@@ -75,7 +75,7 @@ main {
   gap: 8px;
 }
 
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
 
 select, input[type="number"], button {
   font: inherit;
@@ -131,6 +131,16 @@ canvas.image {
 #output { width: 200px; }
 #nearest { width: 110px; }
 #novelty { min-height: 1.4em; margin: 8px 0 0; }
+#saved { font-size: 12px; word-break: break-all; }
+#save-name {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  width: 180px;
+}
 .badge {
   display: inline-block;
   padding: 1px 8px;
