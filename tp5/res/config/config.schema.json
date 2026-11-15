@@ -118,7 +118,7 @@
             "properties": {
                 "type": {
                     "type": "string",
-                    "description": "Kind of autoencoder (only basic is implemented so far)",
+                    "description": "Kind of autoencoder: basic, denoising (needs 'noise') or variational (encoder's last layer = 2·k linear neurons: μ and log Σ; decoder takes k)",
                     "enum": [
                         "basic",
                         "denoising",
@@ -345,15 +345,53 @@
         },
         "dataset": {
             "type": "object",
-            "description": "Where the patterns are read from",
+            "description": "Where the patterns are read from: a font.h file or a folder of images",
             "required": [
                 "path"
             ],
             "additionalProperties": false,
             "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "font: font.h glyphs (binary 7x5); images: every image under the folder (recursively), label = relative path",
+                    "enum": [
+                        "font",
+                        "images"
+                    ],
+                    "default": "font"
+                },
                 "path": {
                     "type": "string",
-                    "description": "Path to the font.h file (relative to the cwd)"
+                    "description": "font.h file or image folder (relative to the cwd)"
+                },
+                "size": {
+                    "type": "array",
+                    "description": "[height, width] every image is resized to (images only)",
+                    "items": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                },
+                "channels": {
+                    "type": "integer",
+                    "description": "1 = grayscale, 3 = RGB (images only)",
+                    "enum": [
+                        1,
+                        3
+                    ],
+                    "default": 3
+                },
+                "fit": {
+                    "type": "string",
+                    "description": "Other aspect ratios: crop (central region), pad (whole image on white) or stretch (images only)",
+                    "enum": [
+                        "crop",
+                        "pad",
+                        "stretch"
+                    ],
+                    "default": "stretch"
                 }
             }
         },
@@ -388,6 +426,19 @@
                     "default": 1
                 }
             }
+        },
+        "variational": {
+            "type": "object",
+            "description": "Parameters of a variational autoencoder (only with type variational; optional, beta defaults to 1)",
+            "additionalProperties": false,
+            "properties": {
+                "beta": {
+                    "type": "number",
+                    "description": "λ of J = reconstruction + λ KL(q(z|x) || N(0, I)); 1 = standard ELBO",
+                    "exclusiveMinimum": 0,
+                    "default": 1
+                }
+            }
         }
     },
     "allOf": [
@@ -414,6 +465,69 @@
             "else": {
                 "properties": {
                     "noise": false
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "autoencoder": {
+                        "properties": {
+                            "type": {
+                                "const": "variational"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "autoencoder"
+                ]
+            },
+            "then": {},
+            "else": {
+                "properties": {
+                    "variational": false
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "dataset": {
+                        "properties": {
+                            "type": {
+                                "const": "images"
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                },
+                "required": [
+                    "dataset"
+                ]
+            },
+            "then": {
+                "properties": {
+                    "dataset": {
+                        "required": [
+                            "size"
+                        ]
+                    },
+                    "goal_pixels": false,
+                    "stop_at_goal": false
+                }
+            },
+            "else": {
+                "properties": {
+                    "dataset": {
+                        "properties": {
+                            "size": false,
+                            "channels": false,
+                            "fit": false
+                        }
+                    }
                 }
             }
         }

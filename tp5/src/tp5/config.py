@@ -131,6 +131,11 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> AutoencoderCon
         "level": float(noise["level"]),
         "copies": int(noise.get("copies", 1)),
     } if noise is not None else None
+    # Only for variational autoencoders (the schema forbids the block otherwise)
+    variational = data.get("variational") or {}
+    data["variational"] = {
+        "beta": float(variational.get("beta", 1.0)),
+    } if autoencoder["type"] == AutoencoderType.VARIATIONAL.value else None
     data["source"] = source
 
     return cast(AutoencoderConfig, data)

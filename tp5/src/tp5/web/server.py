@@ -15,7 +15,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 # Pages: route → file in static/
 PAGES = {"/": "index.html", "/denoise": "denoise.html"}
 
-# Largest batch of latent points / images processed in one request (a 64 × 64 grid)
+# Largest batch of latent points / images processed in one request (a 64 x 64 grid)
 MAX_POINTS = 4096
 
 def _list(body: Dict[str, Any], key: str) -> list:
@@ -62,8 +62,15 @@ def _routes(explorer: LatentExplorer) -> Dict[str, Callable[[Dict[str, Any]], An
         noisy = _list(body, "noisy")
         return {"files": [str(explorer.save_denoising(body.get("sample"), noisy, noise, _string(body, "name")))]}
 
+    def sample(body: Dict[str, Any]) -> Any:
+        seed = body.get("seed")
+        if seed is not None and (not isinstance(seed, int) or seed < 0):
+            raise ValueError("'seed' must be a non-negative integer or null.")
+        return explorer.sample(body.get("count", 1), seed)
+
     return {
         "/api/decode": lambda body: explorer.decode(_list(body, "z")),
+        "/api/sample": sample,
         "/api/generate": generate,
         "/api/noise": noise,
         "/api/reconstruct": lambda body: explorer.reconstruct(_list(body, "images")),

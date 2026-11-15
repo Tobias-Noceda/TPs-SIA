@@ -3,6 +3,7 @@ from typing import Any, Dict, Tuple, TypedDict
 from tp5.types.config.autoencoder import AutoencoderDefinition
 from tp5.types.config.dataset import Dataset
 from tp5.types.config.noise import NoiseDefinition
+from tp5.types.config.variational import VariationalDefinition
 from tp5.types.float import Float
 from tp5.types.initialization_function import InitializationFunction
 from tp5.types.learning_rate_function import LearningRateFactory
@@ -25,6 +26,7 @@ class AutoencoderConfig(TypedDict):
         initialization: Draws the initial weights and biases of each layer.
         dataset: Where the patterns are read from.
         noise: Corruption of the inputs (denoising autoencoder only, None otherwise).
+        variational: β of a variational autoencoder (None for the other types).
         source: The validated config as written (JSON-serializable), stored with the results.
     """
     autoencoder: AutoencoderDefinition
@@ -39,4 +41,5 @@ class AutoencoderConfig(TypedDict):
     initialization: InitializationFunction
     dataset: Dataset
     noise: NoiseDefinition | None
+    variational: VariationalDefinition | None
     source: Dict[str, Any]

@@ -20,6 +20,8 @@ const state = {
   sort: { column: 0, ascending: true },
   binarize: false,
   lastOutput: null,
+  sigma: false,
+  interpolation: { from: 0, to: 1, t: 0.5 },
 };
 
 // Error between a sample and its reconstruction: wrong pixels (binary) or mean absolute error
@@ -137,6 +139,23 @@ function drawMap() {
       ctx.fillText(labels[i], x + 6, y - 6);
     }
   });
+
+  // σ(x) of each code (variational): ellipse of one standard deviation along the axes shown
+  if (state.sigma && state.data.latent_sigma) {
+    ctx.strokeStyle = css("--point");
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1;
+    latent.forEach((code, i) => {
+      const sigma = state.data.latent_sigma[i];
+      const x = toPixel(code[ax], ax, size, false), y = yOf(code);
+      const rx = Math.abs(toPixel(code[ax] + sigma[ax], ax, size, false) - x);
+      const ry = oneDimensional() ? 4 : Math.abs(toPixel(code[ay] + sigma[ay], ay, size, true) - y);
+      ctx.beginPath();
+      ctx.ellipse(x, y, Math.max(rx, 1), Math.max(ry, 1), 0, 0, 2 * Math.PI);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+  }
 
   // Current z (crosshair)
   const cx = toPixel(state.z[ax], ax, size, false), cy = yOf(state.z);
@@ -424,6 +443,7 @@ $("binarize").addEventListener("change", (event) => {
   state.binarize = event.target.checked;
   if (state.lastOutput) drawImage($("output"), shown(state.lastOutput), state.data.image_shape, state.data.ink);
   drawMap();
+  refreshStrip();
 });
 
 // Saves the decoder output for the current z on the server (generated_dir): normal + binarized + JSON
@@ -453,6 +473,76 @@ $("save").addEventListener("click", save);
 $("save-name").addEventListener("keydown", (event) => {
   if (event.key === "Enter") save();
 });
+
+// ---------------------------------------------------------------- variational
+
+// New sample of the variational autoencoder: z ~ N(0, I) drawn by the server
+$("prior").addEventListener("click", async () => {
+  try {
+    const { z } = await api("/api/sample", { count: 1 });
+    state.z = z[0];
+    update();
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+$("sigma-toggle").addEventListener("change", (event) => {
+  state.sigma = event.target.checked;
+  drawMap();
+});
+
+const INTERPOLATION_STEPS = 9;
+
+function interpolationPoint(t) {
+  const a = state.data.latent[state.interpolation.from], b = state.data.latent[state.interpolation.to];
+  return a.map((v, k) => (1 - t) * v + t * b[k]);
+}
+
+const decodeStrip = latestOnly(async (points) => {
+  const { images } = await api("/api/decode", { z: points });
+  const { image_shape, ink } = state.data;
+  $("interp-strip").replaceChildren(...images.map((image, i) => {
+    const canvas = document.createElement("canvas");
+    canvas.className = "image";
+    const t = i / (INTERPOLATION_STEPS - 1);
+    canvas.title = `t = ${t.toFixed(3)}`;
+    drawImage(canvas, shown(image), image_shape, ink);
+    canvas.addEventListener("click", () => setInterpolation(t));
+    return canvas;
+  }));
+});
+
+function refreshStrip() {
+  const points = Array.from({ length: INTERPOLATION_STEPS }, (_, i) => interpolationPoint(i / (INTERPOLATION_STEPS - 1)));
+  decodeStrip(points);
+}
+
+// Moves z to the point t of the line between both codes
+function setInterpolation(t) {
+  state.interpolation.t = t;
+  $("interp-t").value = t;
+  $("interp-t-text").textContent = t.toFixed(2);
+  state.z = interpolationPoint(t);
+  update();
+}
+
+function buildInterpolation() {
+  const { labels } = state.data;
+  for (const [id, key] of [["interp-from", "from"], ["interp-to", "to"]]) {
+    const select = $(id);
+    select.replaceChildren(...labels.map((label, i) => new Option(`${label} (#${i})`, i)));
+    select.value = state.interpolation[key];
+    select.addEventListener("change", () => {
+      state.interpolation[key] = Number(select.value);
+      refreshStrip();
+      setInterpolation(state.interpolation.t);
+    });
+  }
+  $("interp-t").addEventListener("input", () => setInterpolation(Number($("interp-t").value)));
+  $("interp-t-text").textContent = state.interpolation.t.toFixed(2);
+  refreshStrip();
+}
 
 $("random").addEventListener("click", () => {
   state.z = state.data.bounds.map(([low, high]) => low + Math.random() * (high - low));
@@ -496,15 +586,28 @@ async function start() {
   state.grid = params.get("grid") === "1";
   state.gridSize = Math.min(40, Math.max(3, Number(params.get("size")) || state.gridSize));
   state.binarize = state.data.binary && params.get("binarize") === "1";
+  // Variational extras: sample from the prior and σ(x) ellipses (?sigma=1)
+  $("prior").hidden = !state.data.variational;
+  $("sigma-label").hidden = !state.data.latent_sigma;
+  state.sigma = Boolean(state.data.latent_sigma) && params.get("sigma") === "1";
+  $("sigma-toggle").checked = state.sigma;
+  // Interpolation between two samples (?from=3&to=7)
+  const index = (name, fallback) => {
+    const i = Number(params.get(name));
+    return params.has(name) && Number.isInteger(i) && i >= 0 && i < labels.length ? i : fallback;
+  };
+  state.interpolation.from = index("from", 0);
+  state.interpolation.to = index("to", Math.min(1, labels.length - 1));
   $("grid-toggle").checked = state.grid;
   $("grid-size").value = state.gridSize;
   $("binarize").checked = state.binarize;
   const sample = Number(params.get("sample"));
-  $("summary").textContent = `${labels.length} samples · images ${image_shape.height}×${image_shape.width}×${image_shape.channels} · latent space of ${latent_dim} dimension${latent_dim === 1 ? "" : "s"}`;
+  $("summary").textContent = `${labels.length} samples · images ${image_shape.height}x${image_shape.width}x${image_shape.channels} · latent space of ${latent_dim} dimension${latent_dim === 1 ? "" : "s"}`;
 
   buildAxes();
   buildSliders();
   buildTable();
+  buildInterpolation();
   selectSample(Number.isInteger(sample) && sample >= 0 && sample < labels.length ? sample : 0);
 }
 

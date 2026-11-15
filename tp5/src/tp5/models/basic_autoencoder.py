@@ -41,6 +41,12 @@ class BasicAutoencoder(Autoencoder):
     random: RandomState = field(default_factory=RandomState, repr=False, hash=False)
 
     def __post_init__(self) -> None:
+        self._check_sizes()
+        if self.batch_size < 1:
+            raise ValueError("The batch size must be a positive integer.")
+
+    def _check_sizes(self) -> None:
+        """The decoder takes what the encoder outputs and returns as many values as the encoder takes."""
         if self.encoder.output_size != self.decoder.input_size:
             raise ValueError(
                 f"The encoder outputs {self.encoder.output_size} values but the decoder expects {self.decoder.input_size}."
@@ -49,25 +55,23 @@ class BasicAutoencoder(Autoencoder):
             raise ValueError(
                 f"The decoder outputs {self.decoder.output_size} values but the encoder expects {self.encoder.input_size}."
             )
-        if self.batch_size < 1:
-            raise ValueError("The batch size must be a positive integer.")
 
     @property
     def latent_size(self) -> int:
-        return self.encoder.output_size
+        return self.decoder.input_size
 
     @override
     def encode(self, inputs: Samples) -> Samples:
-        return self.encoder.predict(self.__validate(inputs, self.encoder.input_size))
+        return self.encoder.predict(self._validate(inputs, self.encoder.input_size))
 
     @override
     def decode(self, latent: Samples) -> Samples:
-        return self.decoder.predict(self.__validate(latent, self.decoder.input_size))
+        return self.decoder.predict(self._validate(latent, self.decoder.input_size))
 
     @override
     def train(self, inputs: Samples, expected: Samples, epochs: int) -> Tuple[EpochResult, ...]:
-        inputs = self.__validate(inputs, self.encoder.input_size)
-        expected = self.__validate(expected, self.decoder.output_size)
+        inputs = self._validate(inputs, self.encoder.input_size)
+        expected = self._validate(expected, self.decoder.output_size)
         if len(inputs) != len(expected):
             raise ValueError("The number of inputs and expected outputs must be the same.")
 
@@ -81,18 +85,12 @@ class BasicAutoencoder(Autoencoder):
             order = self.random.permutation(len(epoch_inputs))
             for start in range(0, len(epoch_inputs), self.batch_size):
                 batch = order[start:start + self.batch_size]
-
-                output = self.decoder.forward(self.encoder.forward(epoch_inputs[batch]))
-                gradient = self.derivative_loss_function(output, epoch_expected[batch])
-                self.encoder.backward(self.decoder.backward(gradient))
-
-                self.decoder.step(previous_loss)
-                self.encoder.step(previous_loss)
+                self._train_batch(epoch_inputs[batch], epoch_expected[batch], previous_loss)
 
             # Measured with the weights at the end of the epoch (32 patterns: cheap), so the stop
             # criterion refers to the model that is returned
             reconstructions = self.reconstruct(evaluation_inputs)
-            loss = self.loss_function(reconstructions, evaluation_expected)
+            loss = self._epoch_loss(evaluation_inputs, evaluation_expected, reconstructions)
             errors = pixel_errors(reconstructions, evaluation_expected)
             # Without a goal, a pattern counts as learned only when reconstructed exactly
             allowed = self.goal_pixels if self.goal_pixels is not None else 0
@@ -108,6 +106,19 @@ class BasicAutoencoder(Autoencoder):
 
         return tuple(results)
 
+    def _train_batch(self, inputs: Samples, expected: Samples, previous_loss: Float) -> None:
+        """One weight update: forward through both networks, backpropagate the loss, step."""
+        output = self.decoder.forward(self.encoder.forward(inputs))
+        gradient = self.derivative_loss_function(output, expected)
+        self.encoder.backward(self.decoder.backward(gradient))
+
+        self.decoder.step(previous_loss)
+        self.encoder.step(previous_loss)
+
+    def _epoch_loss(self, inputs: Samples, expected: Samples, reconstructions: Samples) -> Float:
+        """Loss measured at the end of each epoch (stop criterion and history)."""
+        return self.loss_function(reconstructions, expected)
+
     def _epoch_data(self, inputs: Samples, expected: Samples) -> Tuple[Samples, Samples]:
         """Inputs and expected outputs trained in one epoch (hook for variants such as the denoising one)."""
         return inputs, expected
@@ -117,7 +128,7 @@ class BasicAutoencoder(Autoencoder):
         return inputs, expected
 
     @staticmethod
-    def __validate(data: Samples, size: int) -> Samples:
+    def _validate(data: Samples, size: int) -> Samples:
         data = np.asarray(data, dtype=np.float64)
         if data.ndim != 2 or data.shape[1] != size:
             raise ValueError(f"Expected a (samples, {size}) matrix, got {data.shape}.")

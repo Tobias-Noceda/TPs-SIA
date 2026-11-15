@@ -16,10 +16,12 @@ Fuente: `assignment/SIATP5.pdf`. Teoría en `theory/` (Clase 17 Deep Learning, 1
 - **b) Denoising autoencoder** ✅ implementado: arquitectura justificada; distorsionar entradas con distintos
   niveles de ruido y estudiar la capacidad de eliminarlo (entrada ruidosa, salida esperada = original).
 
-### Ejercicio 2 — VAE (pendiente)
+### Ejercicio 2 — VAE ✅ implementado (falta entrenar con los datasets reales)
 
-Dataset nuevo (p. ej. emojis), esquema variacional (reparametrization trick) y generar una muestra nueva
-que se juzgue perteneciente al dataset.
+Dataset nuevo, esquema variacional (reparametrization trick) y generar una muestra nueva que se juzgue
+perteneciente al dataset. Dos datasets posibles, subconjuntos de Kaggle (descarga manual, requiere login):
+"The Simpsons characters" (carpeta por personaje, JPG retratos) y "World flags dataset 195" (banderas).
+Plan original: `vae-plan.md`.
 
 ## Ejecución
 
@@ -38,6 +40,12 @@ uv run tp5 -c res/config/ej1b/denoising.json -o res/output/ej1b/denoising.npz -i
 uv run tp5 --load res/output/ej1b/denoising.npz -i               # http://localhost:8000/denoise
 # Generador de patrones ruidosos (archivos que /denoise carga)
 uv run noisy --sample a --noise flip --level 0.15 [--seed 7] [--count 5] [--dataset res/datasets/font.h] [--output-dir res/output/ej1/noisy]
+# Ej. 2: armar el subconjunto (una vez) y entrenar el VAE
+uv run prepare-images -s <kaggle>/simpsons_dataset -o res/datasets/simpsons32 \
+    --classes homer_simpson bart_simpson lisa_simpson -n 50 --size 32 --fit crop
+uv run prepare-images -s <kaggle>/<carpeta de banderas> -o res/datasets/flags20x30 -n 60 --size 20x30 --fit stretch
+uv run tp5 -c res/config/ej2/simpsons.json -o res/output/ej2/simpsons.npz -i
+uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
 ```
 
 - `main` carga la config, despacha por `autoencoder.type` (`RUNNERS`), entrena e imprime épocas,
@@ -70,6 +78,16 @@ uv run noisy --sample a --noise flip --level 0.15 [--seed 7] [--count 5] [--data
   `--noisy-dir` + selector de archivo local, valida forma de imagen y que la etiqueta esté en el dataset,
   ◀ ▶ entre variantes; "Save noisy pattern" guarda la entrada actual (editada o no) en el mismo formato.
   URL opcional: `?sample=a&type=flip&level=0.2&seed=7&all=1&binarize=1&file=<nombre>.json`.
+- **`prepare-images`** (herramienta): de una carpeta grande arma un dataset chico en `--output` (nunca
+  sobrescribe). Clases = subcarpetas con imágenes (`--classes` elige algunas); si no hay subcarpetas, la
+  carpeta es plana (p. ej. una bandera por país) y es un solo grupo. `--names` filtra por nombre de archivo,
+  `-n` elige al azar por clase (con `--seed`), `--size N|HxW`, `--fit crop|pad|stretch`, `--min-side`.
+  Escribe PNG (transparencia sobre blanco) + `manifest.json` con lo necesario para rehacerlo.
+- **VAE en el explorador** (`/`): botón **Sample from p(z)** (z ~ N(0, I) sorteado en el servidor,
+  `POST /api/sample {count, seed}`: la generación del 2c), elipses de 1 σ(x) de cada muestra en el mapa
+  (`σ(x)`), rangos de sliders que incluyen ±3 del prior, e **Interpolation** (para todo AE): tira de 9
+  decodificaciones entre los códigos de dos muestras + slider `t`. URL: `?sigma=1&from=3&to=7`. Las imágenes
+  RGB se dibujan tal cual (`ink` solo para font.h); cercanía y "new" por MAE; Save image sin binarizada.
 - **`noisy`** (herramienta, no corrida de modelo): `--sample` tiene que ser una etiqueta del dataset (o
   `#índice`; si no, error listando las válidas). Escribe `res/output/ej1/noisy/{ruido}-{YYYYmmdd-HHMMSS}.json`
   (nunca sobrescribe: sufijo `-2`…) con `dataset, label, index, image_shape, noise {type, level, seed},
@@ -82,7 +100,7 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 | Clave | Valores |
 |---|---|
-| `autoencoder.type` | `basic` \| `denoising` (implementados) \| `variational` (reservado: `main` lanza `NotImplementedError`) |
+| `autoencoder.type` | `basic` \| `denoising` \| `variational` (la última capa del encoder tiene **2·k neuronas lineales**: μ y log Σ; el decoder recibe k) |
 | `autoencoder.encoder.arquitecture` | capas sin la de entrada; la **última es el espacio latente**. Cada capa: lista de neuronas `{ activation_function }` (estilo tp3) **o** forma compacta `{ neurons, activation_function }` |
 | `autoencoder.decoder.arquitecture` | ídem; su entrada es el latente y la última capa debe tener tantas neuronas como píxeles (35) |
 | `activation_function` | `{ name: linear\|tanh\|logistic\|relu, hyperparameters?: { beta?, L? } }` |
@@ -92,10 +110,16 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 | `goal_pixels` | opcional: un patrón está aprendido con ≤ goal_pixels píxeles mal (binarizando en 0.5). **Sin él no hay objetivo**: el entrenamiento corta solo por `epsilon` (o `epochs`) y "aprendido" = 0 píxeles mal |
 | `stop_at_goal` | default `true`: corta cuando todos los patrones están aprendidos (solo si hay `goal_pixels`) |
 | `noise` | **obligatorio con `denoising`, prohibido con el resto**: `{ type: flip\|salt_pepper\|gaussian, level ∈ [0, 1], copies ≥ 1 (default 1) }`. `flip`: invierte cada píxel con prob. `level`; `salt_pepper`: lo pone en 0 o 1 al azar con prob. `level`; `gaussian`: suma N(0, level²) y recorta a [0, 1]. `copies` = versiones ruidosas por patrón y época |
-| `dataset.path` | archivo `font.h` |
+| `variational` | solo con `variational` (opcional): `{ beta }` = λ de J = L + λ KL, default 1 |
+| `dataset` | `{ type: font (default) \| images, path, size: [h, w], channels: 1\|3 (default 3), fit: crop\|pad\|stretch (default stretch) }`; `size/channels/fit` solo con `images` (`size` obligatorio). Con `images` no se permiten `goal_pixels` ni `stop_at_goal` (no hay píxeles "mal" en una foto) |
 
 Configs: `res/config/ej1a/autoencoder.json` (35-25-15-**2**-15-25-35, tanh oculta, latente lineal,
 salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35, MSE, GD 0.5).
+`res/config/ej2/simpsons.json`: 32×32×3 crop (3072 entradas), 3072-512-128-**2·8**(lineal) /
+8-128-512-3072 (logística), BCE, Adam 0.001, batch 16, 2000 épocas, β 1 (latente 8: retratos tienen mucha
+variación). `res/config/ej2/flags.json`: 20×30×3 stretch (2:3, 1800 entradas), 1800-256-64-**2·2** /
+2-64-256-1800, mismo resto, 3000 épocas (latente 2: mapa 2-D directo y generación con 2 sliders).
+`epsilon` 1e-4 casi nunca se alcanza: la BCE con objetivos continuos no llega a 0 (cortan por épocas).
 `res/config/ej1b/denoising.json`: 35-30-20-**10**-20-30-35 (tanh, latente lineal, salida logística), BCE,
 Adam 0.001, batch 32, xavier, ruido flip 0.1 × 4 copias, 20000 épocas, epsilon 1e-3, goal 1 px.
 
@@ -107,13 +131,16 @@ src/tp5/
 ├── config.py                   # load_config / parse_config (schema + resolución de funciones)
 ├── runners/basic.py            # build_networks, build_basic_autoencoder, train_run(config, builder), run_basic
 ├── runners/denoising.py        # build_denoising_autoencoder, run_denoising
+├── runners/variational.py      # build_variational_autoencoder (kl_weight = β / píxeles), run_variational
+├── tools/prepare_images.py     # script `prepare-images`: subconjunto chico y redimensionado de una carpeta de imágenes
 ├── tools/noisy.py              # script `noisy`: patrones ruidosos de una muestra del dataset → JSON
 ├── interfaces/autoencoder.py   # Autoencoder (ABC): encode / decode / reconstruct / train(inputs, expected, epochs)
 ├── models/
 │   ├── neuron.py, layer.py     # copiados de tp3 (W (in, out), bias aparte, grupos de activación)
 │   ├── multi_layer_perceptron.py  # forward (cachea) / backward(∂E/∂O) -> ∂E/∂input / step / predict
 │   ├── basic_autoencoder.py    # encoder MLP + decoder MLP entrenados como una sola red; hooks _epoch_data / _evaluation_data
-│   └── denoising_autoencoder.py  # entrada ruidosa nueva cada época (copies), métricas sobre un set ruidoso fijo
+│   ├── denoising_autoencoder.py  # entrada ruidosa nueva cada época (copies), métricas sobre un set ruidoso fijo
+│   └── variational_autoencoder.py  # μ/log Σ, reparametrization trick, J = L + λ KL; encode = μ; sample(n) del prior
 ├── functions/
 │   ├── activation/             # linear, tanh, logistic, relu (tp3)
 │   ├── loss/                   # hse, mse (tp3) + binary_cross_entropy
@@ -122,6 +149,8 @@ src/tp5/
 │   ├── noise/                  # flip, salt_pepper, gaussian: (RandomState, Samples, level) -> Samples
 │   └── pixel_error.py          # píxeles incorrectos por patrón
 ├── parsers/font_parser.py      # font.h → (32, 35) en {0, 1}, etiquetas, forma (7, 5)
+├── parsers/image_folder.py     # parse_images (carpeta recursiva → (N, h·w·c) en [0, 1]), fit_image (crop/pad/stretch)
+├── parsers/dataset.py          # load_dataset(config["dataset"]) por tipo (font | images), describe_dataset
 ├── persistence/run_file.py     # save_run (.npz con config, history, latente, reconstrucciones, pesos), load_run, load_parameters
 ├── persistence/generated.py    # run_metadata(run), save_generated(model, z, ...) → figura normal (+ binarizada), save_denoising
 ├── persistence/noisy_file.py   # save_noisy / list_noisy / load_noisy (archivos de patrones ruidosos)
@@ -166,6 +195,17 @@ src/tp5/
   esperada = patrones limpios (la red nunca ve dos veces la misma corrupción). `_evaluation_data`: set
   ruidoso **fijo** (sorteado una vez, 32 × copies) contra los limpios, así pérdida, máx. píxeles, "aprendidos",
   `epsilon` y `goal_pixels` miden **denoising**. `report` imprime además el resultado con entradas limpias.
+- **VAE** (`VariationalAutoencoder(BasicAutoencoder)`, slides 72–89): p(z) = N(0, I), q(z|x) = N(μ, Σ)
+  diagonal; el encoder da μ y log Σ (log Σ recortado a ±10). Entrenamiento: z = μ + ε ⊙ exp(½ log Σ),
+  `decoder.backward` da ∂L/∂z; el decoder se actualiza solo con la reconstrucción, el encoder con la
+  suma ∂L/∂z + λ ∂KL/∂μ y ∂L/∂z · ε σ/2 + λ ∂KL/∂log Σ. Verificado contra gradiente numérico (≈ 1e-9).
+  **Escala del KL**: mse/bce son medias sobre píxeles, así que el KL de cada muestra se pesa con
+  `kl_weight = β / píxeles` (β = 1 ⇔ ELBO estándar: reconstrucción sumada + KL); con hse (suma) es β.
+  Métricas de cada época determinísticas (z = μ), así `epsilon` no depende de ε; `loss_terms` guarda
+  (reconstrucción, KL medio) por época (en el `.npz`). `report` muestra J, ambos términos, MAE y media/desvío
+  de μ y σ medio por dimensión (σ ≈ 1 con μ ≈ 0 = dimensión sin usar).
+- `BasicAutoencoder` tiene hooks `_check_sizes`, `_train_batch`, `_epoch_loss`, `_epoch_data`,
+  `_evaluation_data`: DAE y VAE solo pisan los suyos, el loop es uno.
 - **Arquitectura del DAE (1b.1)**: latente de 10 y no de 2: el objetivo es robustez, no un mapa 2-D;
   un cuello de botella más ancho deja separar los 32 patrones con margen para que una entrada con
   algunos píxeles mal caiga cerca del código correcto. El explorador igual funciona con n dimensiones.
@@ -180,5 +220,9 @@ src/tp5/
   ≤ 1 px; entradas limpias 32/32. Mismo ruido flip (10 semillas × 32 muestras), píxeles mal en la salida,
   DAE vs. básico (`ej1a/autoencoder.npz`): 0.05 → 0.02 vs 7.3; 0.1 → 0.18 vs 9.3; 0.2 → 1.9 vs 12.7;
   0.3 → 6.5 vs 14.8.
+- VAE probado de punta a punta con datasets sintéticos que imitan ambos (carpetas por personaje con JPG
+  de tamaños variados; banderas planas 3:2 y 2:1, algunas RGBA): `prepare-images`, entrenamiento, `--load`,
+  explorador y figuras. Tiempos con esas configs: banderas 40 × 20×30 ≈ 0.1 s/época; Simpsons 60 × 32×32 ≈
+  0.37 s/época (crece lineal con la cantidad de imágenes).
 - Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); barrido de niveles de ruido
-  para 1b.2; ej. 2 (`variational`): agregar runner a `RUNNERS` + `BUILDERS` + claves en el esquema.
+  para 1b.2; descargar los datasets de Kaggle, armar los subconjuntos y entrenar `ej2/*.json`.
