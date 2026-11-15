@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 tp5 = "tp5:main"
 noisy = "tp5.tools.noisy:main"
+prepare-images = "tp5.tools.prepare_images:main"
 ej1a-sweep = "tp5.tools.ej1a_sweep:main"
 ej1a-analysis = "tp5.tools.ej1a_analysis:main"
 

@@ -45,6 +45,9 @@ def describe_model(info: Dict[str, Any]) -> List[str]:
         f"  initialization: {info['initialization']}",
         f"  seed: {info['seed']}",
     ]
+    variational = info.get("variational")
+    if variational:
+        lines.append(f"  β (KL weight): {_format_number(variational['beta'])}")
     noise = info.get("noise")
     if noise:
         lines.append(f"  training noise: {noise['type']} {_format_number(noise['level'])}, {noise['copies']} copies/epoch")
@@ -58,10 +61,17 @@ def describe_model(info: Dict[str, Any]) -> List[str]:
         "Training result",
         f"  epochs trained: {training['epochs_trained']}",
         f"  final loss: {_format_number(training['final_loss'])}",
-        f"  max wrong pixels: {training['max_wrong_pixels']}",
-        (f"  noisy outputs learned: {training['patterns_learned']}/{training['patterns']}"
-         if training.get("noisy_evaluation") else
-         f"  patterns learned: {training['patterns_learned']}/{training['patterns']}"),
+    ]
+    if training.get("binary", True):
+        lines += [
+            f"  max wrong pixels: {training['max_wrong_pixels']}",
+            (f"  noisy outputs learned: {training['patterns_learned']}/{training['patterns']}"
+             if training.get("noisy_evaluation") else
+             f"  patterns learned: {training['patterns_learned']}/{training['patterns']}"),
+        ]
+    else:
+        lines.append(f"  reconstruction MAE: {training['reconstruction_mae']:.4f} ({training['patterns']} samples)")
+    lines += [
         "",
         f"Dataset: {info['dataset']}",
     ]
@@ -88,12 +98,13 @@ def plot_generated(image: npt.NDArray[np.float64], shape: ImageShape, info: Dict
     else:
         image_ax.imshow(values, interpolation="nearest")
 
-    # Pixel grid
-    image_ax.set_xticks(np.arange(shape.width))
-    image_ax.set_yticks(np.arange(shape.height))
-    image_ax.set_xticks(np.arange(-0.5, shape.width), minor=True)
-    image_ax.set_yticks(np.arange(-0.5, shape.height), minor=True)
-    image_ax.grid(which="minor", color="tab:gray", linewidth=0.5, alpha=0.6)
+    # Pixel grid on small images (glyphs); labels every pixel up to 12, every 5 beyond
+    image_ax.set_xticks(np.arange(0, shape.width, 1 if shape.width <= 12 else 5))
+    image_ax.set_yticks(np.arange(0, shape.height, 1 if shape.height <= 12 else 5))
+    if max(shape.width, shape.height) <= 12:
+        image_ax.set_xticks(np.arange(-0.5, shape.width), minor=True)
+        image_ax.set_yticks(np.arange(-0.5, shape.height), minor=True)
+        image_ax.grid(which="minor", color="tab:gray", linewidth=0.5, alpha=0.6)
     image_ax.tick_params(which="minor", length=0)
     image_ax.set_xlabel("column")
     image_ax.set_ylabel("row")
@@ -101,7 +112,9 @@ def plot_generated(image: npt.NDArray[np.float64], shape: ImageShape, info: Dict
 
     text_ax.axis("off")
     # Starts a bit inside its axes: extra margin from the colour bar labels
-    text_ax.text(0.08, 1, "\n".join(describe(info)), va="top", ha="left", family="monospace", fontsize=9, transform=text_ax.transAxes)
+    text = text_ax.text(0.08, 1, "\n".join(describe(info)), va="top", ha="left", family="monospace", fontsize=9, transform=text_ax.transAxes)
+    # Out of the constrained layout: long lines (e.g. paths) would shrink the image instead
+    text.set_in_layout(False)
 
     coordinates = ", ".join(f"{v:.3f}" for v in info["latent"])
     figure.suptitle(f"Generated sample at z = ({coordinates})", fontsize=13)

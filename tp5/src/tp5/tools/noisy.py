@@ -53,4 +53,4 @@ def main() -> None:
         original, noisy,
     )
     changed = np.sum((noisy >= 0.5) != (original >= 0.5), axis=1)
-    print(f"Wrote {path}: '{labels[index]}' × {args.count} ({noise.value} {args.level}), changed pixels: {changed.tolist()}")
+    print(f"Wrote {path}: '{labels[index]}' x {args.count} ({noise.value} {args.level}), changed pixels: {changed.tolist()}")

@@ -4,15 +4,20 @@ from typing import Callable, Tuple
 from tp5.models.basic_autoencoder import BasicAutoencoder
 from tp5.models.multi_layer_perceptron import MultiLayerPerceptron
 from tp5.models.neuron import Neuron
-from tp5.parsers.font_parser import parse_font
+from tp5.parsers.dataset import load_dataset
 from tp5.types.config.config import AutoencoderConfig
-from tp5.types.image_shape import ImageShape
 from tp5.types.training_run import TrainingRun
 
 from numpy.random import MT19937, RandomState, SeedSequence
 
-def build_networks(config: AutoencoderConfig, input_size: int, random: RandomState) -> Tuple[MultiLayerPerceptron, MultiLayerPerceptron]:
-    """Untrained encoder and decoder described by the config, their weights drawn from `random`."""
+def build_networks(
+    config: AutoencoderConfig, input_size: int, random: RandomState, outputs_per_latent: int = 1
+) -> Tuple[MultiLayerPerceptron, MultiLayerPerceptron]:
+    """
+    Untrained encoder and decoder described by the config, their weights drawn from `random`.
+    The decoder takes encoder outputs / `outputs_per_latent` values (2 for a variational
+    autoencoder, whose encoder outputs μ and log Σ).
+    """
     autoencoder = config["autoencoder"]
 
     def network(layers, size: int) -> MultiLayerPerceptron:
@@ -20,7 +25,9 @@ def build_networks(config: AutoencoderConfig, input_size: int, random: RandomSta
         return MultiLayerPerceptron(neurons, size, config["learning_rate"], random, config["initialization"])
 
     encoder = network(autoencoder["encoder"], input_size)
-    decoder = network(autoencoder["decoder"], encoder.output_size)
+    if encoder.output_size % outputs_per_latent:
+        raise ValueError(f"The encoder's last layer must have a multiple of {outputs_per_latent} neurons, it has {encoder.output_size}.")
+    decoder = network(autoencoder["decoder"], encoder.output_size // outputs_per_latent)
     return encoder, decoder
 
 def build_basic_autoencoder(config: AutoencoderConfig, input_size: int, random: RandomState) -> BasicAutoencoder:
@@ -47,10 +54,8 @@ def run_basic(config: AutoencoderConfig) -> TrainingRun:
     return train_run(config, build_basic_autoencoder)
 
 def train_run(config: AutoencoderConfig, build: Builder) -> TrainingRun:
-    """Build the model with `build` and train it to reproduce the glyphs of the dataset (expected = clean input)."""
-    inputs, labels, (height, width) = parse_font(config["dataset"]["path"])
-    # Glyphs are binary grayscale images
-    shape = ImageShape(height, width, 1)
+    """Build the model with `build` and train it to reproduce the samples of the dataset (expected = clean input)."""
+    inputs, labels, shape = load_dataset(config["dataset"])
 
     # Single generator for the whole model: same seed => same weights and same shuffling
     seed = SeedSequence(config["seed"])

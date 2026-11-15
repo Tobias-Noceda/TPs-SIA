@@ -9,9 +9,13 @@ from tp5.persistence.run_file import load_run, save_run
 from tp5.runners.basic import run_basic
 from tp5.models.denoising_autoencoder import DenoisingAutoencoder
 from tp5.runners.denoising import run_denoising
+from tp5.models.variational_autoencoder import VariationalAutoencoder
+from tp5.runners.variational import run_variational
 from tp5.types.config.autoencoder import AutoencoderType
 from tp5.types.config.config import AutoencoderConfig
 from tp5.types.training_run import TrainingRun
+
+import numpy as np
 
 parser = argparse.ArgumentParser(description="Autoencoders: basic, denoising and variational.")
 
@@ -32,18 +36,29 @@ parser.add_argument("--noisy-dir", dest="noisy_dir", type=str, default=NOISY_DIR
 RUNNERS: Dict[AutoencoderType, Callable[[AutoencoderConfig], TrainingRun]] = {
     AutoencoderType.BASIC: run_basic,
     AutoencoderType.DENOISING: run_denoising,
+    AutoencoderType.VARIATIONAL: run_variational,
 }
 
 def report(run: TrainingRun) -> None:
     epoch, loss, max_errors, learned = run.history[-1]
-    wrong = pixel_errors(run.model.reconstruct(run.inputs), run.inputs)
+    reconstructions = run.model.reconstruct(run.inputs)
+    wrong = pixel_errors(reconstructions, run.inputs)
 
-    print(f"Epochs: {epoch + 1} ({run.elapsed:.1f} s), seed {run.seed}")
+    print(f"Epochs: {epoch + 1} ({run.elapsed:.1f} s), seed {run.seed}, {len(run.inputs)} samples {run.shape.height}x{run.shape.width}x{run.shape.channels}")
+
+    if isinstance(run.model, VariationalAutoencoder):
+        report_variational(run, loss, reconstructions)
+        return
+    if not np.isin(run.inputs, (0.0, 1.0)).all():
+        # Continuous images (e.g. photos): wrong pixels mean nothing, mean absolute error instead
+        errors = np.mean(np.abs(reconstructions - run.inputs), axis=1)
+        print(f"Final loss: {loss:.6g}; reconstruction MAE mean {errors.mean():.4f}, max {errors.max():.4f}")
+        return
     allowed = run.goal_pixels if run.goal_pixels is not None else 0
     goal = "" if run.goal_pixels is not None else " (no goal)"
 
     if isinstance(run.model, DenoisingAutoencoder):
-        # The history measures denoising: a fixed noisy set (copies × patterns) against the clean patterns
+        # The history measures denoising: a fixed noisy set (copies x patterns) against the clean patterns
         model = run.model
         evaluated = len(run.inputs) * model.copies
         print(f"Noise: {model.noise.__name__} level {model.noise_level}, {model.copies} copies per pattern")
@@ -57,6 +72,24 @@ def report(run: TrainingRun) -> None:
     failed = [f"{label} ({count})" for label, count in zip(run.labels, wrong) if count > allowed]
     if failed:
         print("Not learned (clean input):", ", ".join(failed))
+
+def report_variational(run: TrainingRun, loss: float, reconstructions) -> None:
+    model = run.model
+    assert isinstance(model, VariationalAutoencoder)
+    reconstruction, kl = model.loss_terms[-1] if model.loss_terms else (float("nan"), float("nan"))
+    print(f"β = {model.beta} (KL weight per sample {model.kl_weight:.4g}); "
+          f"final J {loss:.6g} = reconstruction {reconstruction:.6g} + KL {kl:.4g} · {model.kl_weight:.4g}")
+    errors = np.mean(np.abs(reconstructions - run.inputs), axis=1)
+    print(f"Reconstruction of decode(μ): MAE mean {errors.mean():.4f}, max {errors.max():.4f}")
+    if np.isin(run.inputs, (0.0, 1.0)).all():
+        wrong = pixel_errors(reconstructions, run.inputs)
+        print(f"Wrong pixels: max {int(wrong.max())}, patterns with 0 wrong: {int((wrong == 0).sum())}/{len(run.inputs)}")
+    # Codes close to the prior N(0, I): mean ≈ 0 and spread ≈ 1; σ ≈ 1 with μ ≈ 0 = dimension unused
+    mu, logvar = model.encode_distribution(run.inputs)
+    sigma = np.exp(0.5 * logvar)
+    print("Latent μ mean:", np.array2string(mu.mean(axis=0), precision=3))
+    print("Latent μ std: ", np.array2string(mu.std(axis=0), precision=3))
+    print("Mean σ(x):    ", np.array2string(sigma.mean(axis=0), precision=3))
 
 def main():
     args = parser.parse_args()

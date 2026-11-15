@@ -178,6 +178,11 @@ tbody tr.selected { background: var(--accent-soft); outline: 1px solid var(--acc
 td canvas.image { width: 22px; vertical-align: middle; }
 td.bad { color: var(--selected); }
 
+#interp-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+#interp-strip canvas.image { width: 44px; cursor: pointer; }
+#interp-strip canvas.image.current { outline: 2px solid var(--selected); }
+#interp-from, #interp-to { max-width: 160px; }
+
 /* ---------------------------------------------------------------- navigation */
 nav { display: flex; gap: 4px; margin-bottom: 8px; }
 nav a {

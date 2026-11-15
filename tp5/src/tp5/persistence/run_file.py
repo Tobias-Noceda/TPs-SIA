@@ -7,6 +7,8 @@ from tp5.functions.pixel_error import pixel_errors
 from tp5.models.basic_autoencoder import BasicAutoencoder
 from tp5.runners.basic import Builder, build_basic_autoencoder
 from tp5.runners.denoising import build_denoising_autoencoder
+from tp5.models.variational_autoencoder import VariationalAutoencoder
+from tp5.runners.variational import build_variational_autoencoder
 from tp5.types.config.autoencoder import AutoencoderType
 from tp5.types.image_shape import ImageShape
 from tp5.types.training_run import TrainingRun
@@ -18,6 +20,7 @@ from numpy.random import RandomState
 BUILDERS: Dict[AutoencoderType, Builder] = {
     AutoencoderType.BASIC: build_basic_autoencoder,
     AutoencoderType.DENOISING: build_denoising_autoencoder,
+    AutoencoderType.VARIATIONAL: build_variational_autoencoder,
 }
 
 def save_run(path: str, run: TrainingRun) -> None:
@@ -35,6 +38,12 @@ def save_run(path: str, run: TrainingRun) -> None:
             parameters[f"{name}_W{i}"] = weights
             parameters[f"{name}_b{i}"] = bias
 
+    # Variational: log Σ of each code and the (reconstruction, KL) terms of every epoch
+    extra: Dict[str, Any] = {}
+    if isinstance(run.model, VariationalAutoencoder):
+        extra["latent_logvar"] = run.model.encode_distribution(run.inputs)[1]
+        extra["loss_terms"] = np.array(run.model.loss_terms, dtype=np.float64).reshape(-1, 2)
+
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     np.savez(
         path,
@@ -51,6 +60,7 @@ def save_run(path: str, run: TrainingRun) -> None:
         seed=str(run.seed),
         elapsed=run.elapsed,
         **parameters,
+        **extra,
     )
 
 def load_parameters(data: Any, name: str) -> List[Any]:
@@ -76,6 +86,8 @@ def load_run(path: str) -> TrainingRun:
     model = BUILDERS[autoencoder_type](config, inputs.shape[1], RandomState(0))
     model.encoder.load_parameters(load_parameters(data, "encoder"))
     model.decoder.load_parameters(load_parameters(data, "decoder"))
+    if isinstance(model, VariationalAutoencoder) and "loss_terms" in data.files:
+        model.loss_terms = [(float(r), float(k)) for r, k in data["loss_terms"]]
 
     shape = [int(value) for value in data["shape"]]
     # Files saved before images had channels store (height, width) only

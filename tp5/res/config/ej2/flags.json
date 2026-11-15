@@ -1,0 +1,72 @@
+{
+    "autoencoder": {
+        "type": "variational",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 256,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 64,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 4,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 64,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 256,
+                    "activation_function": {
+                        "name": "tanh"
+                    }
+                },
+                {
+                    "neurons": 1800,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "variational": {
+        "beta": 1
+    },
+    "loss_function": "bce",
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001
+    },
+    "epochs": 3000,
+    "batch_size": 16,
+    "epsilon": 0.0001,
+    "seed": 42,
+    "initialization": "xavier",
+    "dataset": {
+        "type": "images",
+        "path": "res/datasets/flags20x30",
+        "size": [
+            20,
+            30
+        ],
+        "channels": 3,
+        "fit": "stretch"
+    }
+}

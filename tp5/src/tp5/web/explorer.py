@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from tp5.interfaces.autoencoder import Autoencoder
+from tp5.models.variational_autoencoder import VariationalAutoencoder
 from tp5.persistence.generated import GENERATED_DIR, run_metadata, save_denoising, save_generated
 from tp5.persistence.noisy_file import NOISY_DIR, list_noisy, load_noisy, save_noisy
 from tp5.types.config.noise import NoiseFunctions
@@ -49,6 +50,8 @@ class LatentExplorer:
 
     latent: Samples = field(init=False, repr=False)
     binary: bool = field(init=False)
+    # σ of q(z|x) per sample (variational autoencoder only)
+    latent_sigma: Samples | None = field(init=False, repr=False, default=None)
 
     def __post_init__(self) -> None:
         self.inputs = np.asarray(self.inputs, dtype=np.float64)
@@ -59,6 +62,8 @@ class LatentExplorer:
 
         self.latent = self.model.encode(self.inputs)
         self.binary = bool(np.isin(self.inputs, (0.0, 1.0)).all())
+        if isinstance(self.model, VariationalAutoencoder):
+            self.latent_sigma = np.exp(0.5 * self.model.encode_distribution(self.inputs)[1])
 
     @classmethod
     def from_run(cls, run: TrainingRun, generated_dir: str = GENERATED_DIR, noisy_dir: str = NOISY_DIR) -> "LatentExplorer":
@@ -68,7 +73,13 @@ class LatentExplorer:
         )
         if run.goal_pixels is not None:
             explorer.tolerance = run.goal_pixels
+        # Ink (1 = black) only for the glyphs of font.h; image datasets keep 1 = white
+        explorer.ink = run.source["dataset"].get("type", "font") == "font"
         return explorer
+
+    @property
+    def variational(self) -> bool:
+        return isinstance(self.model, VariationalAutoencoder)
 
     @property
     def latent_dim(self) -> int:
@@ -79,7 +90,11 @@ class LatentExplorer:
         low, high = self.latent.min(axis=0), self.latent.max(axis=0)
         # A coordinate where every code is equal still gets a usable range
         span = np.where(high - low > 1e-9, high - low, 1.0)
-        return np.stack([low - self.margin * span, high + self.margin * span], axis=1)
+        bounds = np.stack([low - self.margin * span, high + self.margin * span], axis=1)
+        if self.variational:
+            # Also ±3 standard deviations of the prior N(0, I): where generated samples come from
+            bounds = np.stack([np.minimum(bounds[:, 0], -3.0), np.maximum(bounds[:, 1], 3.0)], axis=1)
+        return bounds
 
     def dataset(self) -> Dict[str, Any]:
         """Everything the page loads once: samples, their latent codes and how to draw them."""
@@ -98,6 +113,9 @@ class LatentExplorer:
             "noise": self.metadata.get("noise"),
             "noise_types": [noise.value for noise in NoiseFunctions],
             "dataset": self.metadata.get("dataset"),
+            # Variational autoencoder: codes are the means μ(x), σ(x) their spread; new samples come from N(0, I)
+            "variational": self.variational,
+            "latent_sigma": np.round(self.latent_sigma, _DECIMALS).tolist() if self.latent_sigma is not None else None,
         }
 
     def distances(self, images: Samples) -> npt.NDArray[np.float64]:
@@ -138,6 +156,16 @@ class LatentExplorer:
             self.model, z, name, self.image_shape, self.metadata, self.generated_dir,
             binarize=self.binary, ink=self.ink, training_inputs=self.inputs, labels=self.labels,
         )
+
+    def sample(self, count: int, seed: int | None) -> Dict[str, Any]:
+        """Latent points drawn from the prior N(0, I) (variational autoencoder) with their decoded images."""
+        if not self.variational:
+            raise ValueError("Sampling from the prior needs a variational autoencoder.")
+        if not isinstance(count, int) or not 1 <= count <= 4096:
+            raise ValueError("'count' must be an integer in [1, 4096].")
+        seed = int(seed) if seed is not None else int(np.random.default_rng().integers(0, 2**31))
+        z = RandomState(MT19937(SeedSequence(seed))).standard_normal((count, self.latent_dim))
+        return {"z": np.round(z, _DECIMALS).tolist(), "seed": seed, **self.decode(z)}
 
     # ------------------------------------------------------------------ denoising page
 

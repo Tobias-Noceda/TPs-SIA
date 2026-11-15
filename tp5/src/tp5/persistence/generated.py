@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from tp5.interfaces.autoencoder import Autoencoder
+from tp5.parsers.dataset import describe_dataset
 from tp5.types.image_shape import ImageShape
 from tp5.types.samples import Samples
 from tp5.types.training_run import TrainingRun
@@ -37,7 +38,11 @@ def run_metadata(run: TrainingRun) -> Dict[str, Any]:
                 described.append(f"{len(layer)} {'/'.join(names)}")
         return described
 
-    # A denoising autoencoder measures its epochs on a fixed noisy set of copies × patterns
+    # Binary datasets (the font) are measured in wrong pixels, continuous ones (images) in mean absolute error
+    binary = bool(np.isin(run.inputs, (0.0, 1.0)).all())
+    mae = float(np.mean(np.abs(np.clip(run.model.reconstruct(run.inputs), 0, 1) - run.inputs)))
+
+    # A denoising autoencoder measures its epochs on a fixed noisy set of copies x patterns
     evaluated = len(run.inputs) * int(getattr(run.model, "copies", 1))
 
     encoder = layers(source["autoencoder"]["encoder"])
@@ -67,14 +72,20 @@ def run_metadata(run: TrainingRun) -> Dict[str, Any]:
             "patterns_learned": int(learned),
             "patterns": evaluated,
             "noisy_evaluation": hasattr(run.model, "copies"),
+            "binary": binary,
+            "reconstruction_mae": mae,
         },
-        "dataset": source["dataset"]["path"],
+        "dataset": describe_dataset(source["dataset"]),
         # Training noise of a denoising autoencoder (None otherwise)
         "noise": {
             "type": source["noise"]["type"],
             "level": source["noise"]["level"],
             "copies": source["noise"].get("copies", 1),
         } if source.get("noise") else None,
+        # β of a variational autoencoder (None otherwise)
+        "variational": {
+            "beta": float((source.get("variational") or {}).get("beta", 1.0)),
+        } if source["autoencoder"]["type"] == "variational" else None,
     }
 
 def save_generated(

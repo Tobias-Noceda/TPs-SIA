@@ -180,7 +180,7 @@ function applyFile(content, name) {
   }
   const shape = content.image_shape || {};
   if (shape.height !== image_shape.height || shape.width !== image_shape.width || (shape.channels ?? 1) !== image_shape.channels) {
-    throw new Error(`its images are ${shape.height}×${shape.width}×${shape.channels ?? 1}, the model uses ${image_shape.height}×${image_shape.width}×${image_shape.channels}.`);
+    throw new Error(`its images are ${shape.height}x${shape.width}x${shape.channels ?? 1}, the model uses ${image_shape.height}x${image_shape.width}x${image_shape.channels}.`);
   }
   // The label must be a sample of the dataset (the index disambiguates repeated labels)
   let index = Number.isInteger(content.index) && labels[content.index] === content.label ? content.index : labels.indexOf(content.label);
@@ -360,7 +360,7 @@ async function start() {
     return;
   }
   const { labels, image_shape, noise, noise_types, binary } = state.data;
-  $("summary").textContent = `${labels.length} samples · images ${image_shape.height}×${image_shape.width}×${image_shape.channels} · `
+  $("summary").textContent = `${labels.length} samples · images ${image_shape.height}x${image_shape.width}x${image_shape.channels} · `
     + (noise ? `trained with ${noise.type} noise ${noise.level} (${noise.copies} copies/epoch)` : "trained without noise (basic autoencoder: baseline to compare)");
   $("binarize-label").hidden = !binary;
   $("noise-type").replaceChildren(...noise_types.map((type) => new Option(type, type)));
