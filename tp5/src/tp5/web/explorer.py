@@ -51,6 +51,8 @@ class LatentExplorer:
 
     @classmethod
     def from_run(cls, run: TrainingRun) -> "LatentExplorer":
+        if run.goal_pixels is None:
+            return cls(run.model, run.inputs, run.labels, run.shape)
         return cls(run.model, run.inputs, run.labels, run.shape, tolerance=run.goal_pixels)
 
     @property

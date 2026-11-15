@@ -30,10 +30,11 @@ class BasicAutoencoder(Autoencoder):
     # Training stops once the epoch loss is below epsilon
     epsilon: Float = np.float64(1e-6)
 
-    # A pattern is learned when it has at most this many wrong pixels
-    goal_pixels: int = 1
+    # A pattern is learned when it has at most this many wrong pixels (None = no goal: the only
+    # stop criteria are epsilon and the epochs limit)
+    goal_pixels: int | None = None
 
-    # Stop as soon as every pattern is learned
+    # Stop as soon as every pattern is learned (only with a goal)
     stop_at_goal: bool = True
 
     # Shuffles the samples of each epoch (the same generator initialized both networks)
@@ -90,14 +91,16 @@ class BasicAutoencoder(Autoencoder):
             reconstructions = self.reconstruct(inputs)
             loss = self.loss_function(reconstructions, expected)
             errors = pixel_errors(reconstructions, expected)
-            results.append((epoch, loss, int(errors.max()), int(np.sum(errors <= self.goal_pixels))))
+            # Without a goal, a pattern counts as learned only when reconstructed exactly
+            allowed = self.goal_pixels if self.goal_pixels is not None else 0
+            results.append((epoch, loss, int(errors.max()), int(np.sum(errors <= allowed))))
             previous_loss = loss
 
             if not np.isfinite(loss):
                 raise FloatingPointError(
                     f"Training diverged at epoch {epoch} (loss={loss}). Try a lower learning rate."
                 )
-            if loss < self.epsilon or (self.stop_at_goal and errors.max() <= self.goal_pixels):
+            if loss < self.epsilon or (self.stop_at_goal and self.goal_pixels is not None and errors.max() <= self.goal_pixels):
                 break
 
         return tuple(results)
