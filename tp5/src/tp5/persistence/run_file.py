@@ -39,7 +39,8 @@ def save_run(path: str, run: TrainingRun) -> None:
         latent=run.model.encode(run.inputs),
         reconstructions=reconstructions,
         pixel_errors=pixel_errors(reconstructions, run.inputs),
-        goal_pixels=run.goal_pixels,
+        # -1 = no goal (npz has no None)
+        goal_pixels=run.goal_pixels if run.goal_pixels is not None else -1,
         seed=str(run.seed),
         elapsed=run.elapsed,
         **parameters,
@@ -80,7 +81,7 @@ def load_run(path: str) -> TrainingRun:
         [str(label) for label in data["labels"]],
         image_shape,
         history,
-        int(data["goal_pixels"]),
+        int(data["goal_pixels"]) if int(data["goal_pixels"]) >= 0 else None,
         int(str(data["seed"])),
         float(data["elapsed"]),
         source,

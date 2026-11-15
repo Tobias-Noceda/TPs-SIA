@@ -118,7 +118,8 @@ def parse_config(data: dict[str, Any], path: str = "<memory>") -> AutoencoderCon
     data["epochs"] = int(data["epochs"])
     data["batch_size"] = int(data.get("batch_size", 1))
     data["epsilon"] = np.float64(data.get("epsilon", 1e-6))
-    data["goal_pixels"] = int(data.get("goal_pixels", 1))
+    # No goal: training stops only by epsilon (or the epochs limit)
+    data["goal_pixels"] = int(data["goal_pixels"]) if data.get("goal_pixels") is not None else None
     data["stop_at_goal"] = bool(data.get("stop_at_goal", True))
     data["seed"] = int(data["seed"]) if "seed" in data else None
     data["initialization"] = InitializationFunctions(data.get("initialization", "random")).function()

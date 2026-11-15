@@ -33,8 +33,10 @@ def report(run: TrainingRun) -> None:
 
     print(f"Epochs: {epoch + 1} ({run.elapsed:.1f} s), seed {run.seed}")
     print(f"Final loss: {loss:.6g}")
-    print(f"Max wrong pixels: {max_errors}; patterns with ≤ {run.goal_pixels} wrong pixels: {learned}/{len(run.inputs)}")
-    failed = [f"{label} ({count})" for label, count in zip(run.labels, wrong) if count > run.goal_pixels]
+    allowed = run.goal_pixels if run.goal_pixels is not None else 0
+    print(f"Max wrong pixels: {max_errors}; patterns with ≤ {allowed} wrong pixels: {learned}/{len(run.inputs)}"
+          + ("" if run.goal_pixels is not None else " (no goal)"))
+    failed = [f"{label} ({count})" for label, count in zip(run.labels, wrong) if count > allowed]
     if failed:
         print("Not learned:", ", ".join(failed))
 

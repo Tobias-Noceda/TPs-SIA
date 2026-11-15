@@ -17,7 +17,7 @@ class TrainingRun:
         labels: Character of each pattern.
         shape: Image shape (height, width, channels) of every pattern.
         history: One EpochResult per trained epoch.
-        goal_pixels: Wrong pixels allowed for a pattern to count as learned.
+        goal_pixels: Wrong pixels allowed for a pattern to count as learned (None = no goal).
         seed: Entropy of the SeedSequence (reproduces the run when the config had no seed).
         elapsed: Training wall time in seconds.
         source: The config as written.
@@ -27,7 +27,7 @@ class TrainingRun:
     labels: List[str]
     shape: ImageShape
     history: Tuple[EpochResult, ...]
-    goal_pixels: int
+    goal_pixels: int | None
     seed: int
     elapsed: float
     source: Dict[str, Any]

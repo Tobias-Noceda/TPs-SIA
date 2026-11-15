@@ -18,8 +18,8 @@ class AutoencoderConfig(TypedDict):
         epochs: Maximum number of training epochs.
         batch_size: Samples per weight update (1 = online, dataset size = batch).
         epsilon: Training stops once the epoch loss is below it.
-        goal_pixels: A pattern is learned with at most this many wrong pixels.
-        stop_at_goal: Training stops once every pattern is learned.
+        goal_pixels: A pattern is learned with at most this many wrong pixels (None = no goal).
+        stop_at_goal: Training stops once every pattern is learned (only with a goal).
         seed: Seed for weight initialization and shuffling (None = random).
         initialization: Draws the initial weights and biases of each layer.
         dataset: Where the patterns are read from.
@@ -31,7 +31,7 @@ class AutoencoderConfig(TypedDict):
     epochs: int
     batch_size: int
     epsilon: Float
-    goal_pixels: int
+    goal_pixels: int | None
     stop_at_goal: bool
     seed: int | None
     initialization: InitializationFunction

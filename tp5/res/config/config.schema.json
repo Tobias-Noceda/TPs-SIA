@@ -321,13 +321,12 @@
         },
         "goal_pixels": {
             "type": "integer",
-            "description": "A pattern is learned when it has at most this many wrong pixels",
-            "minimum": 0,
-            "default": 1
+            "description": "A pattern is learned when it has at most this many wrong pixels. If omitted there is no goal: training stops only by epsilon or the epochs limit",
+            "minimum": 0
         },
         "stop_at_goal": {
             "type": "boolean",
-            "description": "Stop training as soon as every pattern is learned",
+            "description": "Stop training as soon as every pattern is learned (ignored without goal_pixels)",
             "default": true
         },
         "seed": {
