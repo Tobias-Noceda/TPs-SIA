@@ -9,7 +9,7 @@
 ## TP3 - Neutral Networks
 [README.md](tp3/README.md)
 
-## TP4 - Hopfield
+## TP4 - Unsupervised learning
 [README.md](tp4/README.md)
 
 ## TP5 - Auto-Encoders
