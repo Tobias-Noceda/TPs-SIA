@@ -2,26 +2,35 @@
 
 ## Enunciado
 
-Fuente: `assignment/SIATP5.pdf`. Teoría en `theory/` (Clase 17 Deep Learning, 18 Capsule, 19 Autoencoders).
+Fuente: `SIATP5.pdf` (en `tp5/`, sin trackear en git). La teoría (Clase 17 Deep Learning, 18 Capsule,
+19 Autoencoders) no está en el repo.
 
 ### Ejercicio 1 — Autoencoders sobre `font.h`
 
 - Dataset: `res/datasets/font.h`, 32 glifos de 7×5 binarios (`` ` `` a `~` + `DEL`, que es todo 1).
 - **a) Autoencoder básico** ✅ implementado
   1. Arquitectura encoder/decoder con **espacio latente 2-D**.
-  2. Estudiar arquitecturas y técnicas de optimización hasta aprender los 32 patrones con **≤ 1 píxel
-     incorrecto** (o justificar por qué solo un subconjunto).
+  2. Describir y estudiar las arquitecturas y técnicas de optimización probadas hasta aprender los 32
+     patrones con **≤ 1 píxel incorrecto** (si solo se aprende un subconjunto, mostrar por qué no se pudo
+     con el dataset completo). Estudio: `ej1a-sweep` + `ej1a-analysis`.
   3. Gráfico 2-D de los patrones en el espacio latente.
   4. Generar una letra nueva que no esté en el set de entrenamiento.
 - **b) Denoising autoencoder** ✅ implementado: arquitectura justificada; distorsionar entradas con distintos
   niveles de ruido y estudiar la capacidad de eliminarlo (entrada ruidosa, salida esperada = original).
 
-### Ejercicio 2 — VAE ✅ implementado (falta entrenar con los datasets reales)
+### Ejercicio 2 — VAE ✅ implementado
 
-Dataset nuevo, esquema variacional (reparametrization trick) y generar una muestra nueva que se juzgue
-perteneciente al dataset. Dos datasets posibles, subconjuntos de Kaggle (descarga manual, requiere login):
-"The Simpsons characters" (carpeta por personaje, JPG retratos) y "World flags dataset 195" (banderas).
-Plan original: `vae-plan.md`.
+Extender el autoencoder anterior a un VAE:
+
+- **a)** Elegir (o construir) un dataset nuevo; el enunciado da "emojis" como ejemplo. **Elegido: emojis de
+  caras** (`emoji-dataset` → `res/datasets/emojis24`, 101 imágenes 24×24 RGB, trackeado en git).
+- **b)** Esquema variacional (reparametrization trick) para resolver el problema de la representación en
+  el espacio latente (en el AE básico el latente no es continuo ni tiene una distribución de la cual
+  muestrear: entre códigos hay zonas que no decodifican a nada plausible).
+- **c)** Generar una muestra nueva que se juzgue perteneciente al dataset (generative autoencoder).
+
+Alternativas preparadas y no usadas: subconjuntos de Kaggle "The Simpsons characters" y "World flags
+dataset 195" (`ej2/simpsons.json`, `ej2/flags.json`, `prepare-images`; descarga manual, requiere login).
 
 ## Ejecución
 
@@ -35,6 +44,8 @@ uv run tp5 -c res/config/ej1a/autoencoder.json -o res/output/ej1a/autoencoder.np
 # ... o con pesos ya entrenados (sin reentrenar)
 uv run tp5 --load res/output/ej1a/autoencoder.npz -i [--port 8000] [--host 127.0.0.1] [--no-browser]
 uv run tp5 --config res/config/ej1a/baseline.json             # 35-2-35 con GD: no llega
+# Figuras PNG de una corrida (historia, reconstrucciones, latente, grilla decodificada, interpolación)
+uv run tp5 --load res/output/ej1a/autoencoder.npz --plot [--plot-dir res/output/plots]
 # Ej. 1b: denoising autoencoder (entrenar + guardar + abrir; la página de ruido está en /denoise)
 uv run tp5 -c res/config/ej1b/denoising.json -o res/output/ej1b/denoising.npz -i
 uv run tp5 --load res/output/ej1b/denoising.npz -i               # http://localhost:8000/denoise
@@ -47,11 +58,24 @@ uv run prepare-images -s <kaggle>/<carpeta de banderas> -o res/datasets/flags20x
 uv run tp5 -c res/config/ej2/simpsons.json -o res/output/ej2/simpsons.npz -i
 uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
 # Estudios para el informe: barrido (corridas crudas en <output>/runs) + análisis (CSV y plots/)
-uv run ej1a-sweep [-s 5] [-e épocas] [--studies ...] && uv run ej1a-analysis     # res/output/ej1a
+uv run ej1a-sweep [-s 5] [-e épocas] [--studies ...] && uv run ej1a-analysis [-g 1]  # res/output/ej1a
 uv run ej1b-sweep [-s 3] [-e 8000] [--studies ...] && uv run ej1b-analysis     # res/output/ej1b (~4 min)
 uv run emoji-dataset [-s 24] [-f fuente.ttf]                                    # res/datasets/emojis24 (una vez)
 uv run ej2-sweep [-s 1] [-e épocas] && uv run ej2-analysis [-r beta__1 latent__8]  # res/output/ej2 (~16 min)
 ```
+
+- **`ej1a-sweep`** (`experiments/ej1a_sweep.py`, 1a.2): parte de `ej1a/autoencoder.json` (capas en forma
+  compacta) y cambia **un solo aspecto** por variante (`STUDIES`: `architecture` 35-2-35 … 35-30-20-10-2,
+  `optimizer` GD 0.5 / momentum 0.1 / Adam 0.001 / 0.01, `loss` mse/bce, `batch_size` 1/8/32,
+  `latent_activation`, `hidden_activation`, `initialization`), 5 semillas, procesos paralelos. Corren hasta
+  `epsilon` 1e-3 o 20000 épocas (la base no tiene `goal_pixels`). **`ej1a-analysis`** (`analysis/ej1a.py`,
+  figuras en `visualization/sweep.py`): mide cada corrida contra `--goal` (default **1 px**, el objetivo del
+  enunciado) usando el `history` (máx. píxeles mal por época), no el `goal_pixels` guardado: `reached_goal`
+  = algún momento con todos los patrones ≤ goal, `epochs_to_goal` = primera época así (comparable entre
+  pérdidas/optimizadores aunque corten por `epsilon` distinto), `patterns_learned` / `max_pixel_errors` =
+  modelo final. Escribe `summary.csv`, `aggregate.csv` y `plots/`: `*_curves`, `*_summary`,
+  `hardest_patterns` (corridas que no llegan) y `best/` (figuras de `plot_run` de la corrida que llega en
+  menos épocas: latente 2-D para 1a.3, grilla e interpolación con letras "new" para 1a.4).
 
 - **`emoji-dataset`** (`tools/emoji_dataset.py`): dataset del ej. 2 = 101 emojis de caras renderizados de
   la fuente de emojis color del sistema (Segoe UI Emoji vista desde WSL, o `--font`), 24×24 RGB sobre blanco
@@ -140,7 +164,9 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 Configs: `res/config/ej1a/autoencoder.json` (35-25-15-**2**-15-25-35, tanh oculta, latente lineal,
 salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35, MSE, GD 0.5).
-`res/config/ej2/simpsons.json`: 32×32×3 crop (3072 entradas), 3072-512-128-**2·8**(lineal) /
+`res/config/ej2/emojis.json` (el del ej. 2): 24×24×3 (1728 entradas), 1728-256-64-**2·2** / 2-64-256-1728,
+ReLU oculta, salida logística, BCE, Adam 0.001, batch 16, 1500 épocas, β 1.
+`res/config/ej2/simpsons.json` (alternativa sin usar): 32×32×3 crop (3072 entradas), 3072-512-128-**2·8**(lineal) /
 8-128-512-3072 (logística), BCE, Adam 0.001, batch 16, 2000 épocas, β 1 (latente 8: retratos tienen mucha
 variación). `res/config/ej2/flags.json`: 20×30×3 stretch (2:3, 1800 entradas), 1800-256-64-**2·2** /
 2-64-256-1800, mismo resto, 3000 épocas (latente 2: mapa 2-D directo y generación con 2 sliders).
@@ -159,6 +185,13 @@ src/tp5/
 ├── runners/variational.py      # build_variational_autoencoder (kl_weight = β / píxeles), run_variational
 ├── tools/prepare_images.py     # script `prepare-images`: subconjunto chico y redimensionado de una carpeta de imágenes
 ├── tools/noisy.py              # script `noisy`: patrones ruidosos de una muestra del dataset → JSON
+├── tools/emoji_dataset.py      # script `emoji-dataset`: emojis de caras de una fuente color → PNG 24×24 (ej. 2a)
+├── experiments/                # barridos (STUDIES × semillas → <output>/runs/{estudio}__{variante}__s{semilla}.npz)
+│   ├── ej1a_sweep.py           # `ej1a-sweep`: AE básico, un factor por vez
+│   ├── ej1b_sweep.py           # `ej1b-sweep`: DAE (nivel/tipo de ruido de entrenamiento, latente)
+│   └── ej2_sweep.py            # `ej2-sweep`: AE vs VAE con β, tamaño del latente
+├── analysis/                   # runs/*.npz → summary.csv, aggregate.csv, plots/ (pandas)
+│   ├── ej1a.py, ej1b.py, ej2.py  # `ej1a-analysis`, `ej1b-analysis`, `ej2-analysis`
 ├── interfaces/autoencoder.py   # Autoencoder (ABC): encode / decode / reconstruct / train(inputs, expected, epochs)
 ├── models/
 │   ├── neuron.py, layer.py     # copiados de tp3 (W (in, out), bias aparte, grupos de activación)
@@ -185,6 +218,10 @@ src/tp5/
 │   │                           # POST /api/decode, /api/generate, /api/noise, /api/reconstruct, /api/noisy, /api/save-denoising
 │   └── static/                 # common.js (helpers), index.html + app.js, denoise.html + denoise.js, style.css (sin CDN)
 ├── visualization/glyphs.py     # draw_glyph (píxeles incorrectos en rojo)
+├── visualization/autoencoder.py  # plot_run / run_figures: historia, reconstrucciones, latente, grilla, interpolación (--plot)
+├── visualization/sweep.py      # figuras de ej1a-analysis
+├── visualization/denoising_sweep.py  # figuras de ej1b-analysis
+├── visualization/vae_sweep.py  # figuras de ej2-analysis
 ├── visualization/generated.py  # plot_generated: imagen + datos de replicación (API OO de matplotlib, sin pyplot); describe_model
 ├── visualization/denoising.py  # plot_denoising: original / ruidosa / salida (+ binarizada) + datos de replicación
 └── types/                      # Float, Samples, EpochResult, TrainingRun, *Function + config/ (enums y TypedDicts)
@@ -212,8 +249,10 @@ src/tp5/
   Distancia al más cercano: píxeles distintos binarizando en 0.5 si el dataset es binario, MAE si no.
   Rangos de los sliders: rango de los códigos de entrenamiento ± 25%. Decodes del navegador: siempre el
   último pedido, uno por vez (`latestOnly`).
-- `persistence.run_file.load_run`: reconstruye el modelo (`build_basic_autoencoder` + `load_parameters`);
-  `.npz` viejos con `shape` (h, w) se leen como 1 canal.
+- `persistence.run_file.load_run`: reconstruye el modelo (`BUILDERS[type]` + `load_parameters`, y
+  `loss_terms` si es VAE; `goal_pixels` −1 → `None`); `.npz` viejos con `shape` (h, w) se leen como 1 canal.
+  Todo lo que relee corridas (`--load`, los `*-analysis`) pasa por acá.
+- Sin `goal_pixels` (`None`), los gráficos usan 0 px como umbral de "aprendido" / "new", igual que el entrenamiento.
 - Persistencia: el `.npz` guarda la config original (y `goal_pixels = -1` si no hay objetivo).
 - **DAE** (`DenoisingAutoencoder(BasicAutoencoder)`): mismas redes/pérdida/optimizador; solo cambian dos hooks
   del loop. `_epoch_data`: entrada = ruido nuevo sobre `copies` repeticiones de los patrones, salida
@@ -240,7 +279,12 @@ src/tp5/
 - `autoencoder.json` (seed 42, sin `goal_pixels`, `epsilon` 1e-3): 32/32 con 0 píxeles mal en 5639 épocas
   (~2 s); con `goal_pixels: 1` corta en 1359 épocas. `baseline.json`: 4/32,
   máx. 11 píxeles tras 20000 épocas.
-- `--plot` sigue en `main` pero importa `tp5.visualization.autoencoder`, que ya no existe: falla.
+- `ej1a-sweep` (5 semillas, objetivo ≤ 1 px vía `ej1a-analysis`): llegan 5/5 todas las variantes salvo
+  35-2-35 (0/5, máx. 13 px), 35-10-2 (2/5) y MSE (3/5; con BCE 5/5). Mediana de épocas hasta el objetivo:
+  base (35-25-15-2, Adam 0.001, BCE, batch 32) 1378; Adam 0.01 206; momentum 1210; GD 0.5 2825; más capas
+  ocultas ayudan (35-20-2 2807 → 35-30-20-10-2 966); batch 1 465; latente tanh 1965 / logística 2670 vs
+  lineal 1378; ocultas logísticas 3414. `reached_goal` = en algún momento: con MSE el modelo final puede
+  tener más (31.4/32 patrones ≤ 1 px en promedio).
 - `denoising.json`: 20000 épocas (~32 s); set ruidoso fijo (128): pérdida 0.0153, máx. 7 px, 125/128 con
   ≤ 1 px; entradas limpias 32/32. Mismo ruido flip (10 semillas × 32 muestras), píxeles mal en la salida,
   DAE vs. básico (`ej1a/autoencoder.npz`): 0.05 → 0.02 vs 7.3; 0.1 → 0.18 vs 9.3; 0.2 → 1.9 vs 12.7;
@@ -262,4 +306,10 @@ src/tp5/
   (colapso). Latente 2 / 8 / 32 (β 1): MAE 0.021 / 0.014 / 0.009. Muestras de N(0, I): el AE devuelve casi
   siempre la misma cara (sus códigos están a ±60, lejos del prior); el VAE β 1 da caras variadas, MAE al
   más cercano 0.040 (entre imágenes reales vecinas: 0.041).
-- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); descargar los datasets de Kaggle, armar los subconjuntos y entrenar `ej2/*.json`.
+- En `res/output/` (no trackeado) solo están las corridas de `ej1a`; `ej1b` y `ej2` hay que correrlas
+  (los números de arriba son de corridas anteriores).
+- Pendiente: correr `ej1b-sweep`/`ej2-sweep` + análisis; redactar el informe con estas figuras (1a.2 a 2c).
+- Mejoras posibles sin hacer: `noise_type__flip_0.1` (ej1b) y `latent__2` (ej2) repiten la config de
+  `train_level__flip_0.1` y `beta__1` (se entrenan dos veces); ej2 con 1 semilla; en `beta_samples` el AE
+  se muestrea de N(0, I), lejos de sus códigos (±60): para una comparación justa sumar muestras de una
+  gaussiana ajustada a sus códigos.

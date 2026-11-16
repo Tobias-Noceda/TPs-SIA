@@ -1,28 +1,28 @@
 import argparse
-import json
+import dataclasses
 from pathlib import Path
 from typing import Any, Dict, List
 
-from tp5.config import parse_config
-from tp5.persistence.run_file import load_parameters
-from tp5.runners.basic import build_basic_autoencoder
-from tp5.types.training_run import TrainingRun
+from tp5.persistence.run_file import load_run
 from tp5.visualization.autoencoder import plot_run
 from tp5.visualization.sweep import plot_hardest_patterns, plot_study_curves, plot_study_summary
 
 import numpy as np
 import pandas as pd
 import matplotlib
-from numpy.random import RandomState
 
-def _load_runs(runs_dir: Path) -> List[Dict[str, Any]]:
+def _load_runs(runs_dir: Path, goal: int) -> List[Dict[str, Any]]:
+    """
+    Every run of the sweep, measured against `goal` wrong pixels (the objective of the assignment)
+    and not against the goal_pixels each run was trained with: the base config has none (saved as
+    -1) and the runs stop by epsilon, so the epoch the goal is reached comes from the history.
+    """
     runs = []
     for path in sorted(runs_dir.glob("*__*__s*.npz")):
         study, variant, seed = path.stem.split("__")
         data = np.load(path)
         history = data["history"]
         errors = data["pixel_errors"]
-        goal = int(data["goal_pixels"])
         learned = history[:, 2] <= goal
         runs.append({
             "path": path,
@@ -44,30 +44,15 @@ def _load_runs(runs_dir: Path) -> List[Dict[str, Any]]:
         })
     return runs
 
-def _rebuild(path: Path) -> TrainingRun:
-    """TrainingRun of a saved run: the model is rebuilt from its config and the saved weights."""
-    data = np.load(path)
-    source = json.loads(str(data["config"]))
-    config = parse_config(source, str(path))
-    inputs = data["inputs"]
-    model = build_basic_autoencoder(config, inputs.shape[1], RandomState(0))
-    model.encoder.load_parameters(load_parameters(data, "encoder"))
-    model.decoder.load_parameters(load_parameters(data, "decoder"))
-    history = tuple((int(e), np.float64(l), int(m), int(p)) for e, l, m, p in data["history"])
-    shape = data["shape"]
-    return TrainingRun(
-        model, inputs, [str(label) for label in data["labels"]], (int(shape[0]), int(shape[1])),
-        history, int(data["goal_pixels"]), int(str(data["seed"])), float(data["elapsed"]), source,
-    )
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ex. 1a.2: summary and plots of the autoencoder sweep.")
     parser.add_argument("-i", "--input", default="res/output/ej1a", help="Sweep output directory (with runs/)")
+    parser.add_argument("-g", "--goal", type=int, default=1, help="Wrong pixels allowed per pattern (default 1, the assignment's goal)")
     args = parser.parse_args()
     matplotlib.use("Agg")
 
     root = Path(args.input)
-    runs = _load_runs(root / "runs")
+    runs = _load_runs(root / "runs", args.goal)
     if not runs:
         raise SystemExit(f"No runs found in {root / 'runs'}")
 
@@ -103,5 +88,6 @@ def main() -> None:
     # Best run: reaches the goal in the fewest epochs; otherwise the fewest wrong pixels
     best = min(runs, key=lambda r: (not r["reached_goal"], r["epochs_to_goal"] if r["reached_goal"] else r["max_pixel_errors"], r["final_loss"]))
     print(f"Best run: {best['path'].name} (goal: {best['reached_goal']}, epochs: {best['epochs']}, max wrong pixels: {best['max_pixel_errors']})")
-    plot_run(_rebuild(best["path"]), save_dir=str(plots / "best"))
+    # Its figures mark the same goal the sweep is measured against
+    plot_run(dataclasses.replace(load_run(str(best["path"])), goal_pixels=args.goal), save_dir=str(plots / "best"))
     print(f"Saved summary.csv, aggregate.csv and plots/ to {root}")

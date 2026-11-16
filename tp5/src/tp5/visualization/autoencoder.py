@@ -32,7 +32,7 @@ def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int
     ax_pixels.set_xlabel("Epoch")
     ax_pixels.set_ylabel("Wrong pixels")
     ax_learned = ax_pixels.twinx()
-    ax_learned.plot(epochs + 1, learned, color="tab:green", label=f"Patterns ≤ {goal_pixels} px")
+    ax_learned.plot(epochs + 1, learned, color="tab:green", label=f"Patterns ≤ {goal_pixels or 0} px")
     ax_learned.set_ylim(0, patterns + 1)
     ax_learned.set_ylabel("Learned patterns")
     handles = ax_pixels.get_legend_handles_labels()[0] + ax_learned.get_legend_handles_labels()[0]
@@ -111,7 +111,7 @@ def plot_latent_grid(decode: Decoder, latent: Samples, inputs: Samples, labels: 
 
     fig, axes = plt.subplots(size, size, figsize=(size * 0.8, size * 1.05))
     for ax, glyph, index, distance in zip(axes.flat, generated, nearest, distances):
-        new = distance > goal_pixels
+        new = distance > (goal_pixels or 0)
         draw_glyph(ax, glyph, shape, title=f"{labels[index]}+{distance}" if new else labels[index], title_color="tab:blue" if new else "black")
     fig.suptitle(f"Decoded latent grid: z1 ∈ [{z1[0]:.2f}, {z1[-1]:.2f}], z2 ∈ [{z2[0]:.2f}, {z2[-1]:.2f}] (blue = new, nearest+distance)")
     fig.tight_layout()
@@ -139,7 +139,7 @@ def plot_interpolation(decode: Decoder, latent: Samples, inputs: Samples, labels
 
     fig, axes = plt.subplots(1, steps, figsize=(steps * 1.2, 2.4))
     for ax, glyph, step, index, distance in zip(axes, generated, t, nearest, distances):
-        new = distance > goal_pixels
+        new = distance > (goal_pixels or 0)
         name = f"{labels[index]}+{distance}" if new else labels[index]
         draw_glyph(ax, glyph, shape, title=f"t={step:.2f}\n{name}", title_color="tab:blue" if new else "black")
     fig.suptitle(f"Interpolation {labels[a]} → {labels[b]} in the latent space (blue = new, nearest+distance)")

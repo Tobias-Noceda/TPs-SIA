@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "fonttools>=4.63.0",
     "jsonschema>=4.26.0",
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pandas>=3.0.6",
+    "pillow>=12.3.0",
     "pyqt6>=6.11.0",
     "tqdm>=4.70.0",
 ]
