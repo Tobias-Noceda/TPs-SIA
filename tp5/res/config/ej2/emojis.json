@@ -1,0 +1,72 @@
+{
+    "autoencoder": {
+        "type": "variational",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 256,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 64,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 4,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 64,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 256,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 1728,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "variational": {
+        "beta": 1
+    },
+    "loss_function": "bce",
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001
+    },
+    "epochs": 1500,
+    "batch_size": 16,
+    "epsilon": 0.0,
+    "seed": 42,
+    "initialization": "xavier",
+    "dataset": {
+        "type": "images",
+        "path": "res/datasets/emojis24",
+        "size": [
+            24,
+            24
+        ],
+        "channels": 3,
+        "fit": "stretch"
+    }
+}

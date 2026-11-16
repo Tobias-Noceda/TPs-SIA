@@ -46,7 +46,32 @@ uv run prepare-images -s <kaggle>/simpsons_dataset -o res/datasets/simpsons32 \
 uv run prepare-images -s <kaggle>/<carpeta de banderas> -o res/datasets/flags20x30 -n 60 --size 20x30 --fit stretch
 uv run tp5 -c res/config/ej2/simpsons.json -o res/output/ej2/simpsons.npz -i
 uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
+# Estudios para el informe: barrido (corridas crudas en <output>/runs) + análisis (CSV y plots/)
+uv run ej1a-sweep [-s 5] [-e épocas] [--studies ...] && uv run ej1a-analysis     # res/output/ej1a
+uv run ej1b-sweep [-s 3] [-e 8000] [--studies ...] && uv run ej1b-analysis     # res/output/ej1b (~4 min)
+uv run emoji-dataset [-s 24] [-f fuente.ttf]                                    # res/datasets/emojis24 (una vez)
+uv run ej2-sweep [-s 1] [-e épocas] && uv run ej2-analysis [-r beta__1 latent__8]  # res/output/ej2 (~16 min)
 ```
+
+- **`emoji-dataset`** (`tools/emoji_dataset.py`): dataset del ej. 2 = 101 emojis de caras renderizados de
+  la fuente de emojis color del sistema (Segoe UI Emoji vista desde WSL, o `--font`), 24×24 RGB sobre blanco
+  + `manifest.json`. Se regenera con el comando; no hace falta Kaggle.
+- **`ej2-sweep`** (`experiments/ej2_sweep.py`, base `ej2/emojis.json`: 1728-256-64-**2·2** / 2-64-256-1728,
+  **ReLU** oculta, BCE, Adam 0.001, batch 16, 1500 épocas): estudio `beta` (`ae` = autoencoder básico con las
+  mismas capas, β 0.1, 1, 5, 25; latente 2) y `latent` (2, 8, 32; β 1). **`ej2-analysis`** (`analysis/ej2.py`,
+  figuras en `visualization/vae_sweep.py`): `dataset`, y por estudio `*_loss` (reconstrucción y KL por
+  época), `*_reconstructions`, `*_samples` (todos decodifican los mismos z ~ N(0, I)), `*_latent` (mapa 2-D
+  con cada imagen, círculos del prior y elipses σ(x)), `latent_kl_per_dimension`; por modelo de referencia:
+  `generated_*` (muestras nuevas + imagen más cercana del dataset), `interpolation_*`, `latent_grid_*` (2-D).
+
+- **`ej1b-sweep`** (`experiments/ej1b_sweep.py`): DAE que cambian una sola cosa de `ej1b/denoising.json`:
+  `train_level` (flip 0 = AE básico con la misma arquitectura, 0.05, 0.1, 0.2, 0.3), `latent` (2, 5, 10, 20)
+  y `noise_type` (flip 0.1, salt_pepper 0.2, gaussian 0.4). Todas entrenan las mismas épocas (sin
+  `goal_pixels`, `epsilon = 0`). **`ej1b-analysis`** (`analysis/ej1b.py`, figuras en
+  `visualization/denoising_sweep.py`): cada modelo limpia los **mismos** patrones ruidosos (misma semilla,
+  50 sorteos × 32) a varios niveles → `summary.csv`, `aggregate.csv` y `plots/`: `*_curves` (píxeles mal de
+  la salida vs. entrada ruidosa y % recuperados ≤ 1 px), `train_level_heatmap`, `noise_type_curves` (3 ruidos
+  de entrada), `examples`, `confusion` (patrón más cercano a la salida).
 
 - `main` carga la config, despacha por `autoencoder.type` (`RUNNERS`), entrena e imprime épocas,
   pérdida, máx. píxeles incorrectos, patrones aprendidos y cuáles no. `--output` guarda `.npz`.
@@ -224,5 +249,17 @@ src/tp5/
   de tamaños variados; banderas planas 3:2 y 2:1, algunas RGBA): `prepare-images`, entrenamiento, `--load`,
   explorador y figuras. Tiempos con esas configs: banderas 40 × 20×30 ≈ 0.1 s/época; Simpsons 60 × 32×32 ≈
   0.37 s/época (crece lineal con la cantidad de imágenes).
-- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); barrido de niveles de ruido
-  para 1b.2; descargar los datasets de Kaggle, armar los subconjuntos y entrenar `ej2/*.json`.
+- `ej1b-sweep` (8000 épocas, 3 semillas), píxeles mal medios en la salida con flip de entrada 0.1 / 0.2 /
+  0.3 (la entrada tiene 3.6 / 7.1 / 10.6): entrenado con flip 0 → 4.0 / 8.3 / 11.8 (agrega errores);
+  0.05 → 0.4 / 3.2 / 7.8; 0.1 → 0.2 / 2.4 / 7.0; 0.2 → 0.2 / 1.9 / 6.1; 0.3 → 0.7 / 2.3 / 6.0 (y 0.3 px con
+  entrada limpia). Latente 2 / 5 / 10 / 20 con flip 0.2: 3.8 / 2.8 / 2.4 / 2.3. El tipo de ruido de
+  entrenamiento casi no cambia el resultado. Con flip 0.2, 76% de las salidas quedan más cerca del patrón
+  correcto; los peores: `|`, `o`, `l`, `r`, `u`.
+- `ej2-sweep` con emojis: **con tanh oculta y Adam 0.001 la red no aprende** (MAE 0.065 vs 0.0725 de la
+  imagen promedio, y el VAE colapsa con β ≥ 1: KL ≈ 0); con ReLU sí (AE latente 16: MAE 0.013 en 300 épocas).
+  Resultado (1500 épocas, MAE de reconstrucción / desvío de los códigos / KL): AE 0.024 / 20.5 / —;
+  β 0.1 → 0.022 / 2.9 / 17.5; β 1 → 0.021 / 1.46 / 7.0; β 5 → 0.029 / 1.14 / 4.3; β 25 → 0.064 / 0.36 / 0.38
+  (colapso). Latente 2 / 8 / 32 (β 1): MAE 0.021 / 0.014 / 0.009. Muestras de N(0, I): el AE devuelve casi
+  siempre la misma cara (sus códigos están a ±60, lejos del prior); el VAE β 1 da caras variadas, MAE al
+  más cercano 0.040 (entre imágenes reales vecinas: 0.041).
+- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); descargar los datasets de Kaggle, armar los subconjuntos y entrenar `ej2/*.json`.
