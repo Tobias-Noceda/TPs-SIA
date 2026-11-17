@@ -1,0 +1,48 @@
+{
+  "source": "https://cdn.thesimpsonsapi.com/500/character/{1..30}.webp (The Simpsons API, characters 1-30, renamed by character)",
+  "size": [
+    32,
+    32
+  ],
+  "fit": "crop",
+  "seed": 1,
+  "count": null,
+  "classes": null,
+  "names": null,
+  "min_side": 0,
+  "images": {
+    ".": [
+      "abe_simpson.webp",
+      "apu_nahasapeemapetilon.webp",
+      "barney_gumble.webp",
+      "bart_simpson.webp",
+      "carl_carlson.webp",
+      "clancy_wiggum.webp",
+      "edna_krabappel.webp",
+      "gary_chalmers.webp",
+      "homer_simpson.webp",
+      "kirk_van_houten.webp",
+      "krusty_the_clown.webp",
+      "lenny_leonard.webp",
+      "lisa_simpson.webp",
+      "luann_van_houten.webp",
+      "maggie_simpson.webp",
+      "marge_simpson.webp",
+      "maude_flanders.webp",
+      "milhouse_van_houten.webp",
+      "moe_szyslak.webp",
+      "mr_burns.webp",
+      "ned_flanders.webp",
+      "otto_mann.webp",
+      "patty_bouvier.webp",
+      "ralph_wiggum.webp",
+      "rod_flanders.webp",
+      "sarah_wiggum.webp",
+      "selma_bouvier.webp",
+      "seymour_skinner.webp",
+      "todd_flanders.webp",
+      "waylon_smithers.webp"
+    ]
+  },
+  "created": "2026-11-16T21:06:09"
+}
