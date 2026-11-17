@@ -306,7 +306,8 @@ function buildSliders() {
 }
 
 function syncSliders(source) {
-  document.querySelectorAll(".slider-row").forEach((row) => {
+  // Only the latent sliders (the interpolation `t` row shares the class but has no data-k)
+  $("sliders").querySelectorAll(".slider-row").forEach((row) => {
     const k = Number(row.dataset.k);
     const [range, number] = row.querySelectorAll("input");
     if (range !== source) range.value = state.z[k];
