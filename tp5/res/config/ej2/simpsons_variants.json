@@ -4,15 +4,15 @@
         "encoder": {
             "arquitecture": [
                 {
-                    "neurons": 256,
+                    "neurons": 512,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
-                    "neurons": 64,
+                    "neurons": 128,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
@@ -26,19 +26,19 @@
         "decoder": {
             "arquitecture": [
                 {
-                    "neurons": 64,
+                    "neurons": 128,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
-                    "neurons": 256,
+                    "neurons": 512,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
-                    "neurons": 1800,
+                    "neurons": 3072,
                     "activation_function": {
                         "name": "logistic"
                     }
@@ -54,19 +54,19 @@
         "type": "adam",
         "value": 0.001
     },
-    "epochs": 3000,
+    "epochs": 300,
     "batch_size": 16,
     "epsilon": 0.0001,
     "seed": 42,
     "initialization": "xavier",
     "dataset": {
         "type": "images",
-        "path": "res/datasets/flags20x30",
+        "path": "res/datasets/simpsons32",
         "size": [
-            20,
-            30
+            32,
+            32
         ],
         "channels": 3,
-        "fit": "stretch"
+        "fit": "crop"
     }
 }

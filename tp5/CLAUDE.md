@@ -16,12 +16,18 @@ Fuente: `assignment/SIATP5.pdf`. Teoría en `theory/` (Clase 17 Deep Learning, 1
 - **b) Denoising autoencoder** ✅ implementado: arquitectura justificada; distorsionar entradas con distintos
   niveles de ruido y estudiar la capacidad de eliminarlo (entrada ruidosa, salida esperada = original).
 
-### Ejercicio 2 — VAE ✅ implementado (falta entrenar con los datasets reales)
+### Ejercicio 2 — VAE ✅ implementado
 
 Dataset nuevo, esquema variacional (reparametrization trick) y generar una muestra nueva que se juzgue
-perteneciente al dataset. Dos datasets posibles, subconjuntos de Kaggle (descarga manual, requiere login):
-"The Simpsons characters" (carpeta por personaje, JPG retratos) y "World flags dataset 195" (banderas).
-Plan original: `vae-plan.md`.
+perteneciente al dataset. Datasets en el repo (`res/datasets/`, ver README):
+
+- `simpsons32/`: 30 personajes de The Simpsons API (no Kaggle) recortados a 32×32 + 10 aumentos por
+  personaje (`<personaje>_NN.png`) = 330 PNG; `manifest.json` con origen y parámetros de cada aumento.
+  Lo usa `res/config/ej2/simpsons.json`.
+- `escudos30/`, `escudos150/`: escudos de clubes argentinos 64×64 (PNG modo P, 31 y 155), sin manifest.
+  Los usa `res/config/ej2/escudos.json` (stretch a 32×32), pero su `dataset.path` es `res/datasets/escudos`,
+  que **no existe**: apuntarlo a `escudos30` o `escudos150`.
+- `flags.json` y el dataset de banderas se descartaron.
 
 ## Ejecución
 
@@ -40,12 +46,15 @@ uv run tp5 -c res/config/ej1b/denoising.json -o res/output/ej1b/denoising.npz -i
 uv run tp5 --load res/output/ej1b/denoising.npz -i               # http://localhost:8000/denoise
 # Generador de patrones ruidosos (archivos que /denoise carga)
 uv run noisy --sample a --noise flip --level 0.15 [--seed 7] [--count 5] [--dataset res/datasets/font.h] [--output-dir res/output/ej1/noisy]
-# Ej. 2: armar el subconjunto (una vez) y entrenar el VAE
-uv run prepare-images -s <kaggle>/simpsons_dataset -o res/datasets/simpsons32 \
-    --classes homer_simpson bart_simpson lisa_simpson -n 50 --size 32 --fit crop
-uv run prepare-images -s <kaggle>/<carpeta de banderas> -o res/datasets/flags20x30 -n 60 --size 20x30 --fit stretch
+# Configs "best" (ReLU) de 1a y 1b
+uv run tp5 -c res/config/ej1a/best.json -o res/output/ej1a/best.npz -i
+uv run tp5 -c res/config/ej1b/best.json -o res/output/ej1b/best.npz -i
+# Ej. 2: VAE (datasets ya en res/datasets/)
 uv run tp5 -c res/config/ej2/simpsons.json -o res/output/ej2/simpsons.npz -i
-uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
+uv run tp5 -c res/config/ej2/simpsons_variants.json -o res/output/ej2/simpsons_variants.npz -i
+uv run tp5 -c res/config/ej2/escudos.json -o res/output/ej2/escudos.npz -i
+# Armar un dataset nuevo de imágenes (herramienta)
+uv run prepare-images -s <carpeta> -o res/datasets/<nombre> -n 50 --size 32 --fit crop [--classes ...]
 ```
 
 - `main` carga la config, despacha por `autoencoder.type` (`RUNNERS`), entrena e imprime épocas,
@@ -117,17 +126,20 @@ Configs: `res/config/ej1a/autoencoder.json` (35-25-15-**2**-15-25-35, tanh ocult
 salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35, MSE, GD 0.5).
 `res/config/ej2/simpsons.json`: 32×32×3 crop (3072 entradas), 3072-512-128-**2·8**(lineal) /
 8-128-512-3072 (logística), BCE, Adam 0.001, batch 16, 2000 épocas, β 1 (latente 8: retratos tienen mucha
-variación). `res/config/ej2/flags.json`: 20×30×3 stretch (2:3, 1800 entradas), 1800-256-64-**2·2** /
-2-64-256-1800, mismo resto, 3000 épocas (latente 2: mapa 2-D directo y generación con 2 sliders).
+variación). `simpsons_variants.json`: mismo dataset, ReLU, latente **2·2**, 300 épocas.
+`escudos.json`: 32×32×3 stretch, ReLU, latente **2·2**, 1500 épocas (path roto, ver arriba).
 `epsilon` 1e-4 casi nunca se alcanza: la BCE con objetivos continuos no llega a 0 (cortan por épocas).
 `res/config/ej1b/denoising.json`: 35-30-20-**10**-20-30-35 (tanh, latente lineal, salida logística), BCE,
 Adam 0.001, batch 32, xavier, ruido flip 0.1 × 4 copias, 20000 épocas, epsilon 1e-3, goal 1 px.
+`ej1a/best.json`: 35-30-20-10-**2**-10-20-30-35 ReLU, BCE, Adam 0.01, batch 8, 20000 épocas.
+`ej1b/best.json`: 35-30-20-10-**10**-10-20-30-35 ReLU, flip 0.2 × 4, Adam 0.001, batch 8, 8000 épocas.
+Ambos `best.json` traen `stop_at_goal` sin `goal_pixels`: no tiene efecto (cortan por `epsilon`/épocas).
 
 ## Arquitectura
 
 ```
 src/tp5/
-├── __init__.py                 # main: config → RUNNERS[type] (o --load) → report → [--output] → [-i]
+├── __init__.py                 # main: config → RUNNERS[type] (o --load) → report → [--output] → [-i] (sin --plot)
 ├── config.py                   # load_config / parse_config (schema + resolución de funciones)
 ├── runners/basic.py            # build_networks, build_basic_autoencoder, train_run(config, builder), run_basic
 ├── runners/denoising.py        # build_denoising_autoencoder, run_denoising
@@ -215,14 +227,19 @@ src/tp5/
 - `autoencoder.json` (seed 42, sin `goal_pixels`, `epsilon` 1e-3): 32/32 con 0 píxeles mal en 5639 épocas
   (~2 s); con `goal_pixels: 1` corta en 1359 épocas. `baseline.json`: 4/32,
   máx. 11 píxeles tras 20000 épocas.
-- `--plot` sigue en `main` pero importa `tp5.visualization.autoencoder`, que ya no existe: falla.
+- `--plot` eliminado (commit 5ecb95e): las figuras salen del explorador (*Save image*).
 - `denoising.json`: 20000 épocas (~32 s); set ruidoso fijo (128): pérdida 0.0153, máx. 7 px, 125/128 con
   ≤ 1 px; entradas limpias 32/32. Mismo ruido flip (10 semillas × 32 muestras), píxeles mal en la salida,
   DAE vs. básico (`ej1a/autoencoder.npz`): 0.05 → 0.02 vs 7.3; 0.1 → 0.18 vs 9.3; 0.2 → 1.9 vs 12.7;
   0.3 → 6.5 vs 14.8.
-- VAE probado de punta a punta con datasets sintéticos que imitan ambos (carpetas por personaje con JPG
-  de tamaños variados; banderas planas 3:2 y 2:1, algunas RGBA): `prepare-images`, entrenamiento, `--load`,
-  explorador y figuras. Tiempos con esas configs: banderas 40 × 20×30 ≈ 0.1 s/época; Simpsons 60 × 32×32 ≈
-  0.37 s/época (crece lineal con la cantidad de imágenes).
-- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2); barrido de niveles de ruido
-  para 1b.2; descargar los datasets de Kaggle, armar los subconjuntos y entrenar `ej2/*.json`.
+- VAE probado de punta a punta (`prepare-images`, entrenamiento, `--load`, explorador, figuras).
+  `simpsons.json` con `simpsons32` (330 muestras): ~4 s/época → 2000 épocas ≈ 2 h 15 min. Smoke test de 2
+  épocas OK (2026-11-17).
+- `res/output/` (gitignoreado) tiene corridas de barridos del VAE (`runs/beta__{ae,0.1,1,5,25}__s0.npz`,
+  ReLU, latente 2, 1500 épocas) y figuras en `plots-ej2/` (β, dimensión latente, KL por dimensión,
+  interpolación, muestras). El código que las generó (`src/tp5/analysis/`, `src/tp5/experiments/`) **no
+  está en el repo**: esas carpetas solo tienen `__pycache__`.
+- `README.md` del TP: instalación, uso por ejercicio, explorador, config y datasets (en castellano).
+- Pendiente: estudio de arquitecturas/optimizadores para el informe (1a.2), si no se hizo fuera del repo;
+  corregir `dataset.path` de `escudos.json`; recuperar/commitear los scripts de barridos si se quieren
+  reproducir.

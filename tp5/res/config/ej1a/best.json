@@ -1,0 +1,75 @@
+{
+    "autoencoder": {
+        "type": "basic",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 30,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 20,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 10,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 2,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 10,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 20,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 30,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 35,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "loss_function": "bce",
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.01
+    },
+    "epochs": 20000,
+    "batch_size": 8,
+    "epsilon": 0.001,
+    "stop_at_goal": true,
+    "seed": 42,
+    "initialization": "xavier",
+    "dataset": {
+        "path": "res/datasets/font.h"
+    }
+}

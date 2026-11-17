@@ -1,0 +1,72 @@
+{
+    "autoencoder": {
+        "type": "variational",
+        "encoder": {
+            "arquitecture": [
+                {
+                    "neurons": 512,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 128,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 4,
+                    "activation_function": {
+                        "name": "linear"
+                    }
+                }
+            ]
+        },
+        "decoder": {
+            "arquitecture": [
+                {
+                    "neurons": 128,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 512,
+                    "activation_function": {
+                        "name": "relu"
+                    }
+                },
+                {
+                    "neurons": 3072,
+                    "activation_function": {
+                        "name": "logistic"
+                    }
+                }
+            ]
+        }
+    },
+    "variational": {
+        "beta": 1
+    },
+    "loss_function": "bce",
+    "learning_rate": {
+        "type": "adam",
+        "value": 0.001
+    },
+    "epochs": 1500,
+    "batch_size": 16,
+    "epsilon": 0.0001,
+    "seed": 42,
+    "initialization": "xavier",
+    "dataset": {
+        "type": "images",
+        "path": "res/datasets/escudos155",
+        "size": [
+            32,
+            32
+        ],
+        "channels": 3,
+        "fit": "stretch"
+    }
+}
