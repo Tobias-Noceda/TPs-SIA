@@ -15,14 +15,23 @@ from matplotlib.figure import Figure
 
 type Decoder = Callable[[Samples], Samples]
 
-def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int | None) -> Figure:
-    """Loss, max wrong pixels and learned patterns per epoch."""
+def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int | None, learned_pixels: int | None = None) -> Figure:
+    """
+    Loss, max wrong pixels and learned patterns per epoch.
+
+    Parameters:
+    goal_pixels    : goal line of the pixel panel (None = no line).
+    learned_pixels : wrong pixels allowed when the history counted the learned patterns, i.e. the
+                     goal of the training config (None = 0). Defaults to goal_pixels.
+    """
+    if learned_pixels is None:
+        learned_pixels = goal_pixels
     epochs, loss, max_errors, learned = np.array(history, dtype=np.float64).reshape(-1, 4).T
 
-    fig, (ax_loss, ax_pixels) = plt.subplots(1, 2, figsize=(11, 4))
+    # Stacked with a shared epoch axis: the pixel error can be read against the loss at the same epoch
+    fig, (ax_loss, ax_pixels) = plt.subplots(2, 1, figsize=(9, 7), sharex=True)
     ax_loss.plot(epochs + 1, loss)
     ax_loss.set_yscale("log")
-    ax_loss.set_xlabel("Epoch")
     ax_loss.set_ylabel("Loss")
     ax_loss.set_title("Loss")
 
@@ -32,7 +41,7 @@ def plot_history(history: Sequence[EpochResult], patterns: int, goal_pixels: int
     ax_pixels.set_xlabel("Epoch")
     ax_pixels.set_ylabel("Wrong pixels")
     ax_learned = ax_pixels.twinx()
-    ax_learned.plot(epochs + 1, learned, color="tab:green", label=f"Patterns ≤ {goal_pixels or 0} px")
+    ax_learned.plot(epochs + 1, learned, color="tab:green", label=f"Patterns ≤ {learned_pixels or 0} px")
     ax_learned.set_ylim(0, patterns + 1)
     ax_learned.set_ylabel("Learned patterns")
     handles = ax_pixels.get_legend_handles_labels()[0] + ax_learned.get_legend_handles_labels()[0]
@@ -154,7 +163,9 @@ def run_figures(run: TrainingRun, pair: Tuple[int, int] | None = None) -> Dict[s
     shape = (run.shape.height, run.shape.width)
 
     figures = {
-        "history": plot_history(run.history, len(run.inputs), run.goal_pixels),
+        # The learned patterns of the history were counted with the goal of the training config, which
+        # can differ from run.goal_pixels (ej1a-analysis draws its own goal over runs trained without one)
+        "history": plot_history(run.history, len(run.inputs), run.goal_pixels, run.source.get("goal_pixels", 0)),
         "reconstructions": plot_reconstructions(run.inputs, reconstructions, run.labels, shape, run.goal_pixels),
     }
     if latent.shape[1] == 2:

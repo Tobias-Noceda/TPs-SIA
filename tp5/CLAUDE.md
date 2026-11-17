@@ -22,15 +22,17 @@ Fuente: `SIATP5.pdf` (en `tp5/`, sin trackear en git). La teoría (Clase 17 Deep
 
 Extender el autoencoder anterior a un VAE:
 
-- **a)** Elegir (o construir) un dataset nuevo; el enunciado da "emojis" como ejemplo. **Elegido: emojis de
-  caras** (`emoji-dataset` → `res/datasets/emojis24`, 101 imágenes 24×24 RGB, trackeado en git).
+- **a)** Elegir (o construir) un dataset nuevo; el enunciado da "emojis" como ejemplo. **Elegido: retratos de
+  los Simpsons** (`res/datasets/simpsons32`, 30 imágenes 32×32 RGB, una por personaje, de The Simpsons API,
+  trackeado en git; ver su `manifest.json`). Antes se usaban emojis de caras (`emoji-dataset` →
+  `res/datasets/emojis24`, sigue disponible con `ej2-sweep -c res/config/ej2/emojis.json`).
 - **b)** Esquema variacional (reparametrization trick) para resolver el problema de la representación en
   el espacio latente (en el AE básico el latente no es continuo ni tiene una distribución de la cual
   muestrear: entre códigos hay zonas que no decodifican a nada plausible).
 - **c)** Generar una muestra nueva que se juzgue perteneciente al dataset (generative autoencoder).
 
-Alternativas preparadas y no usadas: subconjuntos de Kaggle "The Simpsons characters" y "World flags
-dataset 195" (`ej2/simpsons.json`, `ej2/flags.json`, `prepare-images`; descarga manual, requiere login).
+Otras alternativas preparadas y no usadas: banderas ("World flags dataset 195" de Kaggle, `ej2/flags.json`,
+`prepare-images`; descarga manual, requiere login).
 
 ## Ejecución
 
@@ -51,9 +53,8 @@ uv run tp5 -c res/config/ej1b/denoising.json -o res/output/ej1b/denoising.npz -i
 uv run tp5 --load res/output/ej1b/denoising.npz -i               # http://localhost:8000/denoise
 # Generador de patrones ruidosos (archivos que /denoise carga)
 uv run noisy --sample a --noise flip --level 0.15 [--seed 7] [--count 5] [--dataset res/datasets/font.h] [--output-dir res/output/ej1/noisy]
-# Ej. 2: armar el subconjunto (una vez) y entrenar el VAE
-uv run prepare-images -s <kaggle>/simpsons_dataset -o res/datasets/simpsons32 \
-    --classes homer_simpson bart_simpson lisa_simpson -n 50 --size 32 --fit crop
+# Ej. 2: entrenar el VAE (res/datasets/simpsons32 ya está armado en el repo)
+# Otro dataset desde una carpeta de imágenes (p. ej. banderas de Kaggle), una vez:
 uv run prepare-images -s <kaggle>/<carpeta de banderas> -o res/datasets/flags20x30 -n 60 --size 20x30 --fit stretch
 uv run tp5 -c res/config/ej2/simpsons.json -o res/output/ej2/simpsons.npz -i
 uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
@@ -61,7 +62,14 @@ uv run tp5 -c res/config/ej2/flags.json -o res/output/ej2/flags.npz -i
 uv run ej1a-sweep [-s 5] [-e épocas] [--studies ...] && uv run ej1a-analysis [-g 1]  # res/output/ej1a
 uv run ej1b-sweep [-s 3] [-e 8000] [--studies ...] && uv run ej1b-analysis     # res/output/ej1b (~4 min)
 uv run emoji-dataset [-s 24] [-f fuente.ttf]                                    # res/datasets/emojis24 (una vez)
-uv run ej2-sweep [-s 1] [-e épocas] && uv run ej2-analysis [-r beta__1 latent__8]  # res/output/ej2 (~16 min)
+uv run ej2-sweep [-s 1] [-e épocas] && uv run ej2-analysis [-r beta__1 latent__8]  # res/output/ej2 (Simpsons, ~7 min)
+# Ej. 2 con variantes (10 por personaje, carpeta por personaje, fondo blanco):
+uv run prepare-images -s <carpeta con una subcarpeta por personaje> -o res/datasets/simpsons32x10 -n 10 --size 32 --fit crop
+uv run ej2-sweep -c res/config/ej2/simpsons_variants.json -o res/output/ej2-variants && uv run ej2-analysis -i res/output/ej2-variants
+# Ej. 2 con escudos de fútbol (res/datasets/escudos, 31 PNG 64x64 → 32x32)
+scripts/download_escudos.sh [res/datasets/escudos]   # baja los 64x64 de football-logos.cc/argentina (saltea los que ya están; LIMIT=n, DELAY=s)
+uv run ej2-sweep -c res/config/ej2/escudos.json -o res/output/ej2-escudos && uv run ej2-analysis -i res/output/ej2-escudos \
+    --pairs boca-juniors-river-plate racing-club-independiente newells-old-boys-rosario-central
 ```
 
 - **`ej1a-sweep`** (`experiments/ej1a_sweep.py`, 1a.2): parte de `ej1a/autoencoder.json` (capas en forma
@@ -79,14 +87,23 @@ uv run ej2-sweep [-s 1] [-e épocas] && uv run ej2-analysis [-r beta__1 latent__
 
 - **`emoji-dataset`** (`tools/emoji_dataset.py`): dataset del ej. 2 = 101 emojis de caras renderizados de
   la fuente de emojis color del sistema (Segoe UI Emoji vista desde WSL, o `--font`), 24×24 RGB sobre blanco
-  + `manifest.json`. Se regenera con el comando; no hace falta Kaggle.
-- **`ej2-sweep`** (`experiments/ej2_sweep.py`, base `ej2/emojis.json`: 1728-256-64-**2·2** / 2-64-256-1728,
-  **ReLU** oculta, BCE, Adam 0.001, batch 16, 1500 épocas): estudio `beta` (`ae` = autoencoder básico con las
+  + `manifest.json`. Era el dataset del ej. 2 antes de pasar a los Simpsons.
+- **`ej2-sweep`** (`experiments/ej2_sweep.py`, base `ej2/simpsons.json`: 3072-512-128-**2·2** /
+  2-128-512-3072, **ReLU** oculta, BCE, Adam 0.001, batch 16, 1500 épocas; `-c ej2/emojis.json` para emojis): estudio `beta` (`ae` = autoencoder básico con las
   mismas capas, β 0.1, 1, 5, 25; latente 2) y `latent` (2, 8, 32; β 1). **`ej2-analysis`** (`analysis/ej2.py`,
   figuras en `visualization/vae_sweep.py`): `dataset`, y por estudio `*_loss` (reconstrucción y KL por
   época), `*_reconstructions`, `*_samples` (todos decodifican los mismos z ~ N(0, I)), `*_latent` (mapa 2-D
   con cada imagen, círculos del prior y elipses σ(x)), `latent_kl_per_dimension`; por modelo de referencia:
-  `generated_*` (muestras nuevas + imagen más cercana del dataset), `interpolation_*`, `latent_grid_*` (2-D).
+  `generated_*` (muestras nuevas + imagen más cercana del dataset), `interpolation_*` (pares `--pairs`, por
+  default homer→marge, bart→lisa, ned→burns: etiqueta de una imagen o **clase** (subcarpeta, o nombre sin sufijo
+  `_NN` en carpeta plana: `homer_simpson_03` → `homer_simpson`), que usa el código medio de sus imágenes), `latent_grid_*` (2-D). `generation.csv`: MAE de las muestras a la imagen real más
+  cercana vs. referencia real (imagen real más cercana: cualquiera / misma clase / otra clase; las dos últimas
+  solo con subcarpetas). Muestra ≪ real = copia; ≈ "misma clase" = variante nueva de un personaje. Con
+  subcarpetas además `{estudio}_classes.png` (códigos 2-D coloreados por clase, nombre en el centroide).
+  Títulos y `--pairs` usan nombres cortos: sin el prefijo/sufijo común a todas las etiquetas cortado en `_`
+  (`argentina_boca-juniors_64x64.football-logos.cc` → `boca-juniors`); el par se separa en el `-` que deja dos
+  nombres válidos (los nombres pueden tener `-`).
+  Distancias entre imágenes reales por bloques (todas juntas serían ≈ 2 GB con 300 imágenes).
 
 - **`ej1b-sweep`** (`experiments/ej1b_sweep.py`): DAE que cambian una sola cosa de `ej1b/denoising.json`:
   `train_level` (flip 0 = AE básico con la misma arquitectura, 0.05, 0.1, 0.2, 0.3), `latent` (2, 5, 10, 20)
@@ -164,11 +181,14 @@ JSON validado contra `res/config/config.schema.json` (`config.py`: `load_config(
 
 Configs: `res/config/ej1a/autoencoder.json` (35-25-15-**2**-15-25-35, tanh oculta, latente lineal,
 salida logística, BCE, Adam 0.001, batch 32, xavier) y `baseline.json` (35-2-35, MSE, GD 0.5).
-`res/config/ej2/emojis.json` (el del ej. 2): 24×24×3 (1728 entradas), 1728-256-64-**2·2** / 2-64-256-1728,
+`res/config/ej2/emojis.json` (anterior): 24×24×3 (1728 entradas), 1728-256-64-**2·2** / 2-64-256-1728,
 ReLU oculta, salida logística, BCE, Adam 0.001, batch 16, 1500 épocas, β 1.
-`res/config/ej2/simpsons.json` (alternativa sin usar): 32×32×3 crop (3072 entradas), 3072-512-128-**2·8**(lineal) /
-8-128-512-3072 (logística), BCE, Adam 0.001, batch 16, 2000 épocas, β 1 (latente 8: retratos tienen mucha
-variación). `res/config/ej2/flags.json`: 20×30×3 stretch (2:3, 1800 entradas), 1800-256-64-**2·2** /
+`res/config/ej2/simpsons.json` (el del ej. 2): 32×32×3 crop (3072 entradas), 3072-512-128-**2·2**(lineal) /
+2-128-512-3072 (logística), **ReLU** oculta, BCE, Adam 0.001, batch 16, 1500 épocas, β 1 (latente 2: mapas
+2-D en el estudio `beta`; el estudio `latent` prueba 8 y 32). `ej2/simpsons_variants.json`: igual, sobre
+`res/datasets/simpsons32x10` (30 personajes × 10 variantes) y 300 épocas (con 300 imágenes y batch 16 son
+~19 pasos por época, 10 veces más que con 30). `ej2/escudos.json`: igual que `simpsons.json` sobre
+`res/datasets/escudos` (31 escudos de clubes argentinos, PNG 64×64 con transparencia → 32×32 stretch, fondo blanco). `res/config/ej2/flags.json`: 20×30×3 stretch (2:3, 1800 entradas), 1800-256-64-**2·2** /
 2-64-256-1800, mismo resto, 3000 épocas (latente 2: mapa 2-D directo y generación con 2 sliders).
 `epsilon` 1e-4 casi nunca se alcanza: la BCE con objetivos continuos no llega a 0 (cortan por épocas).
 `res/config/ej1b/denoising.json`: 35-30-20-**10**-20-30-35 (tanh, latente lineal, salida logística), BCE,
@@ -189,7 +209,8 @@ src/tp5/
 ├── experiments/                # barridos (STUDIES × semillas → <output>/runs/{estudio}__{variante}__s{semilla}.npz)
 │   ├── ej1a_sweep.py           # `ej1a-sweep`: AE básico, un factor por vez
 │   ├── ej1b_sweep.py           # `ej1b-sweep`: DAE (nivel/tipo de ruido de entrenamiento, latente)
-│   └── ej2_sweep.py            # `ej2-sweep`: AE vs VAE con β, tamaño del latente
+│   ├── ej2_sweep.py            # `ej2-sweep`: AE vs VAE con β, tamaño del latente
+│   └── parallel.py             # prepare_workers: reparte los núcleos (OPENBLAS/OMP_NUM_THREADS) y apaga tqdm en los workers
 ├── analysis/                   # runs/*.npz → summary.csv, aggregate.csv, plots/ (pandas)
 │   ├── ej1a.py, ej1b.py, ej2.py  # `ej1a-analysis`, `ej1b-analysis`, `ej2-analysis`
 ├── interfaces/autoencoder.py   # Autoencoder (ABC): encode / decode / reconstruct / train(inputs, expected, epochs)
@@ -299,7 +320,10 @@ src/tp5/
   entrada limpia). Latente 2 / 5 / 10 / 20 con flip 0.2: 3.8 / 2.8 / 2.4 / 2.3. El tipo de ruido de
   entrenamiento casi no cambia el resultado. Con flip 0.2, 76% de las salidas quedan más cerca del patrón
   correcto; los peores: `|`, `o`, `l`, `r`, `u`.
-- `ej2-sweep` con emojis: **con tanh oculta y Adam 0.001 la red no aprende** (MAE 0.065 vs 0.0725 de la
+- Simpsons, prueba de 400 épocas (VAE latente 2): tanh oculta no aprende (MAE 0.18 con 512-128, 0.15 con
+  256-64; la imagen promedio da 0.19); ReLU sí (512-128: MAE 0.040, 256-64: 0.068), ≈ 0.3 s/época sola.
+  Entre retratos reales el más cercano difiere MAE 0.177 en promedio (dataset muy variado: 30 personajes).
+- `ej2-sweep` con emojis (dataset anterior): **con tanh oculta y Adam 0.001 la red no aprende** (MAE 0.065 vs 0.0725 de la
   imagen promedio, y el VAE colapsa con β ≥ 1: KL ≈ 0); con ReLU sí (AE latente 16: MAE 0.013 en 300 épocas).
   Resultado (1500 épocas, MAE de reconstrucción / desvío de los códigos / KL): AE 0.024 / 20.5 / —;
   β 0.1 → 0.022 / 2.9 / 17.5; β 1 → 0.021 / 1.46 / 7.0; β 5 → 0.029 / 1.14 / 4.3; β 25 → 0.064 / 0.36 / 0.38
@@ -308,6 +332,9 @@ src/tp5/
   más cercano 0.040 (entre imágenes reales vecinas: 0.041).
 - En `res/output/` (no trackeado) solo están las corridas de `ej1a`; `ej1b` y `ej2` hay que correrlas
   (los números de arriba son de corridas anteriores).
+- Barridos en paralelo: sin `prepare_workers` cada worker abría 16 hilos de OpenBLAS (8 workers × 16 en 16
+  núcleos, load ≈ 113) y el ej. 2 iba a ~6 s/época; con el reparto, 0.2–0.3 s/época con 8 corridas. Los
+  workers no muestran barra: solo se ve `[i/n] done …` al terminar cada corrida.
 - Pendiente: correr `ej1b-sweep`/`ej2-sweep` + análisis; redactar el informe con estas figuras (1a.2 a 2c).
 - Mejoras posibles sin hacer: `noise_type__flip_0.1` (ej1b) y `latent__2` (ej2) repiten la config de
   `train_level__flip_0.1` y `beta__1` (se entrenan dos veces); ej2 con 1 semilla; en `beta_samples` el AE

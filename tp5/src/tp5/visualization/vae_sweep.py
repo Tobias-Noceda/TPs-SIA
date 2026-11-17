@@ -92,6 +92,8 @@ def plot_latent_maps(
     Parameters:
     maps : variant -> (codes (samples, 2), σ (samples, 2) or None for a plain autoencoder).
     """
+    # Smaller thumbnails when there are many samples, so they do not hide each other completely
+    zoom = 0.7 if len(samples) <= 60 else 0.4
     fig, axes = plt.subplots(1, len(maps), figsize=(5.4 * len(maps), 5.6), squeeze=False)
     for ax, (variant, (codes, sigma)) in zip(axes[0], maps.items()):
         for radius in (1, 2, 3):
@@ -100,7 +102,43 @@ def plot_latent_maps(
             for (x, y), (width, height) in zip(codes, sigma):
                 ax.add_patch(Ellipse((x, y), 2 * width, 2 * height, color="tab:blue", alpha=0.12, zorder=2))
         for (x, y), sample in zip(codes, samples):
-            ax.add_artist(AnnotationBbox(OffsetImage(as_image(sample, shape), zoom=0.7, interpolation="nearest"), (x, y), frameon=False, zorder=3))
+            ax.add_artist(AnnotationBbox(OffsetImage(as_image(sample, shape), zoom=zoom, interpolation="nearest"), (x, y), frameon=False, zorder=3))
+        limit = max(3.3, float(np.abs(codes).max()) * 1.08)
+        ax.set_xlim(-limit, limit)
+        ax.set_ylim(-limit, limit)
+        ax.set_aspect("equal")
+        ax.set_xlabel("z1")
+        ax.set_ylabel("z2")
+        ax.set_title(variant, fontsize=10)
+        ax.grid(alpha=0.3)
+    fig.suptitle(title, fontsize=10)
+    fig.tight_layout()
+    return fig
+
+def plot_class_maps(maps: Dict[str, npt.NDArray[Float]], classes: Sequence[str], title: str) -> Figure:
+    """
+    Codes of a 2-D latent space colored by class (e.g. the variants of each character), with the name of
+    every class at its centroid: shows whether each class forms its own cloud and how they overlap.
+
+    Parameters:
+    maps    : variant -> codes (samples, 2).
+    classes : class of every sample.
+    """
+    names = list(dict.fromkeys(classes))
+    palette = plt.get_cmap("tab20").colors + plt.get_cmap("tab20b").colors
+    index = np.array([names.index(name) for name in classes])
+    fig, axes = plt.subplots(1, len(maps), figsize=(5.4 * len(maps), 5.6), squeeze=False)
+    for ax, (variant, codes) in zip(axes[0], maps.items()):
+        for radius in (1, 2, 3):
+            ax.add_patch(Circle((0, 0), radius, fill=False, color="gray", linestyle="--", linewidth=0.8, zorder=1))
+        for k, name in enumerate(names):
+            members = codes[index == k]
+            color = palette[k % len(palette)]
+            ax.scatter(members[:, 0], members[:, 1], s=14, color=color, alpha=0.8, zorder=2)
+            center = members.mean(axis=0)
+            # First word of the name (homer_simpson → homer) keeps the labels short
+            ax.annotate(name.split("_")[0], center, fontsize=6.5, ha="center", va="center", zorder=3,
+                        bbox={"boxstyle": "round,pad=0.15", "facecolor": "white", "edgecolor": color, "alpha": 0.8})
         limit = max(3.3, float(np.abs(codes).max()) * 1.08)
         ax.set_xlim(-limit, limit)
         ax.set_ylim(-limit, limit)

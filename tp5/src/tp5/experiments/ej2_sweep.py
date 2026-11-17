@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
 from tp5.config import parse_config
+from tp5.experiments.parallel import prepare_workers
 from tp5.persistence.run_file import save_run
 from tp5.runners.basic import run_basic
 from tp5.runners.variational import run_variational
@@ -54,8 +55,6 @@ STUDIES: Dict[str, Dict[str, Variant]] = {
 }
 
 def _run(config: Dict[str, Any], path: str) -> str:
-    # Workers run silently: one progress bar per process would interleave
-    os.environ["TQDM_DISABLE"] = "1"
     try:
         parsed = parse_config(config)
         runner = run_variational if parsed["autoencoder"]["type"] == AutoencoderType.VARIATIONAL else run_basic
@@ -67,7 +66,7 @@ def _run(config: Dict[str, Any], path: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ex. 2: sweep of the variational autoencoder (β and latent size) against a plain autoencoder.")
-    parser.add_argument("-c", "--config", default="res/config/ej2/emojis.json", help="Base config (variational, compact layers)")
+    parser.add_argument("-c", "--config", default="res/config/ej2/simpsons.json", help="Base config (variational, compact layers)")
     parser.add_argument("-o", "--output", default="res/output/ej2", help="Output directory (runs/ is created inside)")
     parser.add_argument("-s", "--seeds", type=int, default=1, help="Seeds per variant (0 … seeds - 1)")
     parser.add_argument("-e", "--epochs", type=int, default=None, help="Override the base config epochs")
@@ -102,6 +101,7 @@ def main() -> None:
                 config["seed"] = seed
                 jobs.append((config, str(path)))
 
+    prepare_workers(min(args.workers, len(jobs)))
     print(f"{len(jobs)} runs to train with {args.workers} workers")
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
         futures = [executor.submit(_run, config, path) for config, path in jobs]

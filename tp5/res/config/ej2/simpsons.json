@@ -6,17 +6,17 @@
                 {
                     "neurons": 512,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
                     "neurons": 128,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
-                    "neurons": 16,
+                    "neurons": 4,
                     "activation_function": {
                         "name": "linear"
                     }
@@ -28,13 +28,13 @@
                 {
                     "neurons": 128,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
                     "neurons": 512,
                     "activation_function": {
-                        "name": "tanh"
+                        "name": "relu"
                     }
                 },
                 {
@@ -54,7 +54,7 @@
         "type": "adam",
         "value": 0.001
     },
-    "epochs": 2000,
+    "epochs": 1500,
     "batch_size": 16,
     "epsilon": 0.0001,
     "seed": 42,

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
 from tp5.config import parse_config
+from tp5.experiments.parallel import prepare_workers
 from tp5.persistence.run_file import save_run
 from tp5.runners.basic import run_basic
 
@@ -94,8 +95,6 @@ STUDIES: Dict[str, Dict[str, Variant]] = {
 }
 
 def _run(config: Dict[str, Any], path: str) -> str:
-    # Workers run silently: one progress bar per process would interleave
-    os.environ["TQDM_DISABLE"] = "1"
     try:
         save_run(path, run_basic(parse_config(config)))
         return f"done {Path(path).name}"
@@ -137,6 +136,7 @@ def main() -> None:
                 config["seed"] = seed
                 jobs.append((config, str(path)))
 
+    prepare_workers(min(args.workers, len(jobs)))
     print(f"{len(jobs)} runs to train with {args.workers} workers")
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
         futures = [executor.submit(_run, config, path) for config, path in jobs]

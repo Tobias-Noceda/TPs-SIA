@@ -763,20 +763,24 @@ name = "tp5"
 version = "0.1.0"
 source = { editable = "tp5" }
 dependencies = [
+    { name = "fonttools" },
     { name = "jsonschema" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "pyqt6" },
     { name = "tqdm" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "fonttools", specifier = ">=4.63.0" },
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "matplotlib", specifier = ">=3.11.1" },
     { name = "numpy", specifier = ">=2.5.2" },
     { name = "pandas", specifier = ">=3.0.6" },
+    { name = "pillow", specifier = ">=12.3.0" },
     { name = "pyqt6", specifier = ">=6.11.0" },
     { name = "tqdm", specifier = ">=4.70.0" },
 ]
